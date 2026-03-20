@@ -1,24 +1,18 @@
-// Shopify Storefront API client
-// Add these to a .env file at the project root:
-//   VITE_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
-//   VITE_SHOPIFY_STOREFRONT_TOKEN=your-public-storefront-access-token
+// Shopify Storefront API client (via @shopify/hydrogen-react)
+import { createStorefrontClient } from '@shopify/hydrogen-react';
 
-const SHOPIFY_DOMAIN = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
-const STOREFRONT_TOKEN = import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN;
-const API_VERSION = '2025-01';
+const { getPublicTokenHeaders, getStorefrontApiUrl } = createStorefrontClient({
+  storeDomain: import.meta.env.VITE_SHOPIFY_STORE_DOMAIN,
+  publicStorefrontToken: import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN,
+  storefrontApiVersion: '2025-01',
+});
 
 async function shopifyFetch({ query, variables = {} }) {
-  const res = await fetch(
-    `https://${SHOPIFY_DOMAIN}/api/${API_VERSION}/graphql.json`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN,
-      },
-      body: JSON.stringify({ query, variables }),
-    }
-  );
+  const res = await fetch(getStorefrontApiUrl(), {
+    method: 'POST',
+    headers: getPublicTokenHeaders({ contentType: 'json' }),
+    body: JSON.stringify({ query, variables }),
+  });
 
   if (!res.ok) throw new Error(`Shopify API error: ${res.status}`);
 

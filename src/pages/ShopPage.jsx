@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
+import { useCart } from '@shopify/hydrogen-react';
 import useCartStore from '../store/cartStore';
 import './ShopPage.css';
 
@@ -438,7 +439,8 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
 }
 
 function ProductCard({ product }) {
-  const { addItem, openCart } = useCartStore();
+  const { linesAdd, status } = useCart();
+  const { openCart } = useCartStore();
   const [added, setAdded] = useState(false);
 
   const discount = product.originalPrice
@@ -448,7 +450,9 @@ function ProductCard({ product }) {
   function handleAddToCart(e) {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product);
+    if (product.variantId) {
+      linesAdd([{ merchandiseId: product.variantId, quantity: 1 }]);
+    }
     openCart();
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
