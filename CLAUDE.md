@@ -1,5 +1,9 @@
 # Elusive Racing — React Storefront
 
+## Git Rules
+
+- **Never commit or push automatically.** Only commit or push when the user explicitly says to (e.g. "commit", "push", "commit and push"). Do not commit after completing a task unless asked.
+
 ## Project Overview
 
 We are rebuilding the Elusive Racing website (https://elusiveracing.com.au) as a modern,
