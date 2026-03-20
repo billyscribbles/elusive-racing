@@ -1,0 +1,119 @@
+.about-banner {
+  position: relative;
+  padding: 80px 0;
+  overflow: hidden;
+  background: var(--color-black);
+}
+
+.about-banner-bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('https://elusiveracing.com.au/wp-content/uploads/menu-honda-engine.jpg');
+  background-size: cover;
+  background-position: center right;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+}
+
+.about-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.95) 40%, rgba(0,0,0,0.3) 100%);
+}
+
+.about-banner-content {
+  position: relative;
+  z-index: 1;
+}
+
+.about-text {
+  max-width: 580px;
+}
+
+.about-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  background: var(--color-red);
+  color: white;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin-bottom: 16px;
+}
+
+.about-title {
+  font-family: var(--font-primary);
+  font-size: 38px;
+  font-weight: 800;
+  color: white;
+  line-height: 1.2;
+  margin-bottom: 18px;
+}
+
+.about-desc {
+  color: rgba(255,255,255,0.65);
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 36px;
+}
+
+.about-stats {
+  display: flex;
+  gap: 48px;
+  margin-bottom: 32px;
+}
+
+.about-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-stat strong {
+  font-family: var(--font-primary);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-red);
+  line-height: 1;
+}
+
+.about-stat span {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.about-cta {
+  display: inline-block;
+  padding: 12px 30px;
+  border: 2px solid white;
+  color: white;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.about-cta:hover {
+  background: white;
+  color: var(--color-black);
+}
+
+@media (max-width: 768px) {
+  .about-title {
+    font-size: 28px;
+  }
+  .about-stats {
+    gap: 30px;
+  }
+  .about-stat strong {
+    font-size: 26px;
+  }
+}

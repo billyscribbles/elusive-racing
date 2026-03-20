@@ -1,0 +1,247 @@
+/* ── Slider ── */
+.hero-slider {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 6;
+  min-height: 360px;
+  max-height: 700px;
+  background: #050211;
+  overflow: hidden;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  display: block;
+}
+
+.hero-slide--active {
+  opacity: 1;
+}
+
+.hero-slide-bg {
+  position: absolute;
+  inset: -30px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(24px) brightness(0.55);
+  transform: scale(1.05);
+}
+
+.hero-slide-img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: scale-down;
+  object-position: center;
+  display: block;
+}
+
+.hero-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  background: rgba(0,0,0,0.45);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.hero-nav:hover { background: rgba(0,0,0,0.75); }
+.hero-nav--prev { left: 20px; }
+.hero-nav--next { right: 20px; }
+
+.hero-dots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.hero-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.hero-dot--active {
+  background: white;
+  transform: scale(1.25);
+}
+
+/* ── Vehicle finder bar ── */
+.vehicle-bar {
+  background: #1a1a1a;
+  border-bottom: 3px solid var(--color-red);
+}
+
+.vehicle-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 72px;
+}
+
+.vehicle-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px 16px 0;
+  color: white;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.vehicle-bar-label svg {
+  color: var(--color-red);
+  flex-shrink: 0;
+}
+
+.vehicle-bar-label span {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.vehicle-bar-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255,255,255,0.12);
+  flex-shrink: 0;
+  margin-right: 24px;
+}
+
+.vehicle-bar-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  padding: 14px 0;
+}
+
+.vehicle-bar-selects {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.vb-select {
+  flex: 1;
+  padding: 10px 32px 10px 14px;
+  background: #2a2a2a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 15px;
+  font-family: var(--font-body);
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.vb-select:focus {
+  outline: none;
+  border-color: var(--color-red);
+  background-color: #323232;
+}
+
+.vb-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vb-select option {
+  background: #2a2a2a;
+  color: #ccc;
+}
+
+.vb-btn {
+  padding: 10px 28px;
+  background: var(--color-red);
+  color: white;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.vb-btn:hover:not(:disabled) { background: var(--color-red-hover); }
+.vb-btn:disabled { background: #555; cursor: not-allowed; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .hero-slider {
+    aspect-ratio: 16 / 7;
+    min-height: 240px;
+  }
+  .hero-slide-img {
+    object-fit: cover;
+  }
+  .vehicle-bar-inner {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 0;
+    min-height: auto;
+  }
+  .vehicle-bar-label {
+    padding: 0;
+  }
+  .vehicle-bar-divider { display: none; }
+  .vehicle-bar-form {
+    width: 100%;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+  .vehicle-bar-selects {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .vb-select {
+    flex: 1 1 40%;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-slider {
+    min-height: 200px;
+  }
+  .hero-nav {
+    width: 34px;
+    height: 34px;
+  }
+  .vb-select {
+    flex: 1 1 100%;
+  }
+  .vb-btn {
+    width: 100%;
+  }
+}

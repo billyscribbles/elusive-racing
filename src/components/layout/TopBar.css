@@ -1,0 +1,80 @@
+.topbar {
+  background-color: var(--color-dark);
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Social icons — left */
+.topbar-social {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.topbar-social-link {
+  color: #666;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.topbar-social-link:hover {
+  color: var(--color-white);
+}
+
+/* Shipping message — centre */
+.topbar-center {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #999;
+  white-space: nowrap;
+}
+
+/* Account links — right */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.topbar-link {
+  color: #888;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+
+.topbar-link:hover {
+  color: var(--color-white);
+}
+
+.topbar-divider {
+  color: #444;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .topbar-social { display: none; }
+  .topbar-center { text-align: left; }
+}
+
+@media (max-width: 500px) {
+  .topbar-center { display: none; }
+}

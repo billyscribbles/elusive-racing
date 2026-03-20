@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.yarn/unplugged/
+.yarn/cache/
+.yarn/install-state.gz
+.pnp.*
+.env
+.env.local
+.DS_Store
+*.log
+.claude/
