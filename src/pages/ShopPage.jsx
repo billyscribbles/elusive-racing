@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
+import useCartStore from '../store/cartStore';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -437,9 +438,21 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
 }
 
 function ProductCard({ product }) {
+  const { addItem, openCart } = useCartStore();
+  const [added, setAdded] = useState(false);
+
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
+
+  function handleAddToCart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(product);
+    openCart();
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
 
   return (
     <a href={product.href} className="shop-product-card">
@@ -473,8 +486,11 @@ function ProductCard({ product }) {
         </div>
       </div>
       <div className="shop-product-actions">
-        <button className="shop-quick-add" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-          Add to Cart
+        <button
+          className={`shop-quick-add${added ? ' shop-quick-add--added' : ''}`}
+          onClick={handleAddToCart}
+        >
+          {added ? <>&#10003; Added</> : <><ShoppingBag size={13} /> Add to Cart</>}
         </button>
       </div>
     </a>

@@ -601,7 +601,9 @@
   transition: background 0.2s;
 }
 
+.shop-quick-add { gap: 6px; }
 .shop-quick-add:hover { background: var(--color-red); }
+.shop-quick-add--added { background: #1a6e2e !important; }
 
 /* Skeleton */
 .shop-product-card--skeleton { pointer-events: none; }
