@@ -4,6 +4,9 @@ import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import ServicesPage from './pages/ServicesPage';
 import ShopPage from './pages/ShopPage';
+import CheckoutPage from './pages/CheckoutPage';
+import ContactPage from './pages/ContactPage';
+import PaymentPage from './pages/PaymentPage';
 
 export default function App() {
   return (
@@ -22,6 +25,9 @@ export default function App() {
               <Route path="/services" element={<ServicesPage />} />
               <Route path="/shop" element={<ShopPage />} />
               <Route path="/search" element={<ShopPage />} />
+              <Route path="/checkout"         element={<CheckoutPage />} />
+              <Route path="/checkout/contact" element={<ContactPage />} />
+              <Route path="/checkout/payment" element={<PaymentPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
-import { useCart } from '@shopify/hydrogen-react';
 import useCartStore from '../store/cartStore';
+import { getProducts } from '../lib/shopify';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -369,7 +369,33 @@ const DUMMY_PRODUCTS = [
   },
 ];
 
-const VENDORS = [...new Set(DUMMY_PRODUCTS.map((p) => p.brand))].sort();
+function mapShopifyProduct(node) {
+  const variant = node.variants?.edges[0]?.node;
+  const price = parseFloat(node.priceRange.minVariantPrice.amount);
+  const compareAt = parseFloat(node.compareAtPriceRange?.minVariantPrice?.amount ?? 0);
+  const isBackorder = (node.tags ?? []).some((t) =>
+    t.toLowerCase().includes('backorder')
+  );
+  return {
+    id: node.id,
+    name: node.title,
+    brand: node.vendor,
+    sku: variant?.sku || '',
+    price,
+    originalPrice: compareAt > price ? compareAt : null,
+    image: node.featuredImage?.url ?? null,
+    href: `/products/${node.handle}`,
+    description: node.description || '',
+    category: 'General',
+    subcategory: null,
+    vehicles: [],
+    tags: node.tags ?? [],
+    backorder: isBackorder,
+    variantId: variant?.id ?? null,
+  };
+}
+
+const DUMMY_VENDORS = [...new Set(DUMMY_PRODUCTS.map((p) => p.brand))].sort();
 
 const SORT_OPTIONS = [
   { label: 'Best Selling',    value: 'best-selling' },
@@ -439,8 +465,7 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
 }
 
 function ProductCard({ product }) {
-  const { linesAdd, status } = useCart();
-  const { openCart } = useCartStore();
+  const { addItem, openCart } = useCartStore();
   const [added, setAdded] = useState(false);
 
   const discount = product.originalPrice
@@ -450,9 +475,7 @@ function ProductCard({ product }) {
   function handleAddToCart(e) {
     e.preventDefault();
     e.stopPropagation();
-    if (product.variantId) {
-      linesAdd([{ merchandiseId: product.variantId, quantity: 1 }]);
-    }
+    addItem(product);
     openCart();
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -520,6 +543,22 @@ export default function ShopPage() {
   const activeBrands   = parseList(brandsParam);
   const activeVehicles = parseList(vehiclesParam);
 
+  // Products: fetch from Shopify, fall back to dummy data
+  const [products, setProducts] = useState(DUMMY_PRODUCTS);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    getProducts({ count: 250 })
+      .then((data) => {
+        const mapped = (data.edges ?? []).map(({ node }) => mapShopifyProduct(node));
+        if (mapped.length > 0) setProducts(mapped);
+      })
+      .catch(() => {}) // keep dummy products on error
+      .finally(() => setProductsLoading(false));
+  }, []);
+
+  const vendors = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
+
   // Local state only for inputs that need typing before applying
   const [searchInput, setSearchInput] = useState(qParam);
   const [localMin,    setLocalMin]    = useState(minParam);
@@ -531,7 +570,7 @@ export default function ShopPage() {
   useEffect(() => { setLocalMin(minParam); setLocalMax(maxParam); }, [minParam, maxParam]);
 
   const filtered = useMemo(
-    () => filterAndSort(DUMMY_PRODUCTS, {
+    () => filterAndSort(products, {
       q: qParam,
       brands: activeBrands,
       sub: subParam,
@@ -542,7 +581,7 @@ export default function ShopPage() {
       backorder: backorderParam === '1',
       sort: sortParam,
     }),
-    [qParam, brandsParam, subParam, vehiclesParam, minParam, maxParam, saleParam, backorderParam, sortParam]
+    [products, qParam, brandsParam, subParam, vehiclesParam, minParam, maxParam, saleParam, backorderParam, sortParam]
   );
 
   const totalPages  = Math.max(1, Math.ceil(filtered.length / perPageParam));
@@ -637,7 +676,7 @@ export default function ShopPage() {
 
   // Count products per subcategory for badges
   function subCount(sub) {
-    return DUMMY_PRODUCTS.filter((p) => p.subcategory === sub).length;
+    return products.filter((p) => p.subcategory === sub).length;
   }
 
   const FilterPanel = () => (
@@ -692,7 +731,7 @@ export default function ShopPage() {
       {/* Brand */}
       <CollapsibleSection title="Brand" defaultOpen>
         <div className="shop-filter-check-list">
-          {VENDORS.map((v) => (
+          {vendors.map((v) => (
             <label key={v} className="shop-filter-check">
               <input
                 type="checkbox"
@@ -701,7 +740,7 @@ export default function ShopPage() {
               />
               <span>{v}</span>
               <span className="shop-filter-count">
-                ({DUMMY_PRODUCTS.filter((p) => p.brand === v).length})
+                ({products.filter((p) => p.brand === v).length})
               </span>
             </label>
           ))}
@@ -712,7 +751,7 @@ export default function ShopPage() {
       <CollapsibleSection title="Vehicle Model" defaultOpen={false}>
         <div className="shop-filter-check-list">
           {VEHICLE_MODELS.map((v) => {
-            const count = DUMMY_PRODUCTS.filter((p) => p.vehicles.includes(v)).length;
+            const count = products.filter((p) => p.vehicles.includes(v)).length;
             return (
               <label key={v} className="shop-filter-check">
                 <input

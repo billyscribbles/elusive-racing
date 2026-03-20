@@ -23,7 +23,7 @@ async function shopifyFetch({ query, variables = {} }) {
 
 // ── Products ──────────────────────────────────────────────────────────────────
 
-export async function getProducts({ query = '', sortKey = 'BEST_SELLING', reverse = false, count = 24, cursor = null } = {}) {
+export async function getProducts({ query = '', sortKey = 'BEST_SELLING', reverse = false, count = 250, cursor = null } = {}) {
   const data = await shopifyFetch({
     query: `
       query GetProducts($count: Int!, $query: String!, $sortKey: ProductSortKeys!, $reverse: Boolean!, $cursor: String) {
@@ -35,6 +35,7 @@ export async function getProducts({ query = '', sortKey = 'BEST_SELLING', revers
               title
               handle
               vendor
+              description
               priceRange {
                 minVariantPrice { amount currencyCode }
               }
@@ -43,6 +44,15 @@ export async function getProducts({ query = '', sortKey = 'BEST_SELLING', revers
               }
               featuredImage { url altText }
               tags
+              variants(first: 1) {
+                edges {
+                  node {
+                    id
+                    sku
+                    availableForSale
+                  }
+                }
+              }
             }
           }
         }

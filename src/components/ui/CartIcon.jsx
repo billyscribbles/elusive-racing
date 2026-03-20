@@ -1,34 +1,18 @@
 import { createPortal } from 'react-dom';
 import { X, ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react';
-import { useCart, Money } from '@shopify/hydrogen-react';
 import useCartStore from '../../store/cartStore';
 import './CartIcon.css';
 
 export default function CartIcon() {
-  const { lines, cost, checkoutUrl, linesRemove, linesUpdate, status } = useCart();
-  const { isOpen, openCart, closeCart } = useCartStore();
+  const { items, isOpen, openCart, closeCart, removeItem, updateQuantity, clearCart } = useCartStore();
 
-  const cartLines = lines ?? [];
-  const itemCount = cartLines.reduce((sum, l) => sum + l.quantity, 0);
-  const isLoading = status === 'fetching' || status === 'creating' || status === 'updating';
-
-  function handleUpdateQty(lineId, newQty) {
-    if (newQty < 1) {
-      linesRemove([lineId]);
-    } else {
-      linesUpdate([{ id: lineId, quantity: newQty }]);
-    }
-  }
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotal  = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   return (
     <div className="cart-wrapper">
       <button className="cart-toggle" onClick={openCart} aria-label="View cart">
-        {cost?.totalAmount && (
-          <span className="cart-total">
-            <Money data={cost.totalAmount} />
-          </span>
-        )}
-        {!cost?.totalAmount && <span className="cart-total">$0.00</span>}
+        <span className="cart-total">${subtotal.toFixed(2)}</span>
         <ShoppingBag className="cart-bag-icon" size={22} strokeWidth={1.75} />
         {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
       </button>
@@ -48,7 +32,7 @@ export default function CartIcon() {
 
             {/* Body */}
             <div className="cart-drawer-body">
-              {cartLines.length === 0 ? (
+              {items.length === 0 ? (
                 <div className="cart-empty-state">
                   <ShoppingBag size={48} strokeWidth={1} className="cart-empty-icon" />
                   <p className="cart-empty">Your cart is empty.</p>
@@ -56,69 +40,51 @@ export default function CartIcon() {
                 </div>
               ) : (
                 <ul className="cart-items">
-                  {cartLines.map((line) => {
-                    const { merchandise } = line;
-                    const image = merchandise.image ?? merchandise.product?.featuredImage;
-                    const brand = merchandise.product?.vendor;
-                    const name = merchandise.product?.title;
-                    const variantTitle = merchandise.title !== 'Default Title' ? merchandise.title : null;
-
-                    return (
-                      <li key={line.id} className="cart-item">
-                        <div className="cart-item-image-wrap">
-                          {image
-                            ? <img src={image.url} alt={image.altText ?? name} className="cart-item-image" />
-                            : <div className="cart-item-no-image" />
-                          }
-                        </div>
-                        <div className="cart-item-details">
-                          {brand && <span className="cart-item-brand">{brand}</span>}
-                          <p className="cart-item-name">{name}{variantTitle && ` — ${variantTitle}`}</p>
-                          <div className="cart-item-bottom">
-                            <div className="cart-qty">
-                              <button onClick={() => handleUpdateQty(line.id, line.quantity - 1)} aria-label="Decrease" disabled={isLoading}>
-                                <Minus size={12} />
-                              </button>
-                              <span>{line.quantity}</span>
-                              <button onClick={() => handleUpdateQty(line.id, line.quantity + 1)} aria-label="Increase" disabled={isLoading}>
-                                <Plus size={12} />
-                              </button>
-                            </div>
-                            <span className="cart-item-price">
-                              <Money data={line.cost.totalAmount} />
-                            </span>
-                            <button className="cart-item-remove" onClick={() => linesRemove([line.id])} aria-label="Remove item" disabled={isLoading}>
-                              <Trash2 size={14} />
+                  {items.map((item) => (
+                    <li key={item.id} className="cart-item">
+                      <div className="cart-item-image-wrap">
+                        {item.image
+                          ? <img src={item.image} alt={item.name} className="cart-item-image" />
+                          : <div className="cart-item-no-image" />
+                        }
+                      </div>
+                      <div className="cart-item-details">
+                        <span className="cart-item-brand">{item.brand}</span>
+                        <p className="cart-item-name">{item.name}</p>
+                        <div className="cart-item-bottom">
+                          <div className="cart-qty">
+                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease">
+                              <Minus size={12} />
+                            </button>
+                            <span>{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase">
+                              <Plus size={12} />
                             </button>
                           </div>
+                          <span className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                          <button className="cart-item-remove" onClick={() => removeItem(item.id)} aria-label="Remove item">
+                            <Trash2 size={14} />
+                          </button>
                         </div>
-                      </li>
-                    );
-                  })}
+                      </div>
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
 
             {/* Footer */}
-            {cartLines.length > 0 && (
+            {items.length > 0 && (
               <div className="cart-drawer-footer">
                 <div className="cart-subtotal-row">
                   <span>Subtotal</span>
-                  <span className="cart-subtotal-amount">
-                    {cost?.totalAmount && <Money data={cost.totalAmount} />}
-                  </span>
+                  <span className="cart-subtotal-amount">${subtotal.toFixed(2)}</span>
                 </div>
                 <p className="cart-shipping-note">Shipping &amp; taxes calculated at checkout</p>
-                <a
-                  href={checkoutUrl}
-                  className="cart-checkout-btn"
-                  onClick={closeCart}
-                >
+                <a href="/checkout" className="cart-checkout-btn" onClick={closeCart}>
                   Proceed to Checkout
                 </a>
-                <button className="cart-clear" onClick={() => linesRemove(cartLines.map((l) => l.id))}>
-                  Clear cart
-                </button>
+                <button className="cart-clear" onClick={clearCart}>Clear cart</button>
               </div>
             )}
 
