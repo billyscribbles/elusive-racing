@@ -1,39 +1,57 @@
+import { useRef } from 'react';
 import { FaInstagram } from 'react-icons/fa6';
 import './InstagramSection.css';
 
-// Placeholder posts — replace with Instagram Graph API data when ready
 const posts = [
-  {
-    id: 1,
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-clutch.jpg',
-    href: 'https://www.instagram.com/elusive_racing/',
-  },
-  {
-    id: 2,
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-honda-engine.jpg',
-    href: 'https://www.instagram.com/elusive_racing/',
-  },
-  {
-    id: 3,
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-lsd.jpg',
-    href: 'https://www.instagram.com/elusive_racing/',
-  },
-  {
-    id: 4,
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-driveshaft.jpg',
-    href: 'https://www.instagram.com/elusive_racing/',
-  },
-  {
-    id: 5,
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-synchros.jpg',
-    href: 'https://www.instagram.com/elusive_racing/',
-  },
-  {
-    id: 6,
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-honda-drivetrain.jpg',
-    href: 'https://www.instagram.com/elusive_racing/',
-  },
+  { src: '/instagram/post1.mp4', href: 'https://www.instagram.com/elusive_racing/' },
+  { src: '/instagram/post2.mp4', href: 'https://www.instagram.com/elusive_racing/' },
+  { src: '/instagram/post3.mp4', href: 'https://www.instagram.com/elusive_racing/' },
+  { src: '/instagram/post4.mp4', href: 'https://www.instagram.com/elusive_racing/' },
+  { src: '/instagram/post5.mp4', href: 'https://www.instagram.com/elusive_racing/' },
+  { src: '/instagram/post6.mp4', href: 'https://www.instagram.com/elusive_racing/' },
 ];
+
+function ReelCard({ src, href }) {
+  const videoRef = useRef(null);
+
+  const handleMouseEnter = () => videoRef.current?.play();
+
+  const handleMouseLeave = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.pause();
+    v.currentTime = 0;
+  };
+
+  return (
+    <a
+      className="reel-card"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <video
+        ref={videoRef}
+        className="reel-video"
+        src={src}
+        muted
+        playsInline
+        loop
+        preload="metadata"
+      />
+      <div className="reel-overlay">
+        <div className="reel-play-icon">
+          <svg viewBox="0 0 24 24" fill="white" width="40" height="40">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+        <FaInstagram size={22} className="reel-ig-icon" />
+      </div>
+    </a>
+  );
+}
 
 export default function InstagramSection() {
   return (
@@ -48,24 +66,15 @@ export default function InstagramSection() {
           <FaInstagram size={24} />
           <span>@elusive_racing</span>
         </a>
-        <p className="instagram-tagline">Follow us for builds, parts drops & behind the scenes</p>
+        <p className="instagram-tagline">Follow us for builds, parts drops &amp; behind the scenes</p>
       </div>
 
-      <div className="instagram-grid">
-        {posts.map((post) => (
-          <a
-            key={post.id}
-            href={post.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="instagram-tile"
-          >
-            <img src={post.image} alt="" loading="lazy" className="instagram-tile-img" />
-            <div className="instagram-tile-overlay">
-              <FaInstagram size={28} color="#fff" />
-            </div>
-          </a>
-        ))}
+      <div className="reel-wrapper">
+        <div className="reel-track">
+          {posts.map((post, i) => (
+            <ReelCard key={i} {...post} />
+          ))}
+        </div>
       </div>
 
       <div className="instagram-cta">

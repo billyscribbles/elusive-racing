@@ -5,7 +5,7 @@
 
 .instagram-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
   padding: 0 24px;
 }
 
@@ -32,45 +32,107 @@
   color: var(--color-light);
 }
 
-/* Grid */
-.instagram-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
+/* Reel */
+.reel-wrapper {
+  position: relative;
 }
 
-.instagram-tile {
+.reel-wrapper::before,
+.reel-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.reel-wrapper::before {
+  left: 0;
+  background: linear-gradient(to right, #fff, transparent);
+}
+
+.reel-wrapper::after {
+  right: 0;
+  background: linear-gradient(to left, #fff, transparent);
+}
+
+.reel-track {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 48px;
+}
+
+.reel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Square cards — video plays in place, no size change */
+.reel-card {
+  flex: 0 0 240px;
+  height: 240px;
   position: relative;
-  aspect-ratio: 1;
   overflow: hidden;
+  background: #111;
+  border-radius: 12px;
+  cursor: pointer;
   display: block;
 }
 
-.instagram-tile-img {
+.reel-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
+  object-position: center;
 }
 
-.instagram-tile-overlay {
+/* Overlay */
+.reel-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0);
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.3s ease;
+}
+
+.reel-card:hover .reel-overlay {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Faint play icon — visible by default, hides on hover */
+.reel-play-icon {
+  position: absolute;
+  opacity: 0.7;
+  color: #fff;
+  transition: opacity 0.25s ease;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.4));
+}
+
+.reel-card:hover .reel-play-icon {
   opacity: 0;
-  transition: opacity 0.3s ease, background 0.3s ease;
 }
 
-.instagram-tile:hover .instagram-tile-img {
-  transform: scale(1.06);
+/* Instagram icon — hidden by default, appears on hover */
+.reel-ig-icon {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  color: rgba(255, 255, 255, 0);
+  transition: color 0.3s ease;
 }
 
-.instagram-tile:hover .instagram-tile-overlay {
-  opacity: 1;
-  background: rgba(0, 0, 0, 0.45);
+.reel-card:hover .reel-ig-icon {
+  color: #fff;
 }
 
 /* CTA */
@@ -92,7 +154,10 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--color-black);
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .instagram-follow-btn:hover {
@@ -101,15 +166,19 @@
   color: #fff;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .instagram-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (max-width: 600px) {
+  .reel-card {
+    flex: 0 0 175px;
+    height: 175px;
   }
-}
 
-@media (max-width: 500px) {
-  .instagram-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .reel-track {
+    padding: 0 16px;
+    gap: 6px;
+  }
+
+  .reel-wrapper::before,
+  .reel-wrapper::after {
+    display: none;
   }
 }
