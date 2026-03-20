@@ -104,11 +104,6 @@ function ProductCard({ product }) {
         {product.badge && (
           <span className={`product-badge product-badge--${product.badgeType}`}>{product.badge}</span>
         )}
-        <div className="product-actions">
-          <button className="product-quick-add" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-            Add to Cart
-          </button>
-        </div>
       </div>
       <div className="product-info">
         <span className="product-brand">{product.brand}</span>
@@ -122,6 +117,11 @@ function ProductCard({ product }) {
             </>
           )}
         </div>
+      </div>
+      <div className="product-actions">
+        <button className="product-quick-add" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+          Add to Cart
+        </button>
       </div>
     </a>
   );

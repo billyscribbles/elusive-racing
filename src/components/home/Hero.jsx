@@ -1,14 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Gauge } from 'lucide-react';
 import { vehicleData } from '../../data/navigation';
 import './Hero.css';
-
-const slides = [
-  { image: '/hnats1.jpg', href: '/on-sale' },
-  { image: '/hnats2.jpg', href: '/brand/hybrid-racing' },
-  { image: '/APR-Performance-FL5.png', href: '/brand/apr-performance' },
-  { image: '/APR-Performance-FK8.png', href: '/brand/apr-performance' },
-];
 
 function useVehicleForm() {
   const [make, setMake] = useState('');
@@ -31,7 +24,6 @@ function useVehicleForm() {
   return { make, model, year, models, handleMakeChange, handleModelChange: (e) => { setModel(e.target.value); setYear(''); }, handleYearChange: (e) => setYear(e.target.value), handleSubmit };
 }
 
-// Desktop floating panel
 function DesktopFinder() {
   const { make, model, year, models, handleMakeChange, handleModelChange, handleYearChange, handleSubmit } = useVehicleForm();
 
@@ -63,7 +55,6 @@ function DesktopFinder() {
   );
 }
 
-// Mobile inline form (inside the bar)
 function MobileFinderForm() {
   const { make, model, year, models, handleMakeChange, handleModelChange, handleYearChange, handleSubmit } = useVehicleForm();
 
@@ -89,24 +80,7 @@ function MobileFinderForm() {
 }
 
 export default function Hero() {
-  const [current, setCurrent] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-
-  const goTo = useCallback((idx) => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setCurrent(idx);
-    setTimeout(() => setIsTransitioning(false), 600);
-  }, [isTransitioning]);
-
-  const next = useCallback(() => goTo((current + 1) % slides.length), [current, goTo]);
-  const prev = () => goTo((current - 1 + slides.length) % slides.length);
-
-  useEffect(() => {
-    const timer = setInterval(next, 5000);
-    return () => clearInterval(timer);
-  }, [next]);
 
   return (
     <>
@@ -140,40 +114,11 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* ── Mobile: slider + vehicle bar ── */}
+      {/* ── Mobile: static image + overlay + vehicle bar ── */}
       <div className="hero-mobile">
-        <div className="hero-slider">
-          {slides.map((slide, i) => (
-            <a
-              key={i}
-              href={slide.href}
-              className={`hero-slide ${i === current ? 'hero-slide--active' : ''}`}
-              tabIndex={i === current ? 0 : -1}
-            >
-              <div className="hero-slide-bg" style={{ backgroundImage: `url(${slide.image})` }} />
-              <img src={slide.image} alt="" className="hero-slide-img" />
-            </a>
-          ))}
-          <button className="hero-nav hero-nav--prev" onClick={prev} aria-label="Previous slide">
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <button className="hero-nav hero-nav--next" onClick={next} aria-label="Next slide">
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <div className="hero-dots">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                className={`hero-dot ${i === current ? 'hero-dot--active' : ''}`}
-                onClick={() => goTo(i)}
-                aria-label={`Go to slide ${i + 1}`}
-              />
-            ))}
-          </div>
+        <div className="hero-mobile-img-wrap">
+          <img src="/hnats1.jpg" alt="" className="hero-mobile-img" />
+          <div className="hero-mobile-overlay" />
         </div>
 
         <div className="vehicle-bar">

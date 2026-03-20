@@ -1,8 +1,8 @@
 .nav {
   background: var(--color-black);
   position: sticky;
-  top: var(--header-height);
-  z-index: 999;
+  top: calc(var(--header-height) + var(--finder-height, 0px));
+  z-index: 997;
   overflow: visible;
 }
 
