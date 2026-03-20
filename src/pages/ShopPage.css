@@ -16,7 +16,7 @@
 }
 
 .shop-page-count {
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(255,255,255,0.45);
   font-family: var(--font-primary);
 }
@@ -73,7 +73,7 @@
 
 .shop-filter-title {
   font-family: var(--font-primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -94,7 +94,7 @@
 
 .shop-filter-search-input {
   flex: 1;
-  font-size: 13px;
+  font-size: 15px;
   font-family: var(--font-body);
   color: var(--color-dark);
   background: none;
@@ -120,7 +120,7 @@
   width: 100%;
   padding: 5px 0;
   font-family: var(--font-primary);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-dark);
   text-align: left;
@@ -147,7 +147,7 @@
   width: 100%;
   padding: 5px 8px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-dark-3);
   text-align: left;
   background: none;
@@ -164,7 +164,7 @@
 }
 
 .shop-cat-count {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-light);
   flex-shrink: 0;
 }
@@ -188,7 +188,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-dark-3);
 }
 
@@ -204,7 +204,7 @@
 .shop-filter-check:hover span:nth-child(2) { color: var(--color-red); }
 
 .shop-filter-count {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-light);
   flex-shrink: 0;
 }
@@ -219,7 +219,7 @@
 
 .shop-price-preset {
   padding: 5px 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-family: var(--font-primary);
   font-weight: 600;
   border: 1px solid var(--color-border);
@@ -238,7 +238,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-dark-3);
   cursor: pointer;
 }
@@ -311,7 +311,7 @@
   background: none;
   color: var(--color-red);
   font-family: var(--font-primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -339,7 +339,7 @@
   background: var(--color-dark);
   color: #fff;
   font-family: var(--font-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -378,7 +378,7 @@
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-primary);
   font-weight: 600;
   color: var(--color-dark);
@@ -410,7 +410,7 @@
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 15px;
   font-family: var(--font-primary);
   font-weight: 600;
   color: var(--color-dark);
@@ -446,7 +446,8 @@
 
 /* ── Product card ── */
 .shop-product-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border: 1px solid var(--color-border-light);
   border-radius: 6px;
@@ -499,12 +500,15 @@
 
 .shop-product-info {
   padding: 14px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .shop-product-brand {
   display: block;
   font-family: var(--font-primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -514,16 +518,20 @@
 
 .shop-product-name {
   font-family: var(--font-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-dark);
   line-height: 1.45;
   margin-bottom: 10px;
-  min-height: 40px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.9em;
 }
 
 .shop-product-backorder {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: #7c5cbf;
   font-family: var(--font-primary);
@@ -538,7 +546,7 @@
 }
 
 .shop-product-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-light);
   line-height: 1.5;
   margin-bottom: 10px;
@@ -552,23 +560,24 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  margin-top: auto;
 }
 
 .shop-product-price {
   font-family: var(--font-primary);
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 800;
   color: var(--color-black);
 }
 
 .shop-product-original {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-light);
   text-decoration: line-through;
 }
 
 .shop-product-discount {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--color-red);
   font-family: var(--font-primary);
@@ -593,7 +602,7 @@
   background: var(--color-black);
   color: #fff;
   font-family: var(--font-primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -652,7 +661,7 @@
   border-radius: 4px;
   background: #fff;
   font-family: var(--font-primary);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-dark);
   cursor: pointer;
@@ -677,7 +686,7 @@
 
 .shop-page-ellipsis {
   color: var(--color-light);
-  font-size: 14px;
+  font-size: 15px;
   padding: 0 2px;
   line-height: 38px;
 }
@@ -693,7 +702,7 @@
   background: var(--color-dark);
   color: #fff;
   font-family: var(--font-primary);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -731,7 +740,7 @@
   padding: 20px 20px;
   border-bottom: 1px solid var(--color-border-light);
   font-family: var(--font-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -785,7 +794,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-  .shop-product-name { font-size: 13px; min-height: unset; }
-  .shop-product-price { font-size: 15px; }
+  .shop-product-name { font-size: 15px; }
+  .shop-product-price { font-size: 17px; }
   .shop-page-title { font-size: 22px; }
 }

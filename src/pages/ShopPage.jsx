@@ -471,10 +471,9 @@ function ProductCard({ product }) {
       <div className="shop-product-info">
         <span className="shop-product-brand">{product.brand}</span>
         <h3 className="shop-product-name">{product.name}</h3>
-        <p className="shop-product-desc">{product.description}</p>
-        {product.backorder && (
-          <p className="shop-product-backorder">Available on backorder</p>
-        )}
+        <p className="shop-product-backorder">
+          {product.backorder ? 'Available on backorder' : ''}
+        </p>
         <div className="shop-product-pricing">
           <span className="shop-product-price">${product.price.toFixed(2)}</span>
           {product.originalPrice && (
