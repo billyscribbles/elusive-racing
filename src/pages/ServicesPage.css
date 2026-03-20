@@ -1,0 +1,317 @@
+.services-page {
+  background: #fff;
+}
+
+/* ── Hero ── */
+.sp-hero {
+  position: relative;
+  height: 520px;
+  display: flex;
+  align-items: center;
+}
+
+.sp-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.sp-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(135deg, rgba(217,64,64,0.15) 0%, transparent 55%);
+}
+
+.sp-hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 0 56px;
+  max-width: 680px;
+}
+
+.sp-hero-label {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-red);
+  margin-bottom: 16px;
+}
+
+.sp-hero-title {
+  font-family: var(--font-primary);
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  margin-bottom: 18px;
+}
+
+.sp-hero-sub {
+  font-size: 16px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+.sp-hero-btn {
+  display: inline-block;
+  padding: 14px 36px;
+  background: var(--color-red);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.sp-hero-btn:hover {
+  background: var(--color-red-hover);
+  transform: translateY(-1px);
+}
+
+/* ── Service rows ── */
+.sp-services {
+  padding: 80px 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.sp-service-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  margin-bottom: 96px;
+}
+
+.sp-service-row:last-child {
+  margin-bottom: 0;
+}
+
+.sp-service-row--reverse {
+  direction: rtl;
+}
+
+.sp-service-row--reverse > * {
+  direction: ltr;
+}
+
+.sp-service-img-wrap {
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+
+.sp-service-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.sp-service-img-wrap:hover .sp-service-img {
+  transform: scale(1.04);
+}
+
+.sp-service-tagline {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-red);
+  margin-bottom: 10px;
+}
+
+.sp-service-title {
+  font-family: var(--font-primary);
+  font-size: clamp(24px, 2.5vw, 32px);
+  font-weight: 800;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: -0.3px;
+  margin-bottom: 16px;
+}
+
+.sp-service-desc {
+  font-size: 15px;
+  color: var(--color-mid);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.sp-service-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  margin-bottom: 32px;
+}
+
+.sp-service-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-dark-3);
+  line-height: 1.5;
+}
+
+.sp-service-tick {
+  color: var(--color-red);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.sp-service-btn {
+  display: inline-block;
+  padding: 13px 32px;
+  background: var(--color-black);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.sp-service-btn:hover {
+  background: var(--color-red);
+  transform: translateY(-1px);
+}
+
+/* ── FAQ ── */
+.sp-faq {
+  background: #f7f7f7;
+  padding: 72px 0;
+}
+
+.sp-faq-inner {
+  max-width: 960px;
+}
+
+.sp-faq-title {
+  font-family: var(--font-primary);
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-black);
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.sp-faq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.sp-faq-item {
+  background: #fff;
+  border-radius: 4px;
+  padding: 28px 30px;
+  border-left: 3px solid var(--color-red);
+}
+
+.sp-faq-q {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 10px;
+}
+
+.sp-faq-a {
+  font-size: 14px;
+  color: var(--color-mid);
+  line-height: 1.7;
+}
+
+/* ── CTA banner ── */
+.sp-cta {
+  background: var(--color-black);
+  padding: 72px 32px;
+  text-align: center;
+}
+
+.sp-cta-title {
+  font-family: var(--font-primary);
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.sp-cta-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 32px;
+}
+
+.sp-cta-btn {
+  display: inline-block;
+  padding: 14px 40px;
+  background: var(--color-red);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.sp-cta-btn:hover {
+  background: var(--color-red-hover);
+  transform: translateY(-1px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .sp-hero {
+    height: auto;
+    padding: 80px 0;
+  }
+
+  .sp-hero-content {
+    padding: 0 24px;
+  }
+
+  .sp-service-row,
+  .sp-service-row--reverse {
+    grid-template-columns: 1fr;
+    direction: ltr;
+    gap: 32px;
+    margin-bottom: 64px;
+  }
+
+  .sp-service-list {
+    grid-template-columns: 1fr;
+  }
+
+  .sp-faq-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,4 +1,5 @@
 import Hero from '../components/home/Hero';
+import ServicesStrip from '../components/home/ServicesStrip';
 import CategoryGrid from '../components/home/CategoryGrid';
 import FeaturedProducts from '../components/home/FeaturedProducts';
 import PromoStrip from '../components/home/PromoStrip';
@@ -10,6 +11,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <ServicesStrip />
       <CategoryGrid />
       <FeaturedProducts />
       <PromoStrip />
