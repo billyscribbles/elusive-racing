@@ -1,4 +1,5 @@
 import Hero from '../components/home/Hero';
+import StickyFinder from '../components/layout/StickyFinder';
 import ServicesStrip from '../components/home/ServicesStrip';
 import CategoryGrid from '../components/home/CategoryGrid';
 import FeaturedProducts from '../components/home/FeaturedProducts';
@@ -10,6 +11,7 @@ import InstagramSection from '../components/home/InstagramSection';
 export default function HomePage() {
   return (
     <>
+      <StickyFinder />
       <Hero />
       <ServicesStrip />
       <CategoryGrid />
