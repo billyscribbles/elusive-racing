@@ -84,8 +84,12 @@
 }
 
 @media (max-width: 768px) {
+  .brands-section {
+    padding: 44px 0;
+  }
   .brands-showcase {
     grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 24px;
   }
   .brand-showcase-item {
     height: 90px;
@@ -97,7 +101,19 @@
 }
 
 @media (max-width: 480px) {
+  .brands-section {
+    padding: 36px 0;
+  }
   .brands-showcase {
     grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 20px;
+  }
+  .brand-showcase-item {
+    height: 76px;
+    padding: 12px 10px;
+  }
+  .brand-showcase-item img {
+    max-height: 38px;
+    max-width: 80px;
   }
 }

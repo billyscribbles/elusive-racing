@@ -107,13 +107,56 @@
 }
 
 @media (max-width: 768px) {
+  .about-banner {
+    padding: 56px 0;
+  }
   .about-title {
     font-size: 28px;
   }
+  .about-desc {
+    font-size: 15px;
+    margin-bottom: 28px;
+  }
   .about-stats {
-    gap: 30px;
+    gap: 32px;
+    margin-bottom: 28px;
   }
   .about-stat strong {
     font-size: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-banner {
+    padding: 44px 0;
+  }
+  .about-banner-overlay {
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
+  }
+  .about-text {
+    max-width: 100%;
+  }
+  .about-title {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+  .about-desc {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .about-stats {
+    flex-wrap: wrap;
+    gap: 20px 36px;
+    margin-bottom: 24px;
+  }
+  .about-stat strong {
+    font-size: 28px;
+  }
+  .about-stat span {
+    font-size: 12px;
+  }
+  .about-cta {
+    width: 100%;
+    text-align: center;
   }
 }

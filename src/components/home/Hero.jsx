@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import { Gauge } from 'lucide-react';
 import { vehicleData } from '../../data/navigation';
 import './Hero.css';
@@ -82,6 +82,15 @@ function MobileFinderForm() {
 export default function Hero() {
   const [videoReady, setVideoReady] = useState(false);
 
+  useLayoutEffect(() => {
+    if (window.innerWidth <= 900) {
+      document.documentElement.style.setProperty('--finder-height', '50px');
+      return () => {
+        document.documentElement.style.setProperty('--finder-height', '0px');
+      };
+    }
+  }, []);
+
   return (
     <>
       {/* ── Desktop: video left + floating finder right ── */}
@@ -114,13 +123,8 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* ── Mobile: static image + overlay + vehicle bar ── */}
+      {/* ── Mobile: vehicle bar at top (always visible) + hero image ── */}
       <div className="hero-mobile">
-        <div className="hero-mobile-img-wrap">
-          <img src="/hnats1.jpg" alt="" className="hero-mobile-img" />
-          <div className="hero-mobile-overlay" />
-        </div>
-
         <div className="vehicle-bar">
           <div className="container vehicle-bar-inner">
             <div className="vehicle-bar-label">
@@ -129,6 +133,20 @@ export default function Hero() {
             </div>
             <div className="vehicle-bar-divider" />
             <MobileFinderForm />
+          </div>
+        </div>
+
+        <div className="hero-mobile-img-wrap">
+          <img src="/hnats1.jpg" alt="" className="hero-mobile-img" />
+          <div className="hero-mobile-overlay" />
+          <div className="hero-mobile-content">
+            <span className="hero-mobile-tag">Melbourne, Australia</span>
+            <h1 className="hero-mobile-headline">Honda Performance<br />Specialists</h1>
+            <p className="hero-mobile-sub">10,000+ parts. Over a decade of expertise.</p>
+            <div className="hero-mobile-actions">
+              <a href="/shop" className="hero-btn-primary">Shop Now</a>
+              <a href="/services" className="hero-btn-ghost">Our Services</a>
+            </div>
           </div>
         </div>
       </div>

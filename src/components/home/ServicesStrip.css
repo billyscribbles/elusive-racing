@@ -155,9 +155,35 @@
 
 /* Responsive */
 @media (max-width: 900px) {
+  .services-strip {
+    padding: 52px 0;
+  }
+  .services-strip-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    max-width: 100%;
+  }
+  .services-strip-header {
+    margin-bottom: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .services-strip {
+    padding: 40px 0;
+  }
   .services-strip-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
-    max-width: 520px;
+    gap: 14px;
+    max-width: 440px;
+  }
+  .services-strip-header {
+    margin-bottom: 28px;
+  }
+  .service-card-body {
+    padding: 18px 20px 22px;
+  }
+  .services-strip-footer {
+    margin-top: 32px;
   }
 }

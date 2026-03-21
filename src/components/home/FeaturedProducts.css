@@ -185,18 +185,41 @@
 }
 
 @media (max-width: 768px) {
+  .featured-products-section {
+    padding: 48px 0;
+  }
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
+    margin-bottom: 28px;
   }
 }
 
 @media (max-width: 480px) {
+  .featured-products-section {
+    padding: 36px 0;
+  }
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .product-info {
+    padding: 12px;
+  }
+  .product-brand {
+    font-size: 10px;
+    margin-bottom: 4px;
   }
   .product-name {
-    font-size: 13px;
+    font-size: 12px;
+    min-height: 36px;
+    margin-bottom: 8px;
+  }
+  .product-price {
+    font-size: 16px;
+  }
+  .product-original-price {
+    font-size: 12px;
   }
 }

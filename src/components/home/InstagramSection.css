@@ -166,10 +166,35 @@
   color: #fff;
 }
 
+@media (max-width: 768px) {
+  .instagram-section {
+    padding: 44px 0 0;
+  }
+  .instagram-header {
+    margin-bottom: 28px;
+  }
+  .instagram-handle {
+    font-size: 19px;
+  }
+  .instagram-cta {
+    padding: 28px 24px;
+  }
+}
+
 @media (max-width: 600px) {
+  .instagram-section {
+    padding: 36px 0 0;
+  }
+  .instagram-handle {
+    font-size: 17px;
+    gap: 8px;
+  }
+  .instagram-tagline {
+    font-size: 13px;
+  }
   .reel-card {
-    flex: 0 0 175px;
-    height: 175px;
+    flex: 0 0 155px;
+    height: 155px;
   }
 
   .reel-track {
@@ -180,5 +205,14 @@
   .reel-wrapper::before,
   .reel-wrapper::after {
     display: none;
+  }
+
+  .instagram-cta {
+    padding: 24px 20px;
+  }
+
+  .instagram-follow-btn {
+    padding: 11px 24px;
+    font-size: 12px;
   }
 }

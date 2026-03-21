@@ -107,6 +107,9 @@
 }
 
 @media (max-width: 900px) {
+  .category-section {
+    padding: 36px 0 44px;
+  }
   .cat-card:nth-child(1),
   .cat-card:nth-child(2),
   .cat-card:nth-child(3),
@@ -124,11 +127,21 @@
 }
 
 @media (max-width: 600px) {
+  .category-section {
+    padding: 28px 0 36px;
+  }
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
+  }
+  .cat-card {
+    min-height: 140px;
+  }
+  .cat-card-label {
+    padding: 14px 12px 12px;
   }
   .cat-card-label span {
-    font-size: 15px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
   }
 }

@@ -119,48 +119,7 @@
 }
 
 @media (max-width: 900px) {
-  .sticky-finder-form {
-    padding: 0 16px;
-    height: 48px;
-    gap: 0;
-  }
-
-  .sticky-finder-label span {
+  .sticky-finder {
     display: none;
-  }
-
-  .sticky-finder-divider {
-    margin: 0 12px;
-  }
-
-  .sticky-finder-selects {
-    gap: 6px;
-  }
-
-  .sticky-finder-select {
-    font-size: 12px;
-    padding: 6px 22px 6px 8px;
-    background-position: right 7px center;
-  }
-
-  .sticky-finder-btn {
-    margin-left: 8px;
-    padding: 7px 14px;
-    font-size: 11px;
-    letter-spacing: 1px;
-  }
-}
-
-@media (max-width: 480px) {
-  .sticky-finder-label {
-    display: none;
-  }
-
-  .sticky-finder-divider {
-    display: none;
-  }
-
-  .sticky-finder-selects {
-    flex: 1;
   }
 }

@@ -306,16 +306,27 @@
   .footer-info-item {
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
+    padding: 12px 20px;
   }
   .footer-info-item:last-child {
     border-bottom: none;
   }
+  .footer-main {
+    padding: 36px 0 0;
+  }
   .footer-main-inner {
     grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .footer-payments-inner {
+    gap: 14px;
   }
   .footer-bottom-inner {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+  .footer-copyright {
+    font-size: 12px;
   }
 }

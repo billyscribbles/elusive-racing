@@ -26,7 +26,13 @@
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 70px;
+    --header-height: 62px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --header-height: 56px;
   }
 }
 
@@ -94,6 +100,31 @@ input, select {
   color: var(--color-light);
   font-size: 17px;
   line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 26px;
+    letter-spacing: 0.5px;
+  }
+  .section-subtitle {
+    font-size: 15px;
+  }
+  .section-header {
+    margin-bottom: 32px;
+  }
+  .container {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 22px;
+  }
+  .section-header {
+    margin-bottom: 24px;
+  }
 }
 
 /* Scrollbar */

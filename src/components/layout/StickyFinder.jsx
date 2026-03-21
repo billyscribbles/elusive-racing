@@ -21,7 +21,9 @@ export default function StickyFinder() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--finder-height', visible ? '52px' : '0px');
+    if (window.innerWidth > 900) {
+      document.documentElement.style.setProperty('--finder-height', visible ? '52px' : '0px');
+    }
   }, [visible]);
 
   const handleMakeChange = (e) => { setMake(e.target.value); setModel(''); setYear(''); };

@@ -70,11 +70,6 @@
   font-size: 12px;
 }
 
-@media (max-width: 768px) {
-  .topbar-social { display: none; }
-  .topbar-center { text-align: left; }
-}
-
-@media (max-width: 500px) {
-  .topbar-center { display: none; }
+@media (max-width: 900px) {
+  .topbar { display: none; }
 }
