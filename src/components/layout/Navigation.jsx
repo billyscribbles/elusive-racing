@@ -99,7 +99,7 @@ export default function Navigation() {
                 onMouseEnter={() => handleMouseEnter(item.label)}
                 onMouseLeave={handleMouseLeave}
               >
-                <a href={item.href} className="nav-link">
+                <a href={item.href} className={`nav-link${item.highlight ? ' nav-link--highlight' : ''}`}>
                   {item.label}
                   {(item.hasMega || (item.links && item.links.length > 0)) && (
                     <svg className="nav-arrow" viewBox="0 0 10 6" fill="none">

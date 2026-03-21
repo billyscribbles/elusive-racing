@@ -59,7 +59,7 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-honda-engine.jpg',
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-engine-parts.jpg',
         imageHref: '/category/engine/internals',
         title: 'Internals',
         titleHref: '/category/engine/internals',
@@ -73,7 +73,8 @@ export const navItems = [
         ],
       },
       {
-        image: null,
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-induction.jpg',
+        imageHref: '/category/engine/induction',
         title: 'Induction',
         titleHref: '/category/engine/induction',
         links: [
@@ -84,7 +85,8 @@ export const navItems = [
         ],
       },
       {
-        image: null,
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-fuel.jpg',
+        imageHref: '/category/engine/fuel-system',
         title: 'Fuel System',
         titleHref: '/category/engine/fuel-system',
         links: [
@@ -95,7 +97,8 @@ export const navItems = [
         ],
       },
       {
-        image: null,
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-sway-turbo.jpg',
+        imageHref: '/category/engine/forced-induction',
         title: 'Forced Induction',
         titleHref: '/category/engine/forced-induction',
         links: [
@@ -166,8 +169,9 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: null,
-        title: 'Cooling System',
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-radiator.jpg',
+        imageHref: '/category/cooling/radiators',
+        title: 'Radiators & Cooling',
         titleHref: '/category/cooling',
         links: [
           { label: 'Radiators', href: '/category/cooling/radiators' },
@@ -175,7 +179,17 @@ export const navItems = [
           { label: 'Thermostats', href: '/category/cooling/thermostats' },
           { label: 'Water Pumps', href: '/category/cooling/water-pumps' },
           { label: 'Coolant', href: '/category/cooling/coolant' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-oil-cooler.jpg',
+        imageHref: '/category/cooling/oil-coolers',
+        title: 'Oil & Intercoolers',
+        titleHref: '/category/cooling/oil-coolers',
+        links: [
           { label: 'Oil Coolers', href: '/category/cooling/oil-coolers' },
+          { label: 'Intercoolers', href: '/category/cooling/intercoolers' },
+          { label: 'Fans & Accessories', href: '/category/cooling/fans-accessories' },
         ],
       },
     ],
@@ -187,13 +201,22 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: null,
-        title: 'Braking System',
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-brake-pads.jpg',
+        imageHref: '/category/brakes/brake-pads',
+        title: 'Pads & Rotors',
         titleHref: '/category/brakes',
         links: [
           { label: 'Brake Pads', href: '/category/brakes/brake-pads' },
           { label: 'Brake Rotors', href: '/category/brakes/brake-rotors' },
           { label: 'Brake Kits', href: '/category/brakes/brake-kits' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-brake-lines.jpg',
+        imageHref: '/category/brakes/brake-lines',
+        title: 'Lines & Fluid',
+        titleHref: '/category/brakes/brake-lines',
+        links: [
           { label: 'Brake Lines', href: '/category/brakes/brake-lines' },
           { label: 'Brake Fluid', href: '/category/brakes/brake-fluid' },
           { label: 'Calipers', href: '/category/brakes/calipers' },
@@ -208,7 +231,8 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: null,
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-ecu.jpg',
+        imageHref: '/category/electronics/engine-management',
         title: 'Engine Management',
         titleHref: '/category/electronics/engine-management',
         links: [
@@ -218,7 +242,8 @@ export const navItems = [
         ],
       },
       {
-        image: null,
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-gauges.jpg',
+        imageHref: '/category/electronics/sensors-gauges',
         title: 'Sensors & Gauges',
         titleHref: '/category/electronics/sensors-gauges',
         links: [
@@ -226,6 +251,17 @@ export const navItems = [
           { label: 'Boost Controllers', href: '/category/electronics/sensors-gauges/boost-controllers' },
           { label: 'Oil Pressure', href: '/category/electronics/sensors-gauges/oil-pressure' },
           { label: 'Water Temp', href: '/category/electronics/sensors-gauges/water-temp' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-spark-plugs.jpg',
+        imageHref: '/category/electronics/ignition',
+        title: 'Ignition',
+        titleHref: '/category/electronics/ignition',
+        links: [
+          { label: 'Spark Plugs', href: '/category/electronics/ignition/spark-plugs' },
+          { label: 'Ignition Coils', href: '/category/electronics/ignition/ignition-coils' },
+          { label: 'Sensors', href: '/category/electronics/ignition/sensors' },
         ],
       },
     ],
@@ -237,17 +273,26 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: null,
-        title: 'Suspension',
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-coilovers.jpg',
+        imageHref: '/category/suspension/coilovers',
+        title: 'Height & Damping',
         titleHref: '/category/suspension',
         links: [
           { label: 'Coilovers', href: '/category/suspension/coilovers' },
           { label: 'Springs', href: '/category/suspension/springs' },
+          { label: 'Camber Kits', href: '/category/suspension/camber-kits' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-sway-bars.jpg',
+        imageHref: '/category/suspension/sway-bars',
+        title: 'Handling',
+        titleHref: '/category/suspension/sway-bars',
+        links: [
           { label: 'Sway Bars', href: '/category/suspension/sway-bars' },
+          { label: 'Strut Bars', href: '/category/suspension/strut-bars' },
           { label: 'Control Arms', href: '/category/suspension/control-arms' },
           { label: 'Bushings', href: '/category/suspension/bushings' },
-          { label: 'Strut Bars', href: '/category/suspension/strut-bars' },
-          { label: 'Camber Kits', href: '/category/suspension/camber-kits' },
         ],
       },
     ],
@@ -259,15 +304,25 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: null,
-        title: 'Interior',
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-seat.jpg',
+        imageHref: '/category/interior/seats',
+        title: 'Seating & Safety',
         titleHref: '/category/interior',
         links: [
           { label: 'Seats', href: '/category/interior/seats' },
-          { label: 'Steering Wheels', href: '/category/interior/steering-wheels' },
-          { label: 'Shift Knobs', href: '/category/interior/shift-knobs' },
           { label: 'Harnesses', href: '/category/interior/harnesses' },
           { label: 'Roll Cages', href: '/category/interior/roll-cages' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-wheels.jpg',
+        imageHref: '/category/interior/steering-wheels',
+        title: 'Controls',
+        titleHref: '/category/interior/steering-wheels',
+        links: [
+          { label: 'Steering Wheels', href: '/category/interior/steering-wheels' },
+          { label: 'Shift Knobs', href: '/category/interior/shift-knobs' },
+          { label: 'Short Shifters', href: '/category/interior/short-shifters' },
           { label: 'Pedals', href: '/category/interior/pedals' },
         ],
       },
@@ -280,8 +335,9 @@ export const navItems = [
     type: 'standard',
     columns: [
       {
-        image: null,
-        title: 'Exterior',
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-aero.jpg',
+        imageHref: '/category/exterior/aerodynamics',
+        title: 'Aerodynamics',
         titleHref: '/category/exterior',
         links: [
           { label: 'Body Kits', href: '/category/exterior/body-kits' },
@@ -289,8 +345,17 @@ export const navItems = [
           { label: 'Side Skirts', href: '/category/exterior/side-skirts' },
           { label: 'Rear Diffusers', href: '/category/exterior/rear-diffusers' },
           { label: 'Wings & Spoilers', href: '/category/exterior/wings-spoilers' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-mirror.jpg',
+        imageHref: '/category/exterior/mirrors',
+        title: 'Body & Trim',
+        titleHref: '/category/exterior/mirrors',
+        links: [
           { label: 'Hoods', href: '/category/exterior/hoods' },
           { label: 'Mirrors', href: '/category/exterior/mirrors' },
+          { label: 'Trims & Seals', href: '/category/exterior/trims-seals' },
         ],
       },
     ],
@@ -298,29 +363,68 @@ export const navItems = [
   {
     label: 'Lighting',
     href: '/category/lighting',
-    hasMega: false,
-    links: [
-      { label: 'Headlights', href: '/category/lighting/headlights' },
-      { label: 'Tail Lights', href: '/category/lighting/tail-lights' },
-      { label: 'Fog Lights', href: '/category/lighting/fog-lights' },
-      { label: 'Interior Lighting', href: '/category/lighting/interior-lighting' },
+    hasMega: true,
+    type: 'standard',
+    columns: [
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-lighting.jpg',
+        imageHref: '/category/lighting/hid',
+        title: 'HID & LED',
+        titleHref: '/category/lighting',
+        links: [
+          { label: 'Headlights', href: '/category/lighting/headlights' },
+          { label: 'Tail Lights', href: '/category/lighting/tail-lights' },
+          { label: 'Fog Lights', href: '/category/lighting/fog-lights' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-led.jpg',
+        imageHref: '/category/lighting/interior-lighting',
+        title: 'Interior & Accessories',
+        titleHref: '/category/lighting/interior-lighting',
+        links: [
+          { label: 'Interior Lighting', href: '/category/lighting/interior-lighting' },
+          { label: 'Wiring', href: '/category/lighting/wiring' },
+          { label: 'Accessories', href: '/category/lighting/accessories' },
+        ],
+      },
     ],
   },
   {
     label: 'Merchandise',
     href: '/category/merchandise',
-    hasMega: false,
-    links: [
-      { label: 'Apparel', href: '/category/merchandise/apparel' },
-      { label: 'Accessories', href: '/category/merchandise/accessories' },
-      { label: 'Stickers', href: '/category/merchandise/stickers' },
+    hasMega: true,
+    type: 'standard',
+    columns: [
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-hoodie.jpg',
+        imageHref: '/category/merchandise/apparel',
+        title: 'Apparel',
+        titleHref: '/category/merchandise/apparel',
+        links: [
+          { label: 'Hoodies & Jackets', href: '/category/merchandise/hoodies-jackets' },
+          { label: 'T-Shirts', href: '/category/merchandise/t-shirts' },
+          { label: 'Caps', href: '/category/merchandise/caps' },
+        ],
+      },
+      {
+        image: 'https://elusiveracing.com.au/wp-content/uploads/menu-lanyard.jpg',
+        imageHref: '/category/merchandise/accessories',
+        title: 'Accessories',
+        titleHref: '/category/merchandise/accessories',
+        links: [
+          { label: 'Accessories', href: '/category/merchandise/accessories' },
+          { label: 'Stickers', href: '/category/merchandise/stickers' },
+        ],
+      },
     ],
   },
   {
-    label: 'Clearance',
-    href: '/category/clearance',
+    label: 'Services',
+    href: '/services',
     hasMega: false,
     links: [],
+    highlight: true,
   },
 ];
 
