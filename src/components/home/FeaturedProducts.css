@@ -66,7 +66,8 @@
   color: white;
 }
 
-.product-badge--popular {
+.product-badge--popular,
+.product-badge--backorder {
   background: var(--color-black);
   color: white;
 }

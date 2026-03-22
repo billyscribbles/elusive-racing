@@ -2,6 +2,14 @@
 
 Melbourne's premier Honda performance parts storefront. Built with React + Vite, designed for Shopify integration.
 
+## Live Deployment
+
+Hosted on Railway: **https://elusive-racing-production-d535.up.railway.app/**
+
+Deploys automatically on every push to `main`.
+
+---
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v18 or higher
