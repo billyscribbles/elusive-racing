@@ -104,6 +104,25 @@
 
 .shop-filter-search-input::placeholder { color: var(--color-light); }
 
+.shop-filter-search-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--color-red);
+  color: white;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.shop-filter-search-btn:hover {
+  background: var(--color-red-hover);
+}
+
 /* Category tree */
 .shop-cat-tree {
   display: flex;

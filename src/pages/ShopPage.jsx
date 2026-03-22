@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
@@ -224,14 +224,16 @@ export default function ShopPage() {
 
   const vendors = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
 
-  // Local state only for inputs that need typing before applying
-  const [searchInput, setSearchInput] = useState(qParam);
+  // Uncontrolled ref for search — avoids re-rendering ShopPage on every keystroke
+  const searchInputRef = useRef(null);
   const [localMin,    setLocalMin]    = useState(minParam);
   const [localMax,    setLocalMax]    = useState(maxParam);
   const [drawerOpen,  setDrawerOpen]  = useState(false);
 
-  // Keep local inputs in sync when URL changes (e.g. clear all)
-  useEffect(() => { setSearchInput(qParam); }, [qParam]);
+  // Sync input value when URL changes (e.g. clear all, navigate with ?q=)
+  useEffect(() => {
+    if (searchInputRef.current) searchInputRef.current.value = qParam;
+  }, [qParam]);
   useEffect(() => { setLocalMin(minParam); setLocalMax(maxParam); }, [minParam, maxParam]);
 
   const filtered = useMemo(
@@ -295,8 +297,10 @@ export default function ShopPage() {
     setSearchParams(p);
   }
 
+
   function applySearch() {
-    setParam('q', searchInput.trim());
+    const val = searchInputRef.current?.value.trim() ?? '';
+    setParam('q', val);
     setDrawerOpen(false);
   }
 
@@ -308,7 +312,7 @@ export default function ShopPage() {
   }
 
   function clearFilters() {
-    setSearchInput('');
+    if (searchInputRef.current) searchInputRef.current.value = '';
     setLocalMin('');
     setLocalMax('');
     setSearchParams({});
@@ -352,14 +356,15 @@ export default function ShopPage() {
         <div className="shop-filter-search">
           <Search size={14} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Products, brands, SKUs..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            defaultValue={qParam}
             onKeyDown={(e) => e.key === 'Enter' && applySearch()}
             className="shop-filter-search-input"
           />
         </div>
+        <button className="shop-filter-search-btn" onClick={applySearch}>Search</button>
       </CollapsibleSection>
 
       {/* Availability */}
