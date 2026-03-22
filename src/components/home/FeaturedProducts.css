@@ -72,15 +72,21 @@
 }
 
 .product-actions {
-  max-height: 0;
-  overflow: hidden;
-  padding: 0 16px;
-  transition: max-height 0.25s ease, padding 0.25s ease;
+  padding: 0 16px 14px;
 }
 
-.product-card:hover .product-actions {
-  max-height: 56px;
-  padding: 0 16px 14px;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  .product-actions {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 16px;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  .product-card:hover .product-actions {
+    max-height: 56px;
+    padding: 0 16px 14px;
+  }
 }
 
 .product-quick-add {

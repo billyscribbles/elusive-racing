@@ -583,17 +583,23 @@
   font-family: var(--font-primary);
 }
 
-/* Add to cart hover */
+/* Add to cart — always visible on mobile, hover reveal on desktop */
 .shop-product-actions {
-  max-height: 0;
-  overflow: hidden;
-  padding: 0 16px;
-  transition: max-height 0.25s ease, padding 0.25s ease;
+  padding: 0 16px 14px;
 }
 
-.shop-product-card:hover .shop-product-actions {
-  max-height: 56px;
-  padding: 0 16px 14px;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  .shop-product-actions {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 16px;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  .shop-product-card:hover .shop-product-actions {
+    max-height: 56px;
+    padding: 0 16px 14px;
+  }
 }
 
 .shop-quick-add {
