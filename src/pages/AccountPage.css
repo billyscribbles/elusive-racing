@@ -1,0 +1,284 @@
+.account-page {
+  padding: 60px 0 80px;
+  background: #f5f5f5;
+  min-height: 70vh;
+}
+
+.account-card {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 48px 48px 40px;
+}
+
+/* Logo area */
+.account-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.account-logo img {
+  height: 36px;
+  width: auto;
+}
+
+/* Heading */
+.account-title {
+  font-family: var(--font-primary);
+  font-size: 22px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.account-subtitle {
+  font-size: 14px;
+  color: #888;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* Form */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.account-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-field label {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.account-field label span { color: var(--color-red); }
+
+.account-field input[type="text"],
+.account-field input[type="email"],
+.account-field input[type="password"],
+.account-field input[type="tel"] {
+  padding: 11px 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #111;
+  background: #fafafa;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.account-field input:focus {
+  outline: none;
+  border-color: var(--color-red);
+  background: #fff;
+}
+
+/* Password field with toggle */
+.account-password-wrap {
+  position: relative;
+}
+
+.account-password-wrap input {
+  padding-right: 42px;
+}
+
+.account-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.account-password-toggle:hover { color: #555; }
+
+/* Checkbox row */
+.account-checkbox-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.account-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+}
+
+.account-checkbox-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-red);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.account-forgot {
+  font-size: 13px;
+  color: var(--color-red);
+  transition: opacity 0.15s;
+}
+
+.account-forgot:hover { opacity: 0.8; }
+
+/* Submit button */
+.account-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--color-red);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 4px;
+}
+
+.account-submit:hover:not(:disabled) { background: var(--color-red-hover); }
+.account-submit:active { transform: scale(0.98); }
+.account-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Divider */
+.account-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  color: #ccc;
+  font-size: 12px;
+}
+
+.account-divider::before,
+.account-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+
+/* Switch link */
+.account-switch {
+  text-align: center;
+  font-size: 14px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.account-switch a {
+  color: var(--color-red);
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.account-switch a:hover { opacity: 0.8; }
+
+/* Error / success banners */
+.account-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fff5f5;
+  border: 1px solid #f5c0c0;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #c03333;
+  line-height: 1.5;
+}
+
+.account-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.account-success-icon { color: #1a7a3c; }
+
+.account-success h3 {
+  font-family: var(--font-primary);
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+}
+
+.account-success p { font-size: 14px; color: #666; }
+
+/* Password strength */
+.account-password-hint {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: -10px;
+}
+
+/* Newsletter checkbox (register) */
+.account-newsletter-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.account-newsletter-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-red);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+  .account-card {
+    margin: 0 16px;
+    padding: 36px 24px 32px;
+  }
+
+  .account-form-row {
+    grid-template-columns: 1fr;
+  }
+}

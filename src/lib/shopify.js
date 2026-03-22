@@ -323,6 +323,84 @@ export async function removeFromCart(cartId, lineIds) {
   return data.cartLinesRemove.cart;
 }
 
+// ── Customer Auth ─────────────────────────────────────────────────────────────
+
+export async function customerCreate({ firstName, lastName, email, password, acceptsMarketing = false }) {
+  const data = await shopifyFetch({
+    query: `
+      mutation CustomerCreate($input: CustomerCreateInput!) {
+        customerCreate(input: $input) {
+          customer { id email firstName lastName }
+          customerUserErrors { code field message }
+        }
+      }
+    `,
+    variables: { input: { firstName, lastName, email, password, acceptsMarketing } },
+  });
+  return data.customerCreate;
+}
+
+export async function customerAccessTokenCreate({ email, password }) {
+  const data = await shopifyFetch({
+    query: `
+      mutation CustomerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+        customerAccessTokenCreate(input: $input) {
+          customerAccessToken { accessToken expiresAt }
+          customerUserErrors { code field message }
+        }
+      }
+    `,
+    variables: { input: { email, password } },
+  });
+  return data.customerAccessTokenCreate;
+}
+
+export async function customerAccessTokenDelete(customerAccessToken) {
+  const data = await shopifyFetch({
+    query: `
+      mutation CustomerAccessTokenDelete($customerAccessToken: String!) {
+        customerAccessTokenDelete(customerAccessToken: $customerAccessToken) {
+          deletedAccessToken
+          userErrors { field message }
+        }
+      }
+    `,
+    variables: { customerAccessToken },
+  });
+  return data.customerAccessTokenDelete;
+}
+
+export async function getCustomer(customerAccessToken) {
+  const data = await shopifyFetch({
+    query: `
+      query GetCustomer($customerAccessToken: String!) {
+        customer(customerAccessToken: $customerAccessToken) {
+          id
+          firstName
+          lastName
+          email
+          phone
+          acceptsMarketing
+          orders(first: 10, sortKey: PROCESSED_AT, reverse: true) {
+            edges {
+              node {
+                id
+                orderNumber
+                processedAt
+                financialStatus
+                fulfillmentStatus
+                currentTotalPrice { amount currencyCode }
+              }
+            }
+          }
+        }
+      }
+    `,
+    variables: { customerAccessToken },
+  });
+  return data.customer;
+}
+
 export async function updateCartLine(cartId, lineId, quantity) {
   const data = await shopifyFetch({
     query: `

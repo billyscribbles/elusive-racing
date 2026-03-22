@@ -41,8 +41,6 @@ const resources = [
   { label: 'My Account', href: '/my-account' },
   { label: 'Track Order', href: '/my-account/orders' },
   { label: 'Create an Account', href: '/my-account/register' },
-  { label: 'AfterPay', href: '/afterpay' },
-  { label: 'Zip', href: '/zip' },
 ];
 
 const information = [
@@ -50,7 +48,6 @@ const information = [
   { label: 'Privacy Policy', href: '/terms#privacy' },
   { label: 'Returns Policy', href: '/terms#returns' },
   { label: 'Shipping Policy', href: '/terms#shipping' },
-  { label: 'Cookie Policy', href: '/terms#privacy' },
 ];
 
 export default function Footer() {
