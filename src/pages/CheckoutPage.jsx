@@ -115,9 +115,7 @@ export default function CheckoutPage() {
                   <p className="co-fitment-title">In-store Fitment Request</p>
                   <p className="co-fitment-desc">Want us to fit the parts for you? Book an appointment at our Clayton South workshop and we&apos;ll take care of the rest.</p>
                   <a
-                    href="https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/book"
                     className="co-fitment-btn"
                   >
                     Request Fitment Appointment

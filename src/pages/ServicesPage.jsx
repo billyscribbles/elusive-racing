@@ -88,7 +88,7 @@ export default function ServicesPage() {
           <p className="sp-hero-sub">
             Based in Clayton, Melbourne — we build, service, and tune Hondas the right way.
           </p>
-          <a href="https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9" target="_blank" rel="noopener noreferrer" className="sp-hero-btn">Book a Service</a>
+          <a href="/book" className="sp-hero-btn">Book a Service</a>
         </div>
       </section>
 
@@ -112,7 +112,7 @@ export default function ServicesPage() {
                     </li>
                   ))}
                 </ul>
-                <a href="https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9" target="_blank" rel="noopener noreferrer" className="sp-service-btn">Book This Service</a>
+                <a href="/book" className="sp-service-btn">Book This Service</a>
               </div>
             </div>
           ))}
