@@ -3,5 +3,5 @@ builder = "nixpacks"
 buildCommand = "yarn install && yarn build"
 
 [deploy]
-startCommand = "yarn preview"
+startCommand = "yarn start"
 restartPolicyType = "on_failure"
