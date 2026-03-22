@@ -11,6 +11,8 @@ import ProductPage from './pages/ProductPage';
 import BrandsPage from './pages/BrandsPage';
 import BookingPage from './pages/BookingPage';
 import AboutPage from './pages/AboutPage';
+import ContactUsPage from './pages/ContactUsPage';
+import TermsPage from './pages/TermsPage';
 
 export default function App() {
   return (
@@ -33,6 +35,8 @@ export default function App() {
               <Route path="/brands" element={<BrandsPage />} />
               <Route path="/book" element={<BookingPage />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactUsPage />} />
+              <Route path="/terms" element={<TermsPage />} />
               <Route path="/checkout"         element={<CheckoutPage />} />
               <Route path="/checkout/contact" element={<ContactPage />} />
               <Route path="/checkout/payment" element={<PaymentPage />} />

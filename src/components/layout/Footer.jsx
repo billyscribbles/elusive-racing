@@ -47,10 +47,10 @@ const resources = [
 
 const information = [
   { label: 'Terms and Conditions', href: '/terms' },
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-  { label: 'Returns Policy', href: '/returns-policy' },
-  { label: 'Shipping Policy', href: '/shipping-policy' },
-  { label: 'Cookie Policy', href: '/cookie-policy' },
+  { label: 'Privacy Policy', href: '/terms#privacy' },
+  { label: 'Returns Policy', href: '/terms#returns' },
+  { label: 'Shipping Policy', href: '/terms#shipping' },
+  { label: 'Cookie Policy', href: '/terms#privacy' },
 ];
 
 export default function Footer() {
