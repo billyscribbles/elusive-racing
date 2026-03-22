@@ -3,6 +3,7 @@
 ## Git Rules
 
 - **Never commit or push automatically.** Only commit or push when the user explicitly says to (e.g. "commit", "push", "commit and push"). Do not commit after completing a task unless asked.
+- **Do not bundle a commit at the end of a task.** Complete the task, stop. Wait for the user to review and explicitly request a commit/push.
 
 ## Project Overview
 

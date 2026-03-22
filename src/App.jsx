@@ -8,6 +8,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import ContactPage from './pages/ContactPage';
 import PaymentPage from './pages/PaymentPage';
 import ProductPage from './pages/ProductPage';
+import BrandsPage from './pages/BrandsPage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/shop" element={<ShopPage />} />
               <Route path="/search" element={<ShopPage />} />
               <Route path="/products/:handle" element={<ProductPage />} />
+              <Route path="/brands" element={<BrandsPage />} />
               <Route path="/checkout"         element={<CheckoutPage />} />
               <Route path="/checkout/contact" element={<ContactPage />} />
               <Route path="/checkout/payment" element={<PaymentPage />} />

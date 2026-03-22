@@ -1,8 +1,8 @@
-import { brands } from '../../data/navigation';
+import { featuredBrands } from '../../data/navigation';
 import './BrandsSection.css';
 
 export default function BrandsSection() {
-  const displayBrands = brands.slice(0, 20);
+  const displayBrands = featuredBrands;
 
   return (
     <section className="brands-section">

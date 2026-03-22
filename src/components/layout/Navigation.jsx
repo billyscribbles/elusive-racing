@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { navItems, brands } from '../../data/navigation';
+import { navItems, featuredBrands } from '../../data/navigation';
 import './Navigation.css';
 
 function BrandsMegaMenu() {
@@ -7,7 +7,7 @@ function BrandsMegaMenu() {
     <div className="mega-menu brands-mega">
       <div className="container">
         <div className="brands-grid">
-          {brands.map((brand) => (
+          {featuredBrands.map((brand) => (
             <a key={brand.name} href={brand.href} className="brand-item">
               <img
                 src={brand.logo}
