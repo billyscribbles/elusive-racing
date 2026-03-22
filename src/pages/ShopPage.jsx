@@ -76,7 +76,7 @@ function parseList(str) {
   return str ? str.split(',').map((s) => s.trim()).filter(Boolean) : [];
 }
 
-function filterAndSort(products, { q, brands, sub, vehicles, minPrice, maxPrice, sale, backorder, sort }) {
+function filterAndSort(products, { q, brands, sub, vehicles, model, minPrice, maxPrice, sale, backorder, sort }) {
   let result = [...products];
 
   if (q) {
@@ -92,6 +92,7 @@ function filterAndSort(products, { q, brands, sub, vehicles, minPrice, maxPrice,
   if (brands.length)   result = result.filter((p) => brands.includes(p.brand));
   if (sub)             result = result.filter((p) => p.subcategory === sub);
   if (vehicles.length) result = result.filter((p) => p.vehicles.some((v) => vehicles.includes(v)));
+  if (model)           result = result.filter((p) => p.vehicles.some((v) => v.toLowerCase() === model.toLowerCase()));
   if (sale)            result = result.filter((p) => p.originalPrice !== null);
   if (backorder)       result = result.filter((p) => p.backorder === true);
   if (minPrice)        result = result.filter((p) => p.price >= parseFloat(minPrice));
@@ -197,6 +198,9 @@ export default function ShopPage() {
   const brandsParam   = searchParams.get('brands')    ?? '';
   const subParam      = searchParams.get('sub')       ?? '';
   const vehiclesParam = searchParams.get('vehicles')  ?? '';
+  const makeParam     = searchParams.get('make')      ?? '';
+  const modelParam    = searchParams.get('model')     ?? '';
+  const yearParam     = searchParams.get('year')      ?? '';
   const saleParam      = searchParams.get('sale')      ?? '';
   const backorderParam = searchParams.get('backorder') ?? '';
   const sortParam      = searchParams.get('sort')      ?? 'best-selling';
@@ -242,13 +246,14 @@ export default function ShopPage() {
       brands: activeBrands,
       sub: subParam,
       vehicles: activeVehicles,
+      model: modelParam,
       minPrice: minParam,
       maxPrice: maxParam,
       sale: saleParam === '1',
       backorder: backorderParam === '1',
       sort: sortParam,
     }),
-    [products, qParam, brandsParam, subParam, vehiclesParam, minParam, maxParam, saleParam, backorderParam, sortParam]
+    [products, qParam, brandsParam, subParam, vehiclesParam, modelParam, minParam, maxParam, saleParam, backorderParam, sortParam]
   );
 
   const totalPages  = Math.max(1, Math.ceil(filtered.length / perPageParam));
@@ -341,7 +346,7 @@ export default function ShopPage() {
 
   const totalActiveFilters =
     activeBrands.length + activeVehicles.length +
-    [subParam, minParam || maxParam, saleParam, backorderParam, qParam].filter(Boolean).length;
+    [subParam, minParam || maxParam, saleParam, backorderParam, qParam, makeParam, modelParam, yearParam].filter(Boolean).length;
 
   // Count products per subcategory for badges
   function subCount(sub) {
@@ -538,6 +543,24 @@ export default function ShopPage() {
                   <button onClick={() => removeChip('vehicles', v)}><X size={11} /></button>
                 </span>
               ))}
+              {makeParam && (
+                <span className="shop-chip shop-chip--vehicle">
+                  {makeParam}
+                  <button onClick={() => removeChip('make')}><X size={11} /></button>
+                </span>
+              )}
+              {modelParam && (
+                <span className="shop-chip shop-chip--vehicle">
+                  {modelParam}
+                  <button onClick={() => removeChip('model')}><X size={11} /></button>
+                </span>
+              )}
+              {yearParam && (
+                <span className="shop-chip shop-chip--vehicle">
+                  {yearParam}
+                  <button onClick={() => removeChip('year')}><X size={11} /></button>
+                </span>
+              )}
               {(minParam || maxParam) && (
                 <span className="shop-chip">
                   ${minParam || '0'} – ${maxParam || '∞'}

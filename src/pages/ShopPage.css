@@ -564,6 +564,12 @@
   color: #7c5cbf;
 }
 
+.shop-chip--vehicle {
+  background: #fff5f5;
+  border-color: #f5c0c0;
+  color: #c03333;
+}
+
 .shop-product-desc {
   font-size: 14px;
   color: var(--color-light);

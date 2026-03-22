@@ -26,6 +26,12 @@
   align-items: center;
 }
 
+.nav-link--btn {
+  background: none;
+  border: none;
+  cursor: default;
+}
+
 .nav-link {
   display: flex;
   align-items: center;

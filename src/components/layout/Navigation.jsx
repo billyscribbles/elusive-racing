@@ -99,14 +99,23 @@ export default function Navigation() {
                 onMouseEnter={() => handleMouseEnter(item.label)}
                 onMouseLeave={handleMouseLeave}
               >
-                <a href={item.href} className={`nav-link${item.highlight ? ' nav-link--highlight' : ''}`}>
-                  {item.label}
-                  {(item.hasMega || (item.links && item.links.length > 0)) && (
+                {item.hasMega ? (
+                  <button className={`nav-link nav-link--btn${item.highlight ? ' nav-link--highlight' : ''}`}>
+                    {item.label}
                     <svg className="nav-arrow" viewBox="0 0 10 6" fill="none">
                       <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                  )}
-                </a>
+                  </button>
+                ) : (
+                  <a href={item.href} className={`nav-link${item.highlight ? ' nav-link--highlight' : ''}`}>
+                    {item.label}
+                    {item.links && item.links.length > 0 && (
+                      <svg className="nav-arrow" viewBox="0 0 10 6" fill="none">
+                        <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </a>
+                )}
 
                 {activeItem === item.label && (
                   <div
@@ -158,7 +167,11 @@ export default function Navigation() {
               {navItems.map((item) => (
                 <li key={item.label} className="mobile-menu-item">
                   <div className="mobile-menu-row">
-                    <a href={item.href} className="mobile-menu-link">{item.label}</a>
+                    {item.hasMega ? (
+                      <span className="mobile-menu-link">{item.label}</span>
+                    ) : (
+                      <a href={item.href} className="mobile-menu-link">{item.label}</a>
+                    )}
                     {(item.hasMega || (item.links && item.links.length > 0)) && (
                       <button
                         className="mobile-menu-expand"
