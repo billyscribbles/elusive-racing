@@ -437,6 +437,11 @@
     display: none;
   }
 
+  .nav .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   /* Mobile bar layout */
   .mobile-bar {
     display: flex;
@@ -448,8 +453,7 @@
   .nav-hamburger {
     display: flex;
     flex-shrink: 0;
-    padding: 6px 10px 6px 4px;
-    margin-left: 0;
+    padding: 6px 12px;
   }
 
   .mobile-vehicle-btn {
@@ -488,7 +492,7 @@
   .mobile-bar-cart {
     flex-shrink: 0;
     margin-left: auto;
-    padding-right: 4px;
+    padding-right: 12px;
   }
 
   /* Hide price text in nav cart, show only bag icon */
@@ -501,7 +505,7 @@
     display: block;
     background: #1a1a1a;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 12px 0;
+    padding: 12px 16px;
   }
 
   .mobile-vehicle-grid {
