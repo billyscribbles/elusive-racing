@@ -257,18 +257,9 @@ export default function Navigation() {
                   {mobileExpanded === item.label && item.type === 'brands' && (
                     <div className="mobile-submenu mobile-brands-panel">
                       <div className="mobile-brands-grid">
-                        {featuredBrands.map((brand) => (
+                        {featuredBrands.slice(0, 8).map((brand) => (
                           <a key={brand.name} href={brand.href} className="mobile-brand-item" onClick={() => setMobileOpen(false)}>
-                            <img
-                              src={brand.logo}
-                              alt={brand.name}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.querySelector('.mobile-brand-fallback').style.display = 'block';
-                              }}
-                            />
-                            <span className="mobile-brand-fallback">{brand.name}</span>
+                            {brand.name}
                           </a>
                         ))}
                       </div>
