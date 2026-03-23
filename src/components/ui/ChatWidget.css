@@ -1,7 +1,7 @@
 /* ── FAB button ── */
 .chat-widget {
   position: fixed;
-  bottom: 28px;
+  bottom: 72px;
   right: 28px;
   z-index: 1000;
   display: flex;
@@ -245,11 +245,18 @@
 /* ── Responsive ── */
 @media (max-width: 500px) {
   .chat-widget {
-    bottom: 16px;
+    bottom: 60px;
     right: 16px;
   }
 
-  .chat-window {
-    width: calc(100vw - 32px);
+  .chat-widget--open .chat-window {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    z-index: 9999;
+    animation: none;
   }
 }

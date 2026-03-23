@@ -180,7 +180,7 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="chat-widget">
+    <div className={`chat-widget${open ? ' chat-widget--open' : ''}`}>
       {open && (
         <div className="chat-window">
           <div className="chat-header">
