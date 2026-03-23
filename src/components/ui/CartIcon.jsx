@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react';
 import useCartStore from '../../store/cartStore';
@@ -5,6 +6,7 @@ import './CartIcon.css';
 
 export default function CartIcon() {
   const { items, isOpen, openCart, closeCart, removeItem, updateQuantity, clearCart } = useCartStore();
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal  = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -84,12 +86,28 @@ export default function CartIcon() {
                 <a href="/checkout" className="cart-checkout-btn" onClick={closeCart}>
                   Proceed to Checkout
                 </a>
-                <button className="cart-clear" onClick={clearCart}>Clear cart</button>
+                <button className="cart-clear" onClick={() => setConfirmingClear(true)}>Clear cart</button>
               </div>
             )}
 
           </div>
         </>,
+        document.body
+      )}
+      {confirmingClear && createPortal(
+        <div className="clear-modal-overlay" onClick={() => setConfirmingClear(false)}>
+          <div className="clear-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="clear-modal-icon">
+              <Trash2 size={28} strokeWidth={1.5} />
+            </div>
+            <h4 className="clear-modal-title">Clear your cart?</h4>
+            <p className="clear-modal-body">All items will be removed. This can't be undone.</p>
+            <div className="clear-modal-actions">
+              <button className="clear-modal-cancel" onClick={() => setConfirmingClear(false)}>Cancel</button>
+              <button className="clear-modal-confirm" onClick={() => { clearCart(); setConfirmingClear(false); }}>Yes, clear cart</button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
     </div>

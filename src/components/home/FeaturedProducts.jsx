@@ -1,3 +1,4 @@
+import useCartStore from '../../store/cartStore';
 import DUMMY_PRODUCTS from '../../lib/dummyProducts';
 import './FeaturedProducts.css';
 
@@ -9,6 +10,9 @@ const products = DUMMY_PRODUCTS.slice(0, 8).map((p) => ({
 }));
 
 function ProductCard({ product }) {
+  const addItem = useCartStore((s) => s.addItem);
+  const openCart = useCartStore((s) => s.openCart);
+
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
@@ -35,7 +39,7 @@ function ProductCard({ product }) {
         </div>
       </div>
       <div className="product-actions">
-        <button className="product-quick-add" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+        <button className="product-quick-add" onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(product); openCart(); }}>
           Add to Cart
         </button>
       </div>
