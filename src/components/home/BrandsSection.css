@@ -98,6 +98,10 @@
   .brand-showcase-item img {
     max-height: 48px;
   }
+  /* Hide last 2 so 20 becomes 18 — always full rows of 3 */
+  .brand-showcase-item:nth-child(n+19) {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
