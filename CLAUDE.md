@@ -1,5 +1,19 @@
 # Elusive Racing — React Storefront
 
+## Mobile-First Requirements
+
+**Always consider mobile when writing or reviewing any CSS or layout code.**
+
+- Minimum supported mobile width: **420px** (e.g. Samsung S24, iPhone SE)
+- All UI changes must be verified mentally at 420px width before finalising
+- Use `@media (max-width: 900px)` as the primary mobile breakpoint for layout/nav changes
+- Use `@media (max-width: 768px)` for content/typography adjustments
+- Use `@media (max-width: 480px)` for small phone tweaks
+- `position: sticky` is unreliable inside `display: flex` column containers — use `position: fixed` for the header and nav on mobile, with a matching `padding-top` on `.app` to compensate
+- The StickyFinder (vehicle search bar) is **hidden on mobile** (`display: none` at ≤900px)
+
+---
+
 ## Git Rules
 
 - **Never commit or push automatically.** Only commit or push when the user explicitly says to (e.g. "commit", "push", "commit and push"). Do not commit after completing a task unless asked.

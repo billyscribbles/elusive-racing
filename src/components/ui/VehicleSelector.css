@@ -1,7 +1,7 @@
 .vehicle-bar {
-  background: #f4f4f4;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 14px 0;
+  background: #1a1a1a;
+  border-bottom: 3px solid var(--color-red);
+  padding: 16px 0;
 }
 
 .vehicle-bar-form {
@@ -15,29 +15,35 @@
   font-family: var(--font-primary);
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-dark);
+  color: #fff;
   white-space: nowrap;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   flex-shrink: 0;
 }
 
 .vehicle-bar-select {
   flex: 1;
   min-width: 160px;
-  padding: 9px 36px 9px 12px;
-  border: 1.5px solid #ddd;
+  padding: 10px 36px 10px 14px;
+  border: 1.5px solid rgba(255,255,255,0.15);
   border-radius: 4px;
   font-size: 14px;
   font-family: var(--font-body);
-  color: var(--color-dark-3);
-  background: white;
+  color: #ccc;
+  background: #2a2a2a;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 10px;
   transition: border-color 0.2s;
+}
+
+.vehicle-bar-select option {
+  background: #2a2a2a;
+  color: #ccc;
 }
 
 .vehicle-bar-select:focus {
@@ -46,23 +52,28 @@
 }
 
 .vehicle-bar-select:disabled {
-  background-color: #f0f0f0;
-  color: #bbb;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .vehicle-bar-btn {
-  padding: 9px 28px;
+  padding: 10px 36px;
   background: var(--color-red);
   color: white;
   font-family: var(--font-primary);
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   border-radius: 4px;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 2px 12px rgba(217, 64, 64, 0.4);
+}
+
+.vehicle-bar-btn:hover:not(:disabled) {
+  transform: scale(1.03);
 }
 
 .vehicle-bar-btn:hover:not(:disabled) {
@@ -74,15 +85,8 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .vehicle-bar-form {
-    gap: 8px;
-  }
-  .vehicle-bar-label {
-    width: 100%;
-  }
-  .vehicle-bar-select {
-    flex: 1 1 40%;
-    min-width: 120px;
+@media (max-width: 900px) {
+  .vehicle-bar {
+    display: none;
   }
 }

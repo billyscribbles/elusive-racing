@@ -26,13 +26,13 @@
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 62px;
+    --header-height: 100px;
   }
 }
 
 @media (max-width: 480px) {
   :root {
-    --header-height: 56px;
+    --header-height: 96px;
   }
 }
 

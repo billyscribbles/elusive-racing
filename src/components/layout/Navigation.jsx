@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { navItems, featuredBrands } from '../../data/navigation';
+import { navItems, featuredBrands, vehicleData } from '../../data/navigation';
+import CartIcon from '../ui/CartIcon';
 import './Navigation.css';
 
 function BrandsMegaMenu() {
@@ -69,6 +70,21 @@ export default function Navigation() {
   const [activeItem, setActiveItem] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(null);
+  const [vehicleOpen, setVehicleOpen] = useState(false);
+  const [vMake, setVMake] = useState('');
+  const [vModel, setVModel] = useState('');
+  const [vYear, setVYear] = useState('');
+  const vModels = vMake ? (vehicleData.models[vMake] || []) : [];
+
+  const handleVehicleSubmit = () => {
+    if (!vMake) return;
+    const params = new URLSearchParams();
+    params.set('make', vMake);
+    if (vModel) params.set('model', vModel);
+    if (vYear) params.set('year', vYear);
+    window.location.href = `/search?${params.toString()}`;
+    setVehicleOpen(false);
+  };
   const navRef = useRef(null);
   const timeoutRef = useRef(null);
 
@@ -136,16 +152,69 @@ export default function Navigation() {
             ))}
           </ul>
 
-          <button
-            className={`nav-hamburger ${mobileOpen ? 'nav-hamburger--open' : ''}`}
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
+          {/* Mobile bar: hamburger | vehicle btn | cart */}
+          <div className="mobile-bar">
+            <button
+              className={`nav-hamburger ${mobileOpen ? 'nav-hamburger--open' : ''}`}
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <button
+              className={`mobile-vehicle-btn ${vehicleOpen ? 'mobile-vehicle-btn--active' : ''}`}
+              onClick={() => setVehicleOpen(!vehicleOpen)}
+            >
+              Select Your Vehicle
+            </button>
+            <div className="mobile-bar-cart">
+              <CartIcon />
+            </div>
+          </div>
         </div>
+
+        {/* Vehicle selector panel (mobile only) */}
+        {vehicleOpen && (
+          <div className="mobile-vehicle-panel">
+            <div className="container mobile-vehicle-grid">
+              <select
+                className="mobile-vehicle-select"
+                value={vMake}
+                onChange={e => { setVMake(e.target.value); setVModel(''); setVYear(''); }}
+              >
+                <option value="">Select Make</option>
+                {vehicleData.makes.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <select
+                className="mobile-vehicle-select"
+                value={vModel}
+                onChange={e => { setVModel(e.target.value); setVYear(''); }}
+                disabled={!vMake}
+              >
+                <option value="">Select Model</option>
+                {vModels.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <select
+                className="mobile-vehicle-select mobile-vehicle-select--full"
+                value={vYear}
+                onChange={e => setVYear(e.target.value)}
+                disabled={!vModel}
+              >
+                <option value="">Year / Submodel</option>
+                {vehicleData.years.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <button
+                className="mobile-vehicle-go"
+                onClick={handleVehicleSubmit}
+                disabled={!vMake}
+              >
+                Search Parts
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Mobile Menu */}
