@@ -153,7 +153,144 @@
 .cp-collect-note svg { flex-shrink: 0; margin-top: 2px; color: var(--color-dark); }
 .cp-collect-note strong { display: block; font-family: var(--font-primary); font-weight: 700; color: var(--color-dark); margin-bottom: 2px; }
 
+/* ── Freight calculator ── */
+.cp-freight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.cp-freight-tabs {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cp-freight-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 12px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid);
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.cp-freight-tab:last-child { border-right: none; }
+.cp-freight-tab:hover { background: #efefef; color: var(--color-dark); }
+.cp-freight-tab.active { background: var(--color-dark); color: #fff; }
+
+.cp-select-wrap {
+  position: relative;
+}
+.cp-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-top-color: #aaa;
+  pointer-events: none;
+}
+
+.cp-freight-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  background: var(--color-dark);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.cp-freight-btn:hover:not(:disabled) { background: #333; }
+.cp-freight-btn.loading { opacity: 0.65; cursor: not-allowed; }
+
+.cp-freight-error {
+  font-size: 12px;
+  color: var(--color-red);
+  font-family: var(--font-primary);
+}
+
+.cp-freight-rates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cp-freight-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #fff;
+}
+
+.cp-freight-option:hover { border-color: var(--color-dark); }
+
+.cp-freight-option.selected {
+  border-color: var(--color-red);
+  background: #fff8f8;
+}
+
+.cp-freight-option input[type="radio"] {
+  accent-color: var(--color-red);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.cp-freight-icon {
+  color: var(--color-mid);
+  display: flex;
+  align-items: center;
+}
+
+.cp-freight-option.selected .cp-freight-icon { color: var(--color-red); }
+
+.cp-freight-label {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-dark);
+  font-family: var(--font-body);
+}
+
+.cp-freight-price {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-dark);
+}
+
 /* ── Submit ── */
+.cp-summary-col .cp-continue {
+  margin-top: 16px;
+}
+
 .cp-continue {
   display: flex;
   align-items: center;
@@ -273,6 +410,14 @@
   margin-bottom: 6px;
 }
 .cp-mini-row--muted { color: var(--color-light); font-weight: 400; }
+
+.cp-mini-total {
+  border-top: 1px solid var(--color-border-light);
+  padding-top: 8px;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--color-dark);
+}
 
 /* ── Responsive ── */
 @media (max-width: 900px) {

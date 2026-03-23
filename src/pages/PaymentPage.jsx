@@ -8,9 +8,13 @@ import useCheckoutStore from '../store/checkoutStore';
 import './PaymentPage.css';
 
 const PAYMENT_METHODS = [
-  { id: 'card',     label: 'Credit / Debit Card' },
-  { id: 'afterpay', label: 'Afterpay'             },
-  { id: 'paypal',   label: 'PayPal'               },
+  { id: 'card',     label: 'Credit / Debit Card',   badge: null },
+  { id: 'afterpay', label: 'Afterpay',               badge: { text: 'Buy now, pay later', color: '#b2fcf0', textColor: '#016450' } },
+  { id: 'zip',      label: 'Zip',                    badge: { text: 'Own it now, pay later', color: '#f0e6ff', textColor: '#6a0dad' } },
+  { id: 'paypal',   label: 'PayPal',                 badge: null },
+  { id: 'gpay',     label: 'Google Pay',             badge: null },
+  { id: 'applepay', label: 'Apple Pay',              badge: null },
+  { id: 'bank',     label: 'Direct Bank Transfer',   badge: { text: 'Manual payment', color: '#e8f4e8', textColor: '#2d6a2d' } },
 ];
 
 function ShippingSummary() {
@@ -125,22 +129,20 @@ export default function PaymentPage() {
               <div className="pp-method-list">
                 {PAYMENT_METHODS.map((m) => (
                   <label key={m.id} className={`pp-method${method === m.id ? ' active' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={m.id}
-                      checked={method === m.id}
-                      onChange={() => setMethod(m.id)}
-                    />
+                    <input type="radio" name="payment" value={m.id} checked={method === m.id} onChange={() => setMethod(m.id)} />
                     <div className="pp-method-radio">
                       {method === m.id && <Check size={11} strokeWidth={3} />}
                     </div>
                     <span className="pp-method-label">{m.label}</span>
+                    {m.badge && (
+                      <span className="pp-method-badge" style={{ background: m.badge.color, color: m.badge.textColor }}>
+                        {m.badge.text}
+                      </span>
+                    )}
                   </label>
                 ))}
               </div>
 
-              {/* Card fields — visual only, real payment via Shopify */}
               {method === 'card' && (
                 <div className="pp-card-form">
                   <div className="pp-field">
@@ -169,13 +171,59 @@ export default function PaymentPage() {
 
               {method === 'afterpay' && (
                 <div className="pp-alt-note">
-                  Pay in 4 interest-free instalments with Afterpay. Available for orders between $1 and $2,000.
+                  Pay in 4 interest-free fortnightly instalments with Afterpay. Available for orders between $1 and $2,000. No interest ever.
+                </div>
+              )}
+
+              {method === 'zip' && (
+                <div className="pp-alt-note">
+                  Own it now, pay later with Zip. Split your purchase into flexible repayments. Available for orders up to $1,000.
                 </div>
               )}
 
               {method === 'paypal' && (
                 <div className="pp-alt-note">
                   You&apos;ll be redirected to PayPal to complete your payment securely.
+                </div>
+              )}
+
+              {method === 'gpay' && (
+                <div className="pp-alt-note">
+                  Pay quickly and securely with Google Pay using your saved cards. You&apos;ll be redirected to complete payment.
+                </div>
+              )}
+
+              {method === 'applepay' && (
+                <div className="pp-alt-note">
+                  Pay with Touch ID or Face ID using Apple Pay. Available on Safari and Apple devices.
+                </div>
+              )}
+
+              {method === 'bank' && (
+                <div className="pp-bank-details">
+                  <p className="pp-bank-note">Transfer the order total directly to our bank account. Your order will be processed once payment is confirmed (1–2 business days).</p>
+                  <div className="pp-bank-fields">
+                    <div className="pp-bank-row">
+                      <span className="pp-bank-key">Bank</span>
+                      <span className="pp-bank-val">Commonwealth Bank of Australia</span>
+                    </div>
+                    <div className="pp-bank-row">
+                      <span className="pp-bank-key">Account Name</span>
+                      <span className="pp-bank-val">Elusive Racing Pty Ltd</span>
+                    </div>
+                    <div className="pp-bank-row">
+                      <span className="pp-bank-key">BSB</span>
+                      <span className="pp-bank-val">063-000</span>
+                    </div>
+                    <div className="pp-bank-row">
+                      <span className="pp-bank-key">Account No.</span>
+                      <span className="pp-bank-val">1234 5678</span>
+                    </div>
+                    <div className="pp-bank-row">
+                      <span className="pp-bank-key">Reference</span>
+                      <span className="pp-bank-val">Your order number (provided after placing order)</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -200,7 +248,6 @@ export default function PaymentPage() {
 
               <div className="pp-trust">
                 <span><ShieldCheck size={13} /> Secure Checkout</span>
-                <span><CreditCard size={13} /> Afterpay Available</span>
                 <span><Lock size={13} /> SSL Encrypted</span>
               </div>
             </div>

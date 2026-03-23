@@ -1,17 +1,50 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Truck, Store } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Truck, Store, Package, Zap } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import './ContactPage.css';
 
+// Mock freight rates — domestic
+function calculateDomesticRates(state) {
+  const vic  = ['VIC'];
+  const near = ['NSW', 'ACT', 'QLD', 'SA'];
+  const far  = ['WA', 'TAS', 'NT'];
+  if (vic.includes(state))  return [{ id: 'std', label: 'Standard (3–5 business days)', price: 12.50 }, { id: 'exp', label: 'Express (1–2 business days)', price: 19.95 }];
+  if (near.includes(state)) return [{ id: 'std', label: 'Standard (5–7 business days)', price: 14.95 }, { id: 'exp', label: 'Express (2–3 business days)', price: 24.95 }];
+  if (far.includes(state))  return [{ id: 'std', label: 'Standard (7–10 business days)', price: 18.95 }, { id: 'exp', label: 'Express (3–5 business days)', price: 32.95 }];
+  return [];
+}
+
+// Mock freight rates — international by region
+const INTL_REGIONS = [
+  { value: 'NZ',   label: 'New Zealand' },
+  { value: 'ASIA', label: 'Asia Pacific (Japan, Singapore, HK, Korea…)' },
+  { value: 'US',   label: 'USA / Canada' },
+  { value: 'EU',   label: 'UK / Europe' },
+  { value: 'ROW',  label: 'Rest of World' },
+];
+
+function calculateIntlRates(region) {
+  const map = {
+    NZ:   [{ id: 'std', label: 'Standard (7–14 business days)',  price: 24.95 }, { id: 'exp', label: 'Express (3–5 business days)',   price: 44.95 }],
+    ASIA: [{ id: 'std', label: 'Standard (10–14 business days)', price: 34.95 }, { id: 'exp', label: 'Express (5–7 business days)',   price: 59.95 }],
+    US:   [{ id: 'std', label: 'Standard (14–21 business days)', price: 44.95 }, { id: 'exp', label: 'Express (7–10 business days)',  price: 79.95 }],
+    EU:   [{ id: 'std', label: 'Standard (14–21 business days)', price: 49.95 }, { id: 'exp', label: 'Express (7–10 business days)',  price: 89.95 }],
+    ROW:  [{ id: 'std', label: 'Standard (21–30 business days)', price: 59.95 }, { id: 'exp', label: 'Express (10–14 business days)', price: 109.95 }],
+  };
+  return map[region] ?? [];
+}
+
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 
 function MiniOrderSummary() {
   const { items } = useCartStore();
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const { freight, fulfillment } = useCheckoutStore();
+  const subtotal  = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
+  const total     = subtotal + (freight ? freight.price : 0);
   return (
     <div className="cp-mini-order">
       <ul className="cp-mini-items">
@@ -36,18 +69,29 @@ function MiniOrderSummary() {
       </div>
       <div className="cp-mini-row cp-mini-row--muted">
         <span>Shipping</span>
-        <span>Calculated next</span>
+        <span>{fulfillment === 'collect' ? 'Free' : freight ? `$${freight.price.toFixed(2)}` : 'Calculate below'}</span>
       </div>
+      {(freight || fulfillment === 'collect') && (
+        <div className="cp-mini-row cp-mini-total">
+          <span>Total</span>
+          <span>${fulfillment === 'collect' ? subtotal.toFixed(2) : total.toFixed(2)}</span>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ContactPage() {
   const navigate = useNavigate();
-  const { contact, shipping, fulfillment, setContact, setShipping, setFulfillment } = useCheckoutStore();
+  const { contact, shipping, fulfillment, freight, setContact, setShipping, setFulfillment, setFreight } = useCheckoutStore();
   const { items } = useCartStore();
 
   const [errors, setErrors] = useState({});
+  const [freightTab, setFreightTab]         = useState('domestic'); // 'domestic' | 'international'
+  const [intlRegion, setIntlRegion]         = useState('');
+  const [freightRates, setFreightRates]     = useState([]);
+  const [freightLoading, setFreightLoading] = useState(false);
+  const [freightError, setFreightError]     = useState('');
 
   if (items.length === 0) {
     return (
@@ -74,10 +118,50 @@ export default function ContactPage() {
     return e;
   }
 
+  async function handleCalculateFreight() {
+    setFreightError('');
+    if (freightTab === 'domestic') {
+      const missing = [];
+      if (!shipping.address1.trim()) missing.push('street address');
+      if (!shipping.city.trim())     missing.push('city / suburb');
+      if (!shipping.state)           missing.push('state');
+      if (!shipping.postcode.trim()) missing.push('postcode');
+      if (missing.length) {
+        setFreightError(`Please fill in your ${missing.join(', ')} before calculating freight.`);
+        return;
+      }
+    } else {
+      if (!intlRegion) {
+        setFreightError('Please select a region first.');
+        return;
+      }
+    }
+    setFreightLoading(true);
+    setFreightRates([]);
+    setFreight(null);
+    await new Promise((r) => setTimeout(r, 900));
+    const rates = freightTab === 'domestic'
+      ? calculateDomesticRates(shipping.state)
+      : calculateIntlRates(intlRegion);
+    setFreightRates(rates);
+    setFreightLoading(false);
+  }
+
+  function handleFreightTabChange(tab) {
+    setFreightTab(tab);
+    setFreightRates([]);
+    setFreightError('');
+    setFreight(null);
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (fulfillment === 'delivery' && !freight) {
+      setFreightError('Please calculate and select a freight option to continue.');
+      return;
+    }
     navigate('/checkout/payment');
   }
 
@@ -176,18 +260,69 @@ export default function ContactPage() {
                   <label className="cp-label">Country</label>
                   <input className="cp-input" value="Australia" readOnly />
                 </div>
+
+                {/* Freight calculator */}
+                <div className="cp-freight">
+                  <div className="cp-freight-tabs">
+                    <button type="button" className={`cp-freight-tab${freightTab === 'domestic' ? ' active' : ''}`} onClick={() => handleFreightTabChange('domestic')}>
+                      <Truck size={14} /> Domestic (Australia)
+                    </button>
+                    <button type="button" className={`cp-freight-tab${freightTab === 'international' ? ' active' : ''}`} onClick={() => handleFreightTabChange('international')}>
+                      <Package size={14} /> International
+                    </button>
+                  </div>
+
+                  {freightTab === 'international' && (
+                    <div className="cp-field">
+                      <label className="cp-label">Region <span className="cp-required">*</span></label>
+                      <div className="cp-select-wrap">
+                        <select className="cp-input cp-select" value={intlRegion} onChange={(e) => { setIntlRegion(e.target.value); setFreightRates([]); setFreight(null); }}>
+                          <option value="">Select region…</option>
+                          {INTL_REGIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className={`cp-freight-btn${freightLoading ? ' loading' : ''}`}
+                    onClick={handleCalculateFreight}
+                    disabled={freightLoading}
+                  >
+                    <Truck size={15} />
+                    {freightLoading ? 'Calculating…' : 'Calculate Freight Cost'}
+                  </button>
+
+                  {freightError && <p className="cp-freight-error">{freightError}</p>}
+
+                  {freightRates.length > 0 && (
+                    <div className="cp-freight-rates">
+                      {freightRates.map((rate) => (
+                        <label key={rate.id} className={`cp-freight-option${freight?.id === rate.id ? ' selected' : ''}`}>
+                          <input type="radio" name="freight" value={rate.id} checked={freight?.id === rate.id} onChange={() => setFreight(rate)} />
+                          <span className="cp-freight-icon">
+                            {rate.id === 'exp' ? <Zap size={15} /> : <Package size={15} />}
+                          </span>
+                          <span className="cp-freight-label">{rate.label}</span>
+                          <span className="cp-freight-price">${rate.price.toFixed(2)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            <button type="submit" className="cp-continue">
-              Continue to Payment <ArrowRight size={16} />
-            </button>
           </div>
 
-          {/* Right: mini order summary */}
+          {/* Right: mini order summary + continue */}
           <div className="cp-summary-col">
             <h2 className="cp-summary-heading">Your Order</h2>
             <MiniOrderSummary />
+            <button type="submit" className="cp-continue">
+              Continue to Payment <ArrowRight size={16} />
+            </button>
           </div>
 
         </form>

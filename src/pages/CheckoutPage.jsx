@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingBag, Trash2, Minus, Plus, ArrowLeft, Truck, Store, Wrench, Lock, ShieldCheck, CreditCard } from 'lucide-react';
+import { ShoppingBag, Trash2, Minus, Plus, ArrowLeft, Truck, Store, Wrench, Lock, ShieldCheck } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import './CheckoutPage.css';
@@ -146,12 +146,11 @@ export default function CheckoutPage() {
               <p className="co-tax-note">Taxes and shipping calculated at checkout</p>
 
               <a href="/checkout/contact" className="co-checkout-btn">
-                <Lock size={15} /> Proceed Safely to Checkout
+                <Lock size={15} /> Proceed to Contact Details
               </a>
 
               <div className="co-trust-row">
                 <span><ShieldCheck size={13} /> Secure Checkout</span>
-                <span><CreditCard size={13} /> Afterpay Available</span>
                 <span><Lock size={13} /> SSL Encrypted</span>
               </div>
 

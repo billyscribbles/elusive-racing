@@ -344,9 +344,15 @@
 /* ── Toolbar ── */
 .shop-toolbar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
+}
+
+.shop-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -386,7 +392,6 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  flex: 1;
 }
 
 .shop-chip {
@@ -413,9 +418,7 @@
 .shop-chip button:hover { color: var(--color-red); }
 
 /* Sort */
-.shop-sort {
-  margin-left: auto;
-}
+.shop-sort {}
 
 .shop-sort-select-wrap {
   position: relative;

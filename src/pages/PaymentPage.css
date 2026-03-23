@@ -141,6 +141,18 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--color-dark);
+  flex: 1;
+}
+
+.pp-method-badge {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ── Card form ── */
@@ -196,6 +208,59 @@
   background: var(--color-bg);
   border: 1px solid var(--color-border-light);
   border-radius: 6px;
+}
+
+/* ── Bank transfer ── */
+.pp-bank-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+}
+
+.pp-bank-note {
+  font-size: 13px;
+  color: var(--color-mid);
+  line-height: 1.6;
+}
+
+.pp-bank-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.pp-bank-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 13px;
+}
+
+.pp-bank-row:last-child { border-bottom: none; }
+
+.pp-bank-key {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid);
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.pp-bank-val {
+  color: var(--color-dark);
+  font-weight: 500;
 }
 
 /* ── Right summary col ── */
