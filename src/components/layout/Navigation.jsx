@@ -254,7 +254,30 @@ export default function Navigation() {
                       </button>
                     )}
                   </div>
-                  {mobileExpanded === item.label && item.columns && (
+                  {mobileExpanded === item.label && item.type === 'brands' && (
+                    <div className="mobile-submenu mobile-brands-panel">
+                      <div className="mobile-brands-grid">
+                        {featuredBrands.map((brand) => (
+                          <a key={brand.name} href={brand.href} className="mobile-brand-item" onClick={() => setMobileOpen(false)}>
+                            <img
+                              src={brand.logo}
+                              alt={brand.name}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.querySelector('.mobile-brand-fallback').style.display = 'block';
+                              }}
+                            />
+                            <span className="mobile-brand-fallback">{brand.name}</span>
+                          </a>
+                        ))}
+                      </div>
+                      <a href="/brands" className="mobile-brands-all" onClick={() => setMobileOpen(false)}>
+                        View All Brands →
+                      </a>
+                    </div>
+                  )}
+                  {mobileExpanded === item.label && item.type !== 'brands' && item.columns && (
                     <div className="mobile-submenu">
                       {item.columns.map((col, i) => (
                         <div key={i} className="mobile-submenu-group">
