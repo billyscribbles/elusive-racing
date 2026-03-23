@@ -237,17 +237,20 @@ export default function Navigation() {
             <ul className="mobile-menu-list">
               {navItems.map((item) => (
                 <li key={item.label} className="mobile-menu-item">
-                  <div className="mobile-menu-row">
+                  <div
+                    className="mobile-menu-row"
+                    onClick={(item.hasMega || (item.links && item.links.length > 0))
+                      ? () => setMobileExpanded(mobileExpanded === item.label ? null : item.label)
+                      : undefined}
+                    style={(item.hasMega || (item.links && item.links.length > 0)) ? { cursor: 'pointer' } : undefined}
+                  >
                     {item.hasMega ? (
                       <span className="mobile-menu-link">{item.label}</span>
                     ) : (
-                      <a href={item.href} className="mobile-menu-link">{item.label}</a>
+                      <a href={item.href} className="mobile-menu-link" onClick={(e) => e.stopPropagation()}>{item.label}</a>
                     )}
                     {(item.hasMega || (item.links && item.links.length > 0)) && (
-                      <button
-                        className="mobile-menu-expand"
-                        onClick={() => setMobileExpanded(mobileExpanded === item.label ? null : item.label)}
-                      >
+                      <button className="mobile-menu-expand" aria-label="Toggle">
                         <svg viewBox="0 0 10 6" fill="none" width="12" style={{ transform: mobileExpanded === item.label ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
@@ -258,8 +261,14 @@ export default function Navigation() {
                     <div className="mobile-submenu mobile-brands-panel">
                       <div className="mobile-brands-grid">
                         {featuredBrands.slice(0, 8).map((brand) => (
-                          <a key={brand.name} href={brand.href} className="mobile-brand-item" onClick={() => setMobileOpen(false)}>
-                            {brand.name}
+                          <a
+                            key={brand.name}
+                            href={brand.href}
+                            className="mobile-brand-item"
+                            onClick={() => setMobileOpen(false)}
+                            style={{ '--brand-logo': `url(${brand.logo})` }}
+                          >
+                            <span className="mobile-brand-name">{brand.name}</span>
                           </a>
                         ))}
                       </div>

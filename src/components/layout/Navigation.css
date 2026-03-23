@@ -417,26 +417,53 @@
 }
 
 .mobile-brand-item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 8px;
-  background: #fff;
-  border: 1px solid var(--color-border-light);
+  padding: 18px 8px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
   border-radius: 6px;
-  font-family: var(--font-primary);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  color: var(--color-dark);
+  overflow: hidden;
   text-align: center;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+}
+
+.mobile-brand-item::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background-image: var(--brand-logo);
+  background-size: 160%;
+  background-position: left center;
+  opacity: 0.18;
+  filter: grayscale(20%);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+
+.mobile-brand-item:active::before {
+  opacity: 0.28;
+  transform: scale(1.05);
 }
 
 .mobile-brand-item:hover {
   border-color: var(--color-red);
-  color: var(--color-red);
+}
+
+.mobile-brand-name {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff;
 }
 
 .mobile-brands-all {
@@ -454,7 +481,9 @@
   transition: opacity 0.15s;
 }
 
-.mobile-brands-all:hover { opacity: 0.75; }
+.mobile-brands-all:hover {
+  opacity: 0.75;
+}
 
 @media (max-width: 1200px) {
   .nav-link {
