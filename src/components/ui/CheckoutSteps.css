@@ -61,5 +61,7 @@
 
 @media (max-width: 480px) {
   .co-step-desc { display: none; }
-  .co-step-line { min-width: 16px; margin: 0 6px; }
+  .co-step-text { display: none; }
+  .co-step { gap: 0; }
+  .co-step-line { min-width: 24px; margin: 0 8px; }
 }

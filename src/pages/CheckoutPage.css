@@ -472,13 +472,15 @@
 
   .co-summary {
     position: static;
-    order: -1;
   }
-
-  .co-left-col { order: 1; }
 }
 
 @media (max-width: 480px) {
   .co-title { font-size: 22px; }
   .co-line-image { width: 68px; height: 68px; }
+  .co-line { padding: 14px 16px; }
+  .co-lines-header { padding: 12px 16px; }
+  .co-fulfillment-card { padding: 16px; }
+  .co-fitment-box { padding: 16px; }
+  .co-summary { padding: 16px; }
 }

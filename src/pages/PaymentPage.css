@@ -41,7 +41,7 @@
   align-items: start;
 }
 
-.pp-left { display: flex; flex-direction: column; gap: 20px; }
+.pp-left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 
 /* ── Section card ── */
 .pp-section {
@@ -180,6 +180,7 @@
 }
 
 .pp-input {
+  width: 100%;
   padding: 11px 14px;
   border: 1px solid var(--color-border);
   border-radius: 5px;
@@ -265,6 +266,7 @@
 
 /* ── Right summary col ── */
 .pp-summary-col {
+  min-width: 0;
   position: sticky;
   top: calc(var(--header-height) + var(--nav-height) + 24px);
   background: #fff;
@@ -382,11 +384,28 @@
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .pp-layout { grid-template-columns: 1fr; }
-  .pp-summary-col { position: static; order: -1; }
+  .pp-page { padding: 20px 0 60px; }
+  .pp-header { margin-bottom: 20px; }
+  .pp-layout { grid-template-columns: 1fr; gap: 16px; }
+  .pp-summary-col { position: static; }
 }
 
 @media (max-width: 480px) {
   .pp-title { font-size: 22px; }
   .pp-row-2 { grid-template-columns: 1fr; }
+  .pp-section { padding: 16px; }
+  .pp-summary-col { padding: 16px; }
+
+  /* Prevent iOS Safari auto-zoom on input focus */
+  .pp-input { font-size: 16px; }
+
+  /* Shrink payment method badges so label has room */
+  .pp-method-badge { font-size: 9px; padding: 3px 6px; }
+
+  /* Allow quantity badge to show outside the thumbnail */
+  .pp-order-img { overflow: visible; }
+  .pp-order-img img { border-radius: 4px; }
+
+  /* Bank key column narrower on small screens */
+  .pp-bank-key { min-width: 80px; }
 }
