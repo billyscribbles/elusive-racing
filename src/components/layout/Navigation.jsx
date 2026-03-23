@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { navItems, featuredBrands, vehicleData } from '../../data/navigation';
 import CartIcon from '../ui/CartIcon';
 import './Navigation.css';
@@ -168,6 +169,7 @@ export default function Navigation() {
               onClick={() => setVehicleOpen(!vehicleOpen)}
             >
               Select Your Vehicle
+              <ChevronDown size={13} strokeWidth={2.5} className="mobile-vehicle-chevron" />
             </button>
             <div className="mobile-bar-cart">
               <CartIcon />
