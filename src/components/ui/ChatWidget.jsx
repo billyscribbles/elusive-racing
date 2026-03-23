@@ -149,6 +149,7 @@ export default function ChatWidget() {
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const windowRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -156,6 +157,24 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
+  }, [open]);
+
+  // Keep chat window within the visible viewport when the mobile keyboard appears
+  useEffect(() => {
+    if (!open || !window.visualViewport) return;
+    const update = () => {
+      if (windowRef.current) {
+        windowRef.current.style.height = `${window.visualViewport.height}px`;
+        windowRef.current.style.top = `${window.visualViewport.offsetTop}px`;
+      }
+    };
+    update();
+    window.visualViewport.addEventListener('resize', update);
+    window.visualViewport.addEventListener('scroll', update);
+    return () => {
+      window.visualViewport.removeEventListener('resize', update);
+      window.visualViewport.removeEventListener('scroll', update);
+    };
   }, [open]);
 
   const send = () => {
@@ -182,7 +201,7 @@ export default function ChatWidget() {
   return (
     <div className={`chat-widget${open ? ' chat-widget--open' : ''}`}>
       {open && (
-        <div className="chat-window">
+        <div className="chat-window" ref={windowRef}>
           <div className="chat-header">
             <div className="chat-header-info">
               <div className="chat-avatar">ER</div>

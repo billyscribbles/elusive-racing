@@ -38,6 +38,14 @@ yarn dev
 
 The app will be running at `http://localhost:5173`
 
+To also access it from your phone (on the same Wi-Fi), use:
+
+```bash
+yarn dev --host
+```
+
+Vite will print a **Network** URL (e.g. `http://192.168.x.x:5173`) — open that on your phone.
+
 ### 4. Build for production
 
 ```bash
