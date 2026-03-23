@@ -334,20 +334,13 @@
     flex-wrap: wrap;
   }
 
-  /* Vehicle bar — fixed between header and nav on mobile */
+  /* Vehicle bar hidden on mobile — nav bar handles it */
   .vehicle-bar {
-    background: #1a1a1a;
-    border-bottom: 2px solid var(--color-red);
-    position: fixed;
-    top: var(--header-height);
-    left: 0;
-    right: 0;
-    z-index: 999;
+    display: none;
   }
 
-  /* Push image down to account for the fixed bar */
   .hero-mobile-img-wrap {
-    margin-top: 50px;
+    margin-top: 0;
   }
 
   .vehicle-bar-inner {

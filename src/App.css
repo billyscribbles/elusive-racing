@@ -7,3 +7,9 @@
 main {
   flex: 1;
 }
+
+@media (max-width: 900px) {
+  main {
+    padding-top: var(--nav-height);
+  }
+}
