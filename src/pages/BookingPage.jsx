@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './BookingPage.css';
 
 const BOOKING_URL = 'https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9';
 
 export default function BookingPage() {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <div className="booking-page">
       <div className="container">
@@ -23,12 +26,18 @@ export default function BookingPage() {
         </div>
 
         <div className="booking-frame-wrap">
+          {!loaded && (
+            <div className="booking-skeleton">
+              <div className="booking-skeleton-spinner" />
+              <p className="booking-skeleton-text">Loading booking form…</p>
+            </div>
+          )}
           <iframe
             src={BOOKING_URL}
             title="Book a Service — Elusive Racing"
-            className="booking-frame"
+            className={`booking-frame${loaded ? '' : ' booking-frame--hidden'}`}
             allow="payment"
-            loading="lazy"
+            onLoad={() => setLoaded(true)}
           />
         </div>
       </div>

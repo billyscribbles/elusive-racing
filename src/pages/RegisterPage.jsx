@@ -79,9 +79,6 @@ export default function RegisterPage() {
     return (
       <div className="account-page">
         <div className="account-card">
-          <div className="account-logo">
-            <a href="/"><img src="/logo-footer.svg" alt="Elusive Racing" /></a>
-          </div>
           <div className="account-success">
             <CheckCircle size={48} className="account-success-icon" />
             <h3>Account Created!</h3>
@@ -102,12 +99,6 @@ export default function RegisterPage() {
   return (
     <div className="account-page">
       <div className="account-card">
-
-        <div className="account-logo">
-          <a href="/">
-            <img src="/logo-footer.svg" alt="Elusive Racing" />
-          </a>
-        </div>
 
         <h1 className="account-title">Create Account</h1>
         <p className="account-subtitle">Join Elusive Racing for faster checkout and order tracking</p>

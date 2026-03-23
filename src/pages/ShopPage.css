@@ -681,6 +681,13 @@
   flex-wrap: wrap;
 }
 
+.shop-toolbar-pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
 .shop-page-btn {
   min-width: 38px;
   height: 38px;

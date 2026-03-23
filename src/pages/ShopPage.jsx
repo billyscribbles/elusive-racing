@@ -518,6 +518,38 @@ export default function ShopPage() {
               {totalActiveFilters > 0 && <span className="shop-filter-badge">{totalActiveFilters}</span>}
             </button>
 
+            {totalPages > 1 && (
+              <div className="shop-toolbar-pagination">
+                <button
+                  className="shop-page-btn shop-page-btn--nav"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft size={15} />
+                </button>
+
+                {buildPageNumbers(currentPage, totalPages).map((item, i) =>
+                  item === '...'
+                    ? <span key={`ellipsis-top-${i}`} className="shop-page-ellipsis">…</span>
+                    : <button
+                        key={item}
+                        className={`shop-page-btn${currentPage === item ? ' active' : ''}`}
+                        onClick={() => goToPage(item)}
+                      >
+                        {item}
+                      </button>
+                )}
+
+                <button
+                  className="shop-page-btn shop-page-btn--nav"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronDown size={15} style={{ transform: 'rotate(-90deg)' }} />
+                </button>
+              </div>
+            )}
+
             <div className="shop-active-filters">
               {qParam && (
                 <span className="shop-chip">

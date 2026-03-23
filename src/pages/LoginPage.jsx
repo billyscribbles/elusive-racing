@@ -51,12 +51,6 @@ export default function LoginPage() {
     <div className="account-page">
       <div className="account-card">
 
-        <div className="account-logo">
-          <a href="/">
-            <img src="/logo-footer.svg" alt="Elusive Racing" />
-          </a>
-        </div>
-
         <h1 className="account-title">Sign In</h1>
         <p className="account-subtitle">Welcome back — sign in to your account</p>
 
