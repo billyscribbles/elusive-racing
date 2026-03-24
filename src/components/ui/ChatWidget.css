@@ -111,6 +111,26 @@
   flex-shrink: 0;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-clear {
+  font-size: 11px;
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: #888;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+
+.chat-clear:hover {
+  color: #fff;
+}
+
 .chat-close {
   color: #888;
   display: flex;

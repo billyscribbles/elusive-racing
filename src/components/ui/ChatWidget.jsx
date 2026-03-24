@@ -98,6 +98,12 @@ export default function ChatWidget() {
     }
   };
 
+  const clearChat = () => {
+    setMessages([INITIAL_MESSAGE]);
+    setExpanded(false);
+    setInput('');
+  };
+
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -120,9 +126,16 @@ export default function ChatWidget() {
                 </div>
               </div>
             </div>
-            <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">
-              <X size={18} />
-            </button>
+            <div className="chat-header-actions">
+              {expanded && (
+                <button className="chat-clear" onClick={clearChat} aria-label="New chat">
+                  New chat
+                </button>
+              )}
+              <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <div className="chat-messages">
