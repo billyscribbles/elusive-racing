@@ -4,42 +4,42 @@ const categories = [
   {
     title: 'Cooling',
     image: '/menu/menu-radiator.jpg',
-    href: '/category/cooling',
+    href: '/shop?q=cooling',
   },
   {
     title: 'Induction',
     image: '/menu/menu-induction.jpg',
-    href: '/category/engine/induction',
+    href: '/shop?q=induction',
   },
   {
     title: 'Electronics',
     image: '/menu/menu-ecu.jpg',
-    href: '/category/electronics',
+    href: '/shop?q=electronics',
   },
   {
     title: 'Lighting',
     image: '/menu/menu-led.jpg',
-    href: '/category/lighting',
+    href: '/shop?q=lighting',
   },
   {
     title: 'Exhaust',
     image: '/menu/menu-headers.jpg',
-    href: '/category/engine/exhaust',
+    href: '/shop?q=exhaust',
   },
   {
     title: 'Suspension',
     image: '/menu/menu-coilovers.jpg',
-    href: '/category/suspension',
+    href: '/shop?q=suspension',
   },
   {
     title: 'Brakes',
     image: '/menu/menu-rotors.jpg',
-    href: '/category/brakes',
+    href: '/shop?q=brakes',
   },
   {
     title: 'Drivetrain',
     image: '/menu/menu-clutch.jpg',
-    href: '/category/drivetrain',
+    href: '/shop?q=drivetrain',
   },
 ];
 
