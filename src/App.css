@@ -2,6 +2,13 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: margin-right 0.3s ease;
+}
+
+@media (min-width: 501px) {
+  body.chat-panel-open .app {
+    margin-right: 400px;
+  }
 }
 
 main {

@@ -167,6 +167,14 @@
   border-bottom-right-radius: 4px;
 }
 
+/* Markdown rendered bot bubbles */
+.chat-bubble--md p { margin: 0 0 6px; }
+.chat-bubble--md p:last-child { margin-bottom: 0; }
+.chat-bubble--md strong { font-weight: 700; }
+.chat-bubble--md ul, .chat-bubble--md ol { margin: 4px 0 6px 16px; padding: 0; }
+.chat-bubble--md li { margin-bottom: 2px; }
+.chat-bubble--md a { color: var(--color-red); text-decoration: underline; }
+
 /* Typing indicator */
 .chat-typing {
   display: flex;
@@ -240,6 +248,26 @@
 .chat-send:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+/* ── Expanded (desktop, after first message) ── */
+@media (min-width: 501px) {
+  .chat-widget--expanded .chat-window {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-left: 1px solid var(--color-border);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+    animation: none;
+  }
+
+  .chat-widget--open .chat-fab {
+    display: none;
+  }
 }
 
 /* ── Responsive ── */

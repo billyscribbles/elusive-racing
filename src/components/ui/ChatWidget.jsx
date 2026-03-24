@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, MessageCircle } from 'lucide-react';
+import { marked } from 'marked';
 import './ChatWidget.css';
+
+marked.setOptions({ breaks: true });
 
 const BOT_NAME = 'Elusive Racing AI';
 const API_URL = '/api/chat';
@@ -12,6 +15,7 @@ const INITIAL_MESSAGE = {
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,6 +30,16 @@ export default function ChatWidget() {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  // Push page content left when chat panel is expanded
+  useEffect(() => {
+    if (open && expanded) {
+      document.body.classList.add('chat-panel-open');
+    } else {
+      document.body.classList.remove('chat-panel-open');
+    }
+    return () => document.body.classList.remove('chat-panel-open');
+  }, [open, expanded]);
 
   // Keep chat window within the visible viewport when the mobile keyboard appears
   useEffect(() => {
@@ -52,6 +66,7 @@ export default function ChatWidget() {
     const userMessage = { from: 'user', text };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
+    setExpanded(true);
     setInput('');
     setLoading(true);
 
@@ -91,7 +106,7 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className={`chat-widget${open ? ' chat-widget--open' : ''}`}>
+    <div className={`chat-widget${open ? ' chat-widget--open' : ''}${expanded ? ' chat-widget--expanded' : ''}`}>
       {open && (
         <div className="chat-window" ref={windowRef}>
           <div className="chat-header">
@@ -113,7 +128,10 @@ export default function ChatWidget() {
           <div className="chat-messages">
             {messages.map((msg, i) => (
               <div key={i} className={`chat-msg chat-msg--${msg.from}`}>
-                <div className="chat-bubble">{msg.text}</div>
+                {msg.from === 'bot'
+                  ? <div className="chat-bubble chat-bubble--md" dangerouslySetInnerHTML={{ __html: marked.parse(msg.text) }} />
+                  : <div className="chat-bubble">{msg.text}</div>
+                }
               </div>
             ))}
             {loading && (
