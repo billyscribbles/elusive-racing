@@ -29,7 +29,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
-  }, [open]);
+  }, [open, messages, loading]);
 
   // Push page content left when chat panel is expanded
   useEffect(() => {
@@ -153,7 +153,6 @@ export default function ChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
-              disabled={loading}
             />
             <button
               className="chat-send"

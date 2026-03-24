@@ -27,7 +27,7 @@ BUSINESS DETAILS:
 - Email: sales@elusiveracing.com.au
 - Hours: Mon–Fri 9am–5pm, Sat 9am–2pm, Sun Closed
 - Facebook Messenger: m.me/ElusiveRacin
-- Online booking (workshop): mechanicdesk.com.au/online-booking
+- Online booking (workshop): /book on the website
 
 WHAT WE SELL:
 We stock 150+ performance and OEM brands focused on Honda/Japanese cars (Civic, Integra, NSX, S2000, etc.) but also supporting a wide range of vehicles. Categories include:
