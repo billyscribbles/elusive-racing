@@ -399,12 +399,30 @@
     grid-template-columns: 1fr;
   }
 
+  .sp-brands {
+    padding: 52px 0;
+  }
+
   .sp-brands-inner {
     grid-template-columns: 1fr;
-    gap: 36px;
+    gap: 32px;
   }
 
   .sp-brands-logos {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .sp-brands-logos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sp-brand-chip {
+    padding: 16px 10px;
+  }
+
+  .sp-brand-chip-img {
+    height: 36px;
   }
 }
