@@ -5,7 +5,7 @@ const services = [
     title: 'General Service',
     description:
       'Keep your Honda running at its best. We handle oil changes, timing belt replacements, fluid flushes, brake inspections, and full workshop servicing — using quality parts matched to your build.',
-    image: '/services/MTL03182.jpg',
+    image: '/services-general.jpg',
     href: '/services',
   },
   {
@@ -19,7 +19,7 @@ const services = [
     title: 'Dyno Tuning',
     description:
       'Maximise power, drivability, and reliability on our in-house dyno. Whether you\'re running stock internals or a built motor, we tune to your goals — not just peak numbers.',
-    image: '/services/MTL04308.jpg',
+    image: '/services-tuning.jpg',
     href: '/services',
   },
 ];

@@ -4,7 +4,7 @@ const services = [
   {
     id: 'general-service',
     title: 'General Service',
-    image: '/services/MTL03182.jpg',
+    image: '/services-general.jpg',
     tagline: 'Keep it running right.',
     description:
       'Regular servicing is the foundation of any reliable build. Our technicians carry out thorough inspections and factory-standard maintenance using quality OEM and aftermarket parts suited to your Honda. Whether you\'re daily driving or tracking your car on weekends, we\'ll keep it in peak condition.',
@@ -38,7 +38,7 @@ const services = [
   {
     id: 'dyno-tuning',
     title: 'Dyno Tuning',
-    image: '/services/MTL04308.jpg',
+    image: '/services-tuning.jpg',
     tagline: 'Power, dialled in.',
     description:
       'A proper tune unlocks what your build is actually capable of. We tune on our in-house dynamometer using industry-leading software including Hondata, KTuner, and Link. We tune for your driving conditions — not just peak numbers — ensuring your engine runs safely and efficiently across the entire rev range.',
@@ -80,7 +80,7 @@ export default function ServicesPage() {
 
       {/* Hero */}
       <section className="sp-hero">
-        <div className="sp-hero-bg" style={{ backgroundImage: 'url(/services/MTL03365.jpg)' }} />
+        <div className="sp-hero-bg" style={{ backgroundImage: 'url(/services-performance.jpg)' }} />
         <div className="sp-hero-overlay" />
         <div className="sp-hero-content">
           <p className="sp-hero-label">Workshop Services</p>
@@ -116,6 +116,34 @@ export default function ServicesPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Other brands */}
+      <section className="sp-brands">
+        <div className="container sp-brands-inner">
+          <div className="sp-brands-text">
+            <p className="sp-brands-label">Not Just Honda</p>
+            <h2 className="sp-brands-title">We Service All Japanese Makes</h2>
+            <p className="sp-brands-desc">
+              While our specialty is Honda and Acura, our workshop is equipped to service and modify a wide range of Japanese performance vehicles. Bring us your build — whatever badge it wears.
+            </p>
+          </div>
+          <div className="sp-brands-logos">
+            {[
+              { name: 'Honda',      logo: '/brands/img-brand-logo-honda.png' },
+              { name: 'Toyota',     logo: '/brands/img-brand-logo-toyota.png' },
+              { name: 'Mazda',      logo: '/brands/img-brand-logo-mazda.png' },
+              { name: 'Nissan',     logo: '/brands/img-brand-logo-nissan.png' },
+              { name: 'Subaru',     logo: '/brands/img-brand-logo-subaru-1.png' },
+              { name: 'Mitsubishi', logo: '/brands/img-brand-logo-mitsubishi.png' },
+            ].map((b) => (
+              <div key={b.name} className="sp-brand-chip">
+                <img src={b.logo} alt={b.name} className="sp-brand-chip-img" />
+                <span className="sp-brand-chip-name">{b.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

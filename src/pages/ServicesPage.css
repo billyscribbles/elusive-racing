@@ -198,6 +198,90 @@
   transform: translateY(-1px);
 }
 
+/* ── Other brands ── */
+.sp-brands {
+  background: var(--color-black);
+  padding: 72px 0;
+}
+
+.sp-brands-inner {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.sp-brands-label {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-red);
+  margin-bottom: 12px;
+}
+
+.sp-brands-title {
+  font-family: var(--font-primary);
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: -0.3px;
+  margin-bottom: 16px;
+  line-height: 1.15;
+}
+
+.sp-brands-desc {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.8;
+}
+
+.sp-brands-logos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.sp-brand-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sp-brand-chip:hover {
+  border-color: var(--color-red);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.sp-brand-chip-img {
+  height: 44px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+}
+
+.sp-brand-chip-name {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.sp-brand-chip:hover .sp-brand-chip-name {
+  color: var(--color-red);
+}
+
 /* ── FAQ ── */
 .sp-faq {
   background: #f7f7f7;
@@ -313,5 +397,14 @@
 
   .sp-faq-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sp-brands-inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .sp-brands-logos {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
