@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import './ContactUsPage.css';
 
-// ── To activate email delivery:
-// 1. Go to https://formspree.io and sign up (free)
-// 2. Create a new form and set the destination to your email address
-// 3. Replace YOUR_FORM_ID below with the form ID Formspree gives you (e.g. "xpwzabcd")
-const FORMSPREE_ID = 'YOUR_FORM_ID';
+// ── Email delivery via FormSubmit.co (no account or API key required) ──
+// The first submission will send a one-time verification email to sales@elusiveracing.com.au.
+// Click the confirmation link and all future submissions will be delivered automatically.
+const CONTACT_EMAIL = 'sales@elusiveracing.com.au';
 
 const contactDetails = [
   {
@@ -59,16 +58,21 @@ export default function ContactUsPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (FORMSPREE_ID === 'YOUR_FORM_ID') {
-      setStatus('success');
-      return;
-    }
     setStatus('submitting');
     try {
-      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+      const res = await fetch(`https://formsubmit.co/ajax/${CONTACT_EMAIL}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone || '—',
+          subject: form.subject,
+          message: form.message,
+          _subject: `Contact Form: ${form.subject || 'New Enquiry'} — ${form.name}`,
+          _replyto: form.email,
+          _captcha: 'false',
+        }),
       });
       if (res.ok) {
         setStatus('success');
