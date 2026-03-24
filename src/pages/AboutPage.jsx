@@ -154,7 +154,7 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="ap-workshop-img-wrap">
-            <img src="/services-performance.jpg" alt="Elusive Racing Workshop" className="ap-workshop-img" />
+            <img src="/services/MTL03726-scaled.jpg" alt="Elusive Racing Workshop" className="ap-workshop-img" />
           </div>
         </div>
       </section>

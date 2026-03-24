@@ -4,7 +4,7 @@ const services = [
   {
     id: 'general-service',
     title: 'General Service',
-    image: '/services-general.jpg',
+    image: '/services/MTL03182.jpg',
     tagline: 'Keep it running right.',
     description:
       'Regular servicing is the foundation of any reliable build. Our technicians carry out thorough inspections and factory-standard maintenance using quality OEM and aftermarket parts suited to your Honda. Whether you\'re daily driving or tracking your car on weekends, we\'ll keep it in peak condition.',
@@ -20,7 +20,7 @@ const services = [
   {
     id: 'performance-upgrades',
     title: 'Performance Upgrades',
-    image: '/services-performance.jpg',
+    image: '/services/IMG_7626.jpg',
     tagline: 'Built for more.',
     description:
       'From a simple intake swap to a full engine build, we have the experience and parts to do it right. We work with all Honda and Acura platforms and stock the brands you trust — K-Tuned, Skunk2, Hondata, HKS, Exedy, and more. Every upgrade is fitted and tested in-house before your car leaves our workshop.',
@@ -38,7 +38,7 @@ const services = [
   {
     id: 'dyno-tuning',
     title: 'Dyno Tuning',
-    image: '/services-tuning.jpg',
+    image: '/services/MTL04308.jpg',
     tagline: 'Power, dialled in.',
     description:
       'A proper tune unlocks what your build is actually capable of. We tune on our in-house dynamometer using industry-leading software including Hondata, KTuner, and Link. We tune for your driving conditions — not just peak numbers — ensuring your engine runs safely and efficiently across the entire rev range.',
@@ -80,7 +80,7 @@ export default function ServicesPage() {
 
       {/* Hero */}
       <section className="sp-hero">
-        <div className="sp-hero-bg" style={{ backgroundImage: 'url(/services-performance.jpg)' }} />
+        <div className="sp-hero-bg" style={{ backgroundImage: 'url(/services/MTL03365.jpg)' }} />
         <div className="sp-hero-overlay" />
         <div className="sp-hero-content">
           <p className="sp-hero-label">Workshop Services</p>

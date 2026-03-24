@@ -5,21 +5,21 @@ const services = [
     title: 'General Service',
     description:
       'Keep your Honda running at its best. We handle oil changes, timing belt replacements, fluid flushes, brake inspections, and full workshop servicing — using quality parts matched to your build.',
-    image: '/services-general.jpg',
+    image: '/services/MTL03182.jpg',
     href: '/services',
   },
   {
     title: 'Performance Upgrades',
     description:
       'From bolt-on modifications to full engine builds, our team has the expertise to take your Honda further. Induction, fuelling, forced induction, drivetrain — we do it all in-house.',
-    image: '/services-performance.jpg',
+    image: '/services/IMG_7626.jpg',
     href: '/services',
   },
   {
     title: 'Dyno Tuning',
     description:
       'Maximise power, drivability, and reliability on our in-house dyno. Whether you\'re running stock internals or a built motor, we tune to your goals — not just peak numbers.',
-    image: '/services-tuning.jpg',
+    image: '/services/MTL04308.jpg',
     href: '/services',
   },
 ];
