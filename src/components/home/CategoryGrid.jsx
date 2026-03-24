@@ -3,42 +3,42 @@ import './CategoryGrid.css';
 const categories = [
   {
     title: 'Cooling',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-radiator.jpg',
+    image: '/menu/menu-radiator.jpg',
     href: '/category/cooling',
   },
   {
     title: 'Induction',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-induction.jpg',
+    image: '/menu/menu-induction.jpg',
     href: '/category/engine/induction',
   },
   {
     title: 'Electronics',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-ecu.jpg',
+    image: '/menu/menu-ecu.jpg',
     href: '/category/electronics',
   },
   {
     title: 'Lighting',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-led.jpg',
+    image: '/menu/menu-led.jpg',
     href: '/category/lighting',
   },
   {
     title: 'Exhaust',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-headers.jpg',
+    image: '/menu/menu-headers.jpg',
     href: '/category/engine/exhaust',
   },
   {
     title: 'Suspension',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-coilovers.jpg',
+    image: '/menu/menu-coilovers.jpg',
     href: '/category/suspension',
   },
   {
     title: 'Brakes',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-rotors.jpg',
+    image: '/menu/menu-rotors.jpg',
     href: '/category/brakes',
   },
   {
     title: 'Drivetrain',
-    image: 'https://elusiveracing.com.au/wp-content/uploads/menu-clutch.jpg',
+    image: '/menu/menu-clutch.jpg',
     href: '/category/drivetrain',
   },
 ];
