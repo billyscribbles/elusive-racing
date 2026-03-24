@@ -71,8 +71,9 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.68) 0%,
-    rgba(0,0,0,0.15) 45%,
+    rgba(0,0,0,0.88) 0%,
+    rgba(0,0,0,0.55) 33%,
+    rgba(0,0,0,0.08) 65%,
     rgba(0,0,0,0) 100%
   );
   transition: background 0.3s;
@@ -81,9 +82,10 @@
 .cat-card:hover .cat-card-overlay {
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.78) 0%,
-    rgba(0,0,0,0.2) 50%,
-    rgba(0,0,0,0.05) 100%
+    rgba(0,0,0,0.92) 0%,
+    rgba(0,0,0,0.62) 33%,
+    rgba(0,0,0,0.12) 65%,
+    rgba(0,0,0,0) 100%
   );
 }
 
