@@ -3,6 +3,10 @@
   background: var(--color-bg);
 }
 
+.featured-products-section .section-subtitle {
+  color: #666;
+}
+
 /* Red accent bar above section title */
 .featured-products-section .section-header::before {
   content: '';

@@ -4,6 +4,10 @@
   border-top: 1px solid var(--color-border-light);
 }
 
+.brands-section .section-subtitle {
+  color: #666;
+}
+
 /* Red accent bar above section title */
 .brands-section .section-header::before {
   content: '';

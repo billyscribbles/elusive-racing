@@ -154,7 +154,7 @@
 
 .footer-col-link {
   font-size: 15px;
-  color: #777;
+  color: #999;
   transition: color 0.15s, padding-left 0.15s;
   display: block;
 }
@@ -183,7 +183,7 @@
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #555;
+  color: #999;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -240,7 +240,7 @@
 
 .footer-copyright {
   font-size: 14px;
-  color: #444;
+  color: #888;
 }
 
 .footer-social {

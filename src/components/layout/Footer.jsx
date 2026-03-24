@@ -113,7 +113,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div className="footer-col">
-            <h4 className="footer-col-title">Quick Links</h4>
+            <h3 className="footer-col-title">Quick Links</h3>
             <ul className="footer-col-links">
               {quickLinks.map((l) => (
                 <li key={l.href}><a href={l.href} className="footer-col-link">{l.label}</a></li>
@@ -123,7 +123,7 @@ export default function Footer() {
 
           {/* Resources */}
           <div className="footer-col">
-            <h4 className="footer-col-title">Resources</h4>
+            <h3 className="footer-col-title">Resources</h3>
             <ul className="footer-col-links">
               {resources.map((l) => (
                 <li key={l.href}><a href={l.href} className="footer-col-link">{l.label}</a></li>
@@ -133,7 +133,7 @@ export default function Footer() {
 
           {/* Information */}
           <div className="footer-col">
-            <h4 className="footer-col-title">Information</h4>
+            <h3 className="footer-col-title">Information</h3>
             <ul className="footer-col-links">
               {information.map((l) => (
                 <li key={l.href}><a href={l.href} className="footer-col-link">{l.label}</a></li>

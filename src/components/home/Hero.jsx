@@ -35,15 +35,15 @@ function DesktopFinder() {
       <h2 className="vf-title">Find Parts For<br />Your Vehicle</h2>
       <p className="vf-sub">Select your vehicle to find compatible parts</p>
       <div className="vf-selects">
-        <select className="vf-select" value={make} onChange={handleMakeChange}>
+        <select className="vf-select" value={make} onChange={handleMakeChange} aria-label="Vehicle make">
           <option value="">Select Make</option>
           {vehicleData.makes.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
-        <select className="vf-select" value={model} onChange={handleModelChange} disabled={!make}>
+        <select className="vf-select" value={model} onChange={handleModelChange} disabled={!make} aria-label="Vehicle model">
           <option value="">Select Model</option>
           {models.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
-        <select className="vf-select" value={year} onChange={handleYearChange} disabled={!model}>
+        <select className="vf-select" value={year} onChange={handleYearChange} disabled={!model} aria-label="Vehicle year">
           <option value="">Select Year</option>
           {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
@@ -61,15 +61,15 @@ function MobileFinderForm() {
   return (
     <form className="vehicle-bar-form" onSubmit={handleSubmit}>
       <div className="vehicle-bar-selects">
-        <select className="vb-select" value={make} onChange={handleMakeChange}>
+        <select className="vb-select" value={make} onChange={handleMakeChange} aria-label="Vehicle make">
           <option value="">Select Make</option>
           {vehicleData.makes.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
-        <select className="vb-select" value={model} onChange={handleModelChange} disabled={!make}>
+        <select className="vb-select" value={model} onChange={handleModelChange} disabled={!make} aria-label="Vehicle model">
           <option value="">Select Model</option>
           {models.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
-        <select className="vb-select" value={year} onChange={handleYearChange} disabled={!model}>
+        <select className="vb-select" value={year} onChange={handleYearChange} disabled={!model} aria-label="Vehicle year">
           <option value="">Select Year / Submodel</option>
           {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
@@ -96,7 +96,7 @@ export default function Hero() {
       {/* ── Desktop: video left + floating finder right ── */}
       <div className="hero-desktop">
         <div className="hero-video-panel">
-          <img src="/hnats1.jpg" alt="" className="hero-poster" />
+          <img src="/hnats1.jpg" alt="" className="hero-poster" fetchpriority="high" />
           <video
             className={`hero-video ${videoReady ? 'hero-video--ready' : ''}`}
             autoPlay

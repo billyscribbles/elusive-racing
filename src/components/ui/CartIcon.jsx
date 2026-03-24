@@ -14,7 +14,7 @@ export default function CartIcon() {
   return (
     <div className="cart-wrapper">
       <button className="cart-toggle" onClick={openCart} aria-label="View cart">
-        <span className="cart-total">${subtotal.toFixed(2)}</span>
+        <span className="cart-total" aria-hidden="true">${subtotal.toFixed(2)}</span>
         <ShoppingBag className="cart-bag-icon" size={22} strokeWidth={1.75} />
         {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
       </button>

@@ -29,6 +29,7 @@ function ReelCard({ src, href }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label="View on Instagram"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

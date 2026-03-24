@@ -55,6 +55,7 @@ export default function StickyFinder() {
             className="sticky-finder-select"
             value={make}
             onChange={handleMakeChange}
+            aria-label="Vehicle make"
           >
             <option value="">Make</option>
             {vehicleData.makes.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -64,6 +65,7 @@ export default function StickyFinder() {
             value={model}
             onChange={handleModelChange}
             disabled={!make}
+            aria-label="Vehicle model"
           >
             <option value="">Model</option>
             {models.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -73,6 +75,7 @@ export default function StickyFinder() {
             value={year}
             onChange={(e) => setYear(e.target.value)}
             disabled={!model}
+            aria-label="Vehicle year"
           >
             <option value="">Year</option>
             {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}

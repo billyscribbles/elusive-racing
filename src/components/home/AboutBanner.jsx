@@ -28,7 +28,7 @@ export default function AboutBanner() {
               <span>Years Experience</span>
             </div>
           </div>
-          <a href="/about" className="about-cta">Learn More</a>
+          <a href="/about" className="about-cta">About Elusive Racing</a>
         </div>
       </div>
     </section>
