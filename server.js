@@ -19,6 +19,67 @@ const PORT = process.env.PORT || 8080;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+const SHOPIFY_DOMAIN = process.env.VITE_SHOPIFY_STORE_DOMAIN;
+const SHOPIFY_TOKEN  = process.env.VITE_SHOPIFY_STOREFRONT_TOKEN;
+
+async function shopifySearch(query, count = 6) {
+  try {
+    const res = await fetch(`https://${SHOPIFY_DOMAIN}/api/2025-01/graphql.json`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN,
+      },
+      body: JSON.stringify({
+        query: `
+          query ChatSearch($query: String!, $count: Int!) {
+            products(first: $count, query: $query, sortKey: BEST_SELLING) {
+              edges {
+                node {
+                  title
+                  handle
+                  vendor
+                  priceRange {
+                    minVariantPrice { amount currencyCode }
+                  }
+                  compareAtPriceRange {
+                    minVariantPrice { amount }
+                  }
+                  variants(first: 1) {
+                    edges { node { availableForSale } }
+                  }
+                  tags
+                }
+              }
+            }
+          }
+        `,
+        variables: { query, count },
+      }),
+    });
+    const { data } = await res.json();
+    return data?.products?.edges?.map(e => e.node) || [];
+  } catch {
+    return [];
+  }
+}
+
+function isProductQuery(message) {
+  return /\b(stock|price|available|buy|order|part|clutch|coilover|coilovers|spring|sway bar|brake|rotor|pad|caliper|exhaust|header|intake|turbo|intercooler|blow.?off|suspension|engine|cam|piston|rod|bearing|injector|fuel pump|fuel rail|radiator|ecu|tune|hondata|k.?tuned|skunk2|exedy|bc racing|hks|arp|acl|spoon|mugen|bosch|ngk|mishimoto|cusco|project mu|tein|whiteline|hardrace|hasport|hybrid racing|cometic|wiseco|je piston|do you have|do you stock|got any|show me|what.*have|looking for|need a|need some)\b/i.test(message);
+}
+
+function buildProductContext(products) {
+  if (!products.length) return '';
+  const lines = products.map(p => {
+    const price = parseFloat(p.priceRange.minVariantPrice.amount).toFixed(2);
+    const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount || 0);
+    const saleTag = compareAt > parseFloat(p.priceRange.minVariantPrice.amount) ? ' (ON SALE)' : '';
+    const status = p.variants.edges[0]?.node?.availableForSale ? 'In Stock' : 'Backorder';
+    return `• ${p.title} — ${p.vendor} | $${price} AUD${saleTag} | ${status} | /products/${p.handle}`;
+  }).join('\n');
+  return `\n\nLIVE PRODUCT DATA FROM OUR STORE (use this to answer the customer):\n${lines}\n\nInclude relevant product names, prices, stock status and the product URL in your reply. Do not invent products not in this list.`;
+}
+
 const SYSTEM_PROMPT = `You are the AI assistant for Elusive Racing, a specialist performance car parts retailer based in Clayton South, Melbourne, Australia. You help customers find the right parts, understand products, and get answers to common questions.
 
 BUSINESS DETAILS:
@@ -109,11 +170,19 @@ async function handleChat(req, res) {
         return;
       }
 
+      // Search Shopify for live product data if the query is product-related
+      const latestUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+      let productContext = '';
+      if (isProductQuery(latestUserMessage)) {
+        const products = await shopifySearch(latestUserMessage);
+        productContext = buildProductContext(products);
+      }
+
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        system: SYSTEM_PROMPT,
-        messages: messages.slice(-10), // keep last 10 messages for context
+        max_tokens: 600,
+        system: SYSTEM_PROMPT + productContext,
+        messages: messages.slice(-10),
       });
 
       const reply = response.content[0]?.text || "Sorry, I couldn't process that. Please try again or call us on 03 9574 1710.";
