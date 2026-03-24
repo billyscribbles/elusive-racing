@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "node server.js",
+    "server": "lsof -ti :8080 | xargs kill -9 2>/dev/null; yarn node server.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@shopify/hydrogen-react": "^2026.1.1",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
