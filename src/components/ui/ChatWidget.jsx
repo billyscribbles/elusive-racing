@@ -10,7 +10,7 @@ const API_URL = '/api/chat';
 
 const INITIAL_MESSAGE = {
   from: 'bot',
-  text: "G'day! I'm the Elusive Racing AI assistant. Ask me about products, brands, fitment, shipping or anything else — I'm here to help.",
+  text: "Hey, welcome to Elusive Racing. What can I help you with today?\n\nIf you'd rather speak to someone directly, give us a call on **03 9574 1710**.",
 };
 
 export default function ChatWidget() {
