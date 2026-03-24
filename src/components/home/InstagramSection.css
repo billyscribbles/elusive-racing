@@ -1,6 +1,7 @@
 .instagram-section {
-  background: #fff;
+  background: #0a0a0a;
   padding: 60px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 .instagram-header {
@@ -16,7 +17,7 @@
   font-family: var(--font-primary);
   font-size: 22px;
   font-weight: 800;
-  color: var(--color-black);
+  color: #fff;
   letter-spacing: 0.5px;
   text-decoration: none;
   transition: color 0.2s;
@@ -29,7 +30,7 @@
 .instagram-tagline {
   margin-top: 8px;
   font-size: 15px;
-  color: var(--color-light);
+  color: #555;
 }
 
 /* Reel */
@@ -43,19 +44,19 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 48px;
+  width: 60px;
   z-index: 2;
   pointer-events: none;
 }
 
 .reel-wrapper::before {
   left: 0;
-  background: linear-gradient(to right, #fff, transparent);
+  background: linear-gradient(to right, #0a0a0a, transparent);
 }
 
 .reel-wrapper::after {
   right: 0;
-  background: linear-gradient(to left, #fff, transparent);
+  background: linear-gradient(to left, #0a0a0a, transparent);
 }
 
 .reel-track {
@@ -71,16 +72,23 @@
   display: none;
 }
 
-/* Square cards — video plays in place, no size change */
+/* Square cards */
 .reel-card {
   flex: 0 0 240px;
   height: 240px;
   position: relative;
   overflow: hidden;
   background: #111;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   display: block;
+  border: 1px solid rgba(255,255,255,0.07);
+  transition: border-color 0.3s, transform 0.3s;
+}
+
+.reel-card:hover {
+  border-color: rgba(217,64,64,0.3);
+  transform: scale(1.025);
 }
 
 .reel-video {
@@ -109,13 +117,13 @@
   background: rgba(0, 0, 0, 0.15);
 }
 
-/* Faint play icon — visible by default, hides on hover */
+/* Play icon — visible by default, hides on hover */
 .reel-play-icon {
   position: absolute;
-  opacity: 0.7;
+  opacity: 0.65;
   color: #fff;
   transition: opacity 0.25s ease;
-  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
 }
 
 .reel-card:hover .reel-play-icon {
@@ -146,18 +154,15 @@
   align-items: center;
   gap: 8px;
   padding: 13px 32px;
-  border: 2px solid var(--color-black);
+  border: 1.5px solid rgba(255,255,255,0.2);
   border-radius: 4px;
   font-family: var(--font-primary);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--color-black);
-  transition:
-    background 0.2s,
-    color 0.2s,
-    border-color 0.2s;
+  color: rgba(255,255,255,0.7);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .instagram-follow-btn:hover {
@@ -196,21 +201,17 @@
     flex: 0 0 155px;
     height: 155px;
   }
-
   .reel-track {
     padding: 0 16px;
     gap: 6px;
   }
-
   .reel-wrapper::before,
   .reel-wrapper::after {
     display: none;
   }
-
   .instagram-cta {
     padding: 24px 20px;
   }
-
   .instagram-follow-btn {
     padding: 11px 24px;
     font-size: 12px;

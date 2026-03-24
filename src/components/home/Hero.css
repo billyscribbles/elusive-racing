@@ -139,6 +139,19 @@
   transform: translateY(-1px);
 }
 
+/* Bottom fade — blends hero into dark sections below */
+.hero-desktop::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.55));
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* ── Floating finder panel ── */
 .hero-finder-panel {
   width: 360px;

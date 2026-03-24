@@ -8,6 +8,16 @@
   margin-bottom: 32px;
 }
 
+.category-section .section-header::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 3px;
+  background: var(--color-red);
+  margin: 0 auto 16px;
+  border-radius: 2px;
+}
+
 .category-section .section-title {
   font-family: var(--font-primary);
   font-size: 28px;
@@ -20,7 +30,7 @@
 
 .category-section .section-subtitle {
   font-size: 14px;
-  color: #666;
+  color: #555;
 }
 
 /* Grid */
@@ -37,7 +47,7 @@
   overflow: hidden;
   border-radius: 6px;
   display: block;
-  min-height: 190px;
+  min-height: 220px;
   background: #1a1a1a;
 }
 

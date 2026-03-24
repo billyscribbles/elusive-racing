@@ -74,10 +74,12 @@
 
 .about-stat strong {
   font-family: var(--font-primary);
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--color-red);
   line-height: 1;
+  letter-spacing: -1px;
+  text-shadow: 0 0 24px rgba(217,64,64,0.3);
 }
 
 .about-stat span {
