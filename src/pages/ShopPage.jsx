@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts, getCollections, getBrands } from '../lib/woocommerce';
+import { getProducts, getBrands } from '../lib/woocommerce';
+import { CATEGORIES, CATEGORIES_FLAT, getCategoryBySlug } from '../data/categories';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -206,22 +207,20 @@ export default function ShopPage() {
   const activeBrands   = parseList(brandsParam);
 
   const [products, setProducts]     = useState([]);
-  const [categories, setCategories] = useState([]);
   const [allBrands, setAllBrands]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
   const [apiTotalPages, setApiTotalPages] = useState(1);
 
-  // Fetch categories and brands once on mount
+  // Fetch brands once on mount (categories are hardcoded)
   useEffect(() => {
-    getCollections(100).then(setCategories).catch(() => {});
     getBrands().then(setAllBrands).catch(() => {});
   }, []);
 
   // Refetch products whenever any filter/sort/page changes
   useEffect(() => {
     setLoading(true);
-    const catObj = categories.find((c) => c.handle === subParam);
+    const catObj = getCategoryBySlug(subParam);
     getProducts({
       query:    qParam,
       count:    perPageParam,
@@ -241,7 +240,7 @@ export default function ShopPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [qParam, subParam, saleParam, instockParam, minParam, maxParam, sortParam, pageParam, perPageParam, categories.length]);
+  }, [qParam, subParam, saleParam, instockParam, minParam, maxParam, sortParam, pageParam, perPageParam]);
 
   // Brand filter is client-side (WC has no native brand API param)
   const filtered = useMemo(
@@ -266,6 +265,7 @@ export default function ShopPage() {
   const [localMin,    setLocalMin]    = useState(minParam);
   const [localMax,    setLocalMax]    = useState(maxParam);
   const [drawerOpen,  setDrawerOpen]  = useState(false);
+  const [catSearch,   setCatSearch]   = useState('');
 
   useEffect(() => {
     if (searchInputRef.current) searchInputRef.current.value = qParam;
@@ -350,6 +350,25 @@ export default function ShopPage() {
     activeBrands.length +
     [subParam, minParam || maxParam, saleParam, backorderParam, qParam].filter(Boolean).length;
 
+  const catSearchTerm = catSearch.toLowerCase().trim();
+  const visibleCategories = catSearchTerm
+    ? CATEGORIES.reduce((acc, top) => {
+        const topMatch = top.name.toLowerCase().includes(catSearchTerm);
+        const filteredMids = (top.children ?? []).reduce((macc, mid) => {
+          const midMatch = mid.name.toLowerCase().includes(catSearchTerm);
+          const filteredLeaves = (mid.children ?? []).filter(l => l.name.toLowerCase().includes(catSearchTerm));
+          if (midMatch || filteredLeaves.length > 0) {
+            macc.push({ ...mid, children: midMatch ? mid.children : filteredLeaves });
+          }
+          return macc;
+        }, []);
+        if (topMatch || filteredMids.length > 0) {
+          acc.push({ ...top, children: topMatch ? top.children : filteredMids });
+        }
+        return acc;
+      }, [])
+    : CATEGORIES;
+
   const FilterPanel = () => (
     <div className="shop-filter-panel">
 
@@ -385,34 +404,88 @@ export default function ShopPage() {
         </label>
       </CollapsibleSection>
 
-      {/* Categories */}
-      {categories.length > 0 && (
-        <CollapsibleSection title="Categories">
-          <div className="shop-filter-check-list">
+      {/* Categories — hierarchical tree */}
+      <CollapsibleSection title="Categories">
+        <div className="shop-cat-search-wrap">
+          <Search size={13} className="shop-cat-search-icon" />
+          <input
+            type="text"
+            className="shop-cat-search-input"
+            placeholder="Search categories..."
+            value={catSearch}
+            onChange={(e) => setCatSearch(e.target.value)}
+          />
+          {catSearch && (
+            <button className="shop-cat-search-clear" onClick={() => setCatSearch('')} aria-label="Clear">
+              <X size={11} strokeWidth={2.5} />
+            </button>
+          )}
+        </div>
+        <div className="shop-filter-check-list">
+          {!catSearchTerm && (
             <label className="shop-filter-check">
               <input type="radio" name="cat" checked={!subParam} onChange={() => setParam('sub', '')} />
               <span>All Categories</span>
-              <span className="shop-filter-count">({products.length})</span>
             </label>
-            {categories.map((cat) => {
-              const count = products.filter((p) => p.categories.some((c) => c.handle === cat.handle)).length;
-              if (count === 0) return null;
-              return (
-                <label key={cat.id} className="shop-filter-check">
+          )}
+          {visibleCategories.length === 0 && (
+            <p className="shop-cat-no-results">No categories found</p>
+          )}
+          {visibleCategories.map((top) => {
+            const topActive = catSearchTerm || subParam === top.slug || (top.children ?? []).some(
+              c => c.slug === subParam || (c.children ?? []).some(l => l.slug === subParam)
+            );
+            return (
+              <div key={top.id} className="shop-filter-cat-group">
+                <label className="shop-filter-check shop-filter-check--top">
                   <input
                     type="radio"
                     name="cat"
-                    checked={subParam === cat.handle}
-                    onChange={() => setParam('sub', subParam === cat.handle ? '' : cat.handle)}
+                    checked={subParam === top.slug}
+                    onChange={() => setParam('sub', subParam === top.slug ? '' : top.slug)}
                   />
-                  <span>{cat.title}</span>
-                  <span className="shop-filter-count">({count})</span>
+                  <span>{top.name}</span>
                 </label>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-      )}
+                {topActive && top.children?.length > 0 && (
+                  <div className="shop-filter-children">
+                    {top.children.map((mid) => {
+                      const midActive = catSearchTerm || subParam === mid.slug || (mid.children ?? []).some(l => l.slug === subParam);
+                      return (
+                        <div key={mid.id}>
+                          <label className="shop-filter-check shop-filter-check--mid">
+                            <input
+                              type="radio"
+                              name="cat"
+                              checked={subParam === mid.slug}
+                              onChange={() => setParam('sub', subParam === mid.slug ? top.slug : mid.slug)}
+                            />
+                            <span>{mid.name}</span>
+                          </label>
+                          {midActive && mid.children?.length > 0 && (
+                            <div className="shop-filter-children shop-filter-children--leaf">
+                              {mid.children.map((leaf) => (
+                                <label key={leaf.id} className="shop-filter-check shop-filter-check--leaf">
+                                  <input
+                                    type="radio"
+                                    name="cat"
+                                    checked={subParam === leaf.slug}
+                                    onChange={() => setParam('sub', subParam === leaf.slug ? mid.slug : leaf.slug)}
+                                  />
+                                  <span>{leaf.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CollapsibleSection>
 
       {/* Brand */}
       {vendors.length > 0 && (
@@ -479,7 +552,7 @@ export default function ShopPage() {
   const pageTitle = qParam
     ? `Search: "${qParam}"`
     : subParam
-    ? (categories.find((c) => c.handle === subParam)?.title ?? subParam)
+    ? (getCategoryBySlug(subParam)?.name ?? subParam)
     : activeBrands.length === 1
     ? activeBrands[0]
     : 'Shop All Products';
@@ -500,7 +573,7 @@ export default function ShopPage() {
       <div className="container shop-layout">
 
         <aside className="shop-sidebar">
-          <FilterPanel />
+          {FilterPanel()}
         </aside>
 
         <div className="shop-main">
@@ -624,7 +697,7 @@ export default function ShopPage() {
               <span>Filters {totalActiveFilters > 0 && `(${totalActiveFilters})`}</span>
               <button onClick={() => setDrawerOpen(false)}><X size={20} /></button>
             </div>
-            <div className="shop-drawer-body"><FilterPanel /></div>
+            <div className="shop-drawer-body">{FilterPanel()}</div>
           </div>
         </div>
       )}
