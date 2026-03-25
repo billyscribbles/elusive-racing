@@ -6,16 +6,6 @@ export const navItems = [
     type: 'brands',
   },
   {
-    label: 'Honda OEM',
-    href: '/shop?sub=honda-oem',
-    hasMega: false,
-    links: [
-      { label: 'Engine', href: '/shop?sub=engine-honda-oem' },
-      { label: 'Drivetrain', href: '/shop?sub=drivetrain-honda-oem' },
-      { label: 'Body & Accessories', href: '/shop?sub=body-accessories-honda-oem' },
-    ],
-  },
-  {
     label: 'Engine',
     href: '/shop?sub=engine',
     hasMega: false,
@@ -50,6 +40,31 @@ export const navItems = [
     ],
   },
   {
+    label: 'Honda OEM',
+    href: '/shop?sub=honda-oem',
+    hasMega: false,
+    links: [
+      { label: 'Engine', href: '/shop?sub=engine-honda-oem' },
+      { label: 'Drivetrain', href: '/shop?sub=drivetrain-honda-oem' },
+      { label: 'Body & Accessories', href: '/shop?sub=body-accessories-honda-oem' },
+    ],
+  },
+  {
+    label: 'Interior',
+    href: '/shop?sub=interior',
+    hasMega: false,
+    links: [
+      { label: 'Steering Wheels', href: '/shop?sub=steering-wheels' },
+      { label: 'Seat & Rails', href: '/shop?sub=seat-rails' },
+      { label: 'Shift Knobs', href: '/shop?sub=shift-knobs' },
+      { label: 'Shifters', href: '/shop?sub=shifters' },
+      { label: 'Quick Release & Hub/Boss Kits', href: '/shop?sub=quick-release-hub-boss-kits' },
+      { label: 'Cables & Accessories', href: '/shop?sub=cables-accessories' },
+      { label: 'X Bar & Braces', href: '/shop?sub=x-bar-braces' },
+      { label: 'Accessories', href: '/shop?sub=accessories' },
+    ],
+  },
+  {
     label: 'Drivetrain',
     href: '/shop?sub=drivetrain',
     hasMega: false,
@@ -80,20 +95,6 @@ export const navItems = [
     ],
   },
   {
-    label: 'Electronics',
-    href: '/shop?sub=electronics',
-    hasMega: false,
-    links: [
-      { label: 'ECU & Converters', href: '/shop?sub=ecu-converters' },
-      { label: 'Gauges', href: '/shop?sub=gauges' },
-      { label: 'Sensors', href: '/shop?sub=sensors' },
-      { label: 'Spark Plugs', href: '/shop?sub=spark-plugs' },
-      { label: 'Boost Controller', href: '/shop?sub=boost-controller' },
-      { label: 'Wiring Harnesses', href: '/shop?sub=wiring-harnesses' },
-      { label: 'Accessories', href: '/shop?sub=accessories-electronics' },
-    ],
-  },
-  {
     label: 'Exterior',
     href: '/shop?sub=exterior',
     hasMega: false,
@@ -109,6 +110,20 @@ export const navItems = [
     ],
   },
   {
+    label: 'Electronics',
+    href: '/shop?sub=electronics',
+    hasMega: false,
+    links: [
+      { label: 'ECU & Converters', href: '/shop?sub=ecu-converters' },
+      { label: 'Gauges', href: '/shop?sub=gauges' },
+      { label: 'Sensors', href: '/shop?sub=sensors' },
+      { label: 'Spark Plugs', href: '/shop?sub=spark-plugs' },
+      { label: 'Boost Controller', href: '/shop?sub=boost-controller' },
+      { label: 'Wiring Harnesses', href: '/shop?sub=wiring-harnesses' },
+      { label: 'Accessories', href: '/shop?sub=accessories-electronics' },
+    ],
+  },
+  {
     label: 'Cooling',
     href: '/shop?sub=cooling',
     hasMega: false,
@@ -120,21 +135,6 @@ export const navItems = [
       { label: 'Upper Coolant Housings', href: '/shop?sub=upper-coolant-housings' },
       { label: 'Water Pump & Plate Kits', href: '/shop?sub=water-plate-kits' },
       { label: 'Fans, Hose & Accessories', href: '/shop?sub=fans-shrouds-hose-accessories' },
-    ],
-  },
-  {
-    label: 'Interior',
-    href: '/shop?sub=interior',
-    hasMega: false,
-    links: [
-      { label: 'Steering Wheels', href: '/shop?sub=steering-wheels' },
-      { label: 'Seat & Rails', href: '/shop?sub=seat-rails' },
-      { label: 'Shift Knobs', href: '/shop?sub=shift-knobs' },
-      { label: 'Shifters', href: '/shop?sub=shifters' },
-      { label: 'Quick Release & Hub/Boss Kits', href: '/shop?sub=quick-release-hub-boss-kits' },
-      { label: 'Cables & Accessories', href: '/shop?sub=cables-accessories' },
-      { label: 'X Bar & Braces', href: '/shop?sub=x-bar-braces' },
-      { label: 'Accessories', href: '/shop?sub=accessories' },
     ],
   },
   {

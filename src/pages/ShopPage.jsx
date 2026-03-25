@@ -405,7 +405,7 @@ export default function ShopPage() {
       </CollapsibleSection>
 
       {/* Categories — hierarchical tree */}
-      <CollapsibleSection title="Categories">
+      <CollapsibleSection title="Categories" defaultOpen={!!subParam}>
         <div className="shop-cat-search-wrap">
           <Search size={13} className="shop-cat-search-icon" />
           <input
@@ -563,10 +563,12 @@ export default function ShopPage() {
       <div className="shop-page-header">
         <div className="container">
           <h1 className="shop-page-title">{pageTitle}</h1>
-          <p className="shop-page-count">
-            {activeBrands.length ? filtered.length : totalProducts} product{totalProducts !== 1 ? 's' : ''}
-            {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
-          </p>
+          {!loading && (
+            <p className="shop-page-count">
+              {activeBrands.length ? filtered.length : totalProducts} product{totalProducts !== 1 ? 's' : ''}
+              {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
+            </p>
+          )}
         </div>
       </div>
 
