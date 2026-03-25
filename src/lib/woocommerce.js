@@ -293,24 +293,13 @@ export async function searchProducts(query, count = 24) {
 }
 
 export async function getBrands() {
-  // Try WooCommerce Brands plugin first, then fall back to pa_brand attribute terms
-  try {
-    const brands = await wcFetch('/products/brands?per_page=100&orderby=name&order=asc&hide_empty=true');
-    if (Array.isArray(brands) && brands.length) return brands.map(b => b.name);
-  } catch (_) { /* plugin not installed */ }
-
-  try {
-    const attrs = await wcFetch('/products/attributes?per_page=100');
-    const brandAttr = attrs.find(a =>
-      ['pa_brand', 'brand', 'Brand', 'PA_Brand'].includes(a.slug) ||
-      ['pa_brand', 'brand', 'Brand', 'PA_Brand'].includes(a.name)
-    );
-    if (brandAttr) {
-      const terms = await wcFetch(`/products/attributes/${brandAttr.id}/terms?per_page=100&orderby=name&order=asc&hide_empty=true`);
-      return terms.map(t => t.name);
-    }
-  } catch (_) { /* no brand attribute */ }
-
+  // /wc/v3/brands (Perfect Brands plugin) — fetch both pages (116 total)
+  const [p1, p2] = await Promise.all([
+    wcFetch('/brands?per_page=100&page=1&orderby=name&order=asc'),
+    wcFetch('/brands?per_page=100&page=2&orderby=name&order=asc').catch(() => []),
+  ]);
+  const all = [...p1, ...p2];
+  if (all.length) return all.map(b => b.name);
   return [];
 }
 

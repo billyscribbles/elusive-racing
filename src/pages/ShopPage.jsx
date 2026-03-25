@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts, getBrands } from '../lib/woocommerce';
+import { getProducts } from '../lib/woocommerce';
 import { CATEGORIES, CATEGORIES_FLAT, getCategoryBySlug } from '../data/categories';
+import { BRAND_NAMES } from '../data/brands';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -207,15 +208,9 @@ export default function ShopPage() {
   const activeBrands   = parseList(brandsParam);
 
   const [products, setProducts]     = useState([]);
-  const [allBrands, setAllBrands]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
   const [apiTotalPages, setApiTotalPages] = useState(1);
-
-  // Fetch brands once on mount (categories are hardcoded)
-  useEffect(() => {
-    getBrands().then(setAllBrands).catch(() => {});
-  }, []);
 
   // Refetch products whenever any filter/sort/page changes
   useEffect(() => {
@@ -250,9 +245,7 @@ export default function ShopPage() {
     [products, brandsParam]
   );
 
-  const vendors = allBrands.length
-    ? allBrands
-    : [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
+  const vendors = BRAND_NAMES;
 
   const totalPages  = activeBrands.length ? Math.max(1, Math.ceil(filtered.length / perPageParam)) : apiTotalPages;
   const currentPage = pageParam;
