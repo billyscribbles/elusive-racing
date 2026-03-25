@@ -49,6 +49,25 @@ function parseList(str) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function SkeletonCard() {
+  return (
+    <div className="shop-product-card shop-product-card--skeleton">
+      <div className="shop-product-image-wrap">
+        <div className="skeleton-block skeleton-image" />
+      </div>
+      <div className="shop-product-info">
+        <div className="skeleton-block skeleton-brand" />
+        <div className="skeleton-block skeleton-name-1" />
+        <div className="skeleton-block skeleton-name-2" />
+        <div className="skeleton-block skeleton-price" />
+      </div>
+      <div className="shop-product-actions">
+        <div className="skeleton-block skeleton-btn" />
+      </div>
+    </div>
+  );
+}
+
 function buildPageNumbers(current, total) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages = new Set([1, total, current, current - 1, current + 1].filter((n) => n >= 1 && n <= total));
@@ -72,7 +91,7 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
   );
 }
 
-function ProductCard({ product }) {
+function ProductCard({ product, index = 0 }) {
   const { addItem, openCart } = useCartStore();
   const [added, setAdded] = useState(false);
 
@@ -90,7 +109,7 @@ function ProductCard({ product }) {
   }
 
   return (
-    <a href={product.href} className="shop-product-card">
+    <a href={product.href} className="shop-product-card shop-product-card--loaded" style={{ animationDelay: `${Math.min(index, 11) * 40}ms` }}>
       <div className="shop-product-image-wrap">
         {product.image
           ? <img src={product.image} alt={product.name} loading="lazy" className="shop-product-image" />
@@ -140,6 +159,7 @@ export default function ShopPage() {
   const brandsParam    = searchParams.get('brands')    ?? '';
   const subParam       = searchParams.get('sub')       ?? '';
   const saleParam      = searchParams.get('sale')      ?? '';
+  const instockParam   = searchParams.get('instock')   ?? '';
   const backorderParam = searchParams.get('backorder') ?? '';
   const sortParam      = searchParams.get('sort')      ?? 'best-selling';
   const minParam       = searchParams.get('min_price') ?? '';
@@ -171,6 +191,7 @@ export default function ShopPage() {
       category: catObj?.id ?? '',
       sort:     sortParam,
       onSale:   saleParam === '1',
+      inStock:  instockParam === '1',
       minPrice: minParam,
       maxPrice: maxParam,
     })
@@ -182,7 +203,7 @@ export default function ShopPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [qParam, subParam, saleParam, minParam, maxParam, sortParam, pageParam, perPageParam, categories.length]);
+  }, [qParam, subParam, saleParam, instockParam, minParam, maxParam, sortParam, pageParam, perPageParam, categories.length]);
 
   // Brand filter is client-side (WC has no native brand API param)
   const filtered = useMemo(
@@ -423,24 +444,6 @@ export default function ShopPage() {
     ? activeBrands[0]
     : 'Shop All Products';
 
-  if (loading) {
-    return (
-      <div className="shop-page">
-        <div className="shop-page-header">
-          <div className="container">
-            <h1 className="shop-page-title">Shop All Products</h1>
-          </div>
-        </div>
-        <div className="container shop-layout">
-          <aside className="shop-sidebar" />
-          <div className="shop-main">
-            <p style={{ color: 'var(--color-text-muted)', padding: '40px 0' }}>Loading products…</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="shop-page">
 
@@ -562,10 +565,10 @@ export default function ShopPage() {
 
           <div className="shop-product-grid">
             {loading
-              ? <p className="shop-no-results">Loading products…</p>
+              ? Array.from({ length: perPageParam }).map((_, i) => <SkeletonCard key={i} />)
               : paginated.length === 0
               ? <p className="shop-no-results">No products found. Try adjusting your filters.</p>
-              : paginated.map((p) => <ProductCard key={p.id} product={p} />)
+              : paginated.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
             }
           </div>
 
