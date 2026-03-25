@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart, CartCheckoutButton } from '@shopify/hydrogen-react';
+import { getCheckoutUrl } from '../lib/woocommerce';
 import { ArrowLeft, Lock, ShieldCheck, CreditCard, Truck, Store, Check } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
@@ -81,7 +81,7 @@ function MiniOrderSummary() {
 
 export default function PaymentPage() {
   const { items } = useCartStore();
-  const { checkoutUrl } = useCart();
+  const checkoutUrl = getCheckoutUrl();
   const navigate = useNavigate();
   const { contact } = useCheckoutStore();
   const [method, setMethod] = useState('card');
@@ -164,7 +164,7 @@ export default function PaymentPage() {
                     <input className="pp-input" placeholder="As it appears on your card" readOnly />
                   </div>
                   <p className="pp-card-note">
-                    <Lock size={12} /> Your payment details are entered securely on Shopify&apos;s checkout page.
+                    <Lock size={12} /> Your payment details are entered securely on our checkout page.
                   </p>
                 </div>
               )}
@@ -236,15 +236,9 @@ export default function PaymentPage() {
             <MiniOrderSummary />
 
             <div className="pp-cta">
-              {checkoutUrl ? (
-                <a href={checkoutUrl} className="pp-checkout-btn">
-                  <Lock size={15} /> Complete Order
-                </a>
-              ) : (
-                <CartCheckoutButton className="pp-checkout-btn">
-                  <Lock size={15} /> Complete Order
-                </CartCheckoutButton>
-              )}
+              <a href={checkoutUrl} className="pp-checkout-btn">
+                <Lock size={15} /> Complete Order
+              </a>
 
               <div className="pp-trust">
                 <span><ShieldCheck size={13} /> Secure Checkout</span>

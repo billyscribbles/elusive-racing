@@ -1,20 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Loader } from 'lucide-react';
-// import { searchProducts as shopifySearch } from '../../lib/shopify'; // TODO: re-enable when Shopify is connected
-import DUMMY_PRODUCTS from '../../lib/dummyProducts';
+import { searchProducts as wcSearch } from '../../lib/woocommerce';
 import './SearchBar.css';
 
-function searchProducts(query) {
-  const q = query.toLowerCase();
-  return Promise.resolve(
-    DUMMY_PRODUCTS.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        (p.sku && p.sku.toLowerCase().includes(q)) ||
-        p.tags.some((t) => t.toLowerCase().includes(q))
-    ).slice(0, 6)
-  );
+function mapResult(p) {
+  const price = parseFloat(p.priceRange?.minVariantPrice?.amount) || 0;
+  const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount) || 0;
+  return {
+    id: p.id,
+    name: p.title,
+    brand: p.vendor || '',
+    price,
+    originalPrice: compareAt > price ? compareAt : null,
+    image: p.featuredImage?.url ?? null,
+    href: `/products/${p.handle}`,
+  };
+}
+
+async function searchProducts(query) {
+  const results = await wcSearch(query, 6);
+  return results.map(mapResult);
 }
 
 export default function SearchBar() {

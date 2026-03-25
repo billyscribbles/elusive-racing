@@ -1,13 +1,25 @@
+import { useState, useEffect } from 'react';
 import useCartStore from '../../store/cartStore';
-import DUMMY_PRODUCTS from '../../lib/dummyProducts';
+import { getFeaturedProducts } from '../../lib/woocommerce';
 import './FeaturedProducts.css';
 
-// Show first 8 products — will be replaced with Shopify API data
-const products = DUMMY_PRODUCTS.slice(0, 8).map((p) => ({
-  ...p,
-  badge: p.originalPrice ? 'Sale' : p.backorder ? 'Backorder' : null,
-  badgeType: p.originalPrice ? 'sale' : p.backorder ? 'backorder' : null,
-}));
+function mapProduct(p) {
+  const price = parseFloat(p.priceRange.minVariantPrice.amount) || 0;
+  const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount) || 0;
+  const originalPrice = compareAt > price ? compareAt : null;
+  return {
+    id: p.id,
+    name: p.title,
+    brand: p.vendor || '',
+    price,
+    originalPrice,
+    image: p.featuredImage?.url ?? null,
+    href: `/products/${p.handle}`,
+    badge: originalPrice ? 'Sale' : p.stockStatus === 'onbackorder' ? 'Backorder' : null,
+    badgeType: originalPrice ? 'sale' : p.stockStatus === 'onbackorder' ? 'backorder' : null,
+    variantId: p.variants?.[0]?.id ?? null,
+  };
+}
 
 function ProductCard({ product }) {
   const addItem = useCartStore((s) => s.addItem);
@@ -20,7 +32,10 @@ function ProductCard({ product }) {
   return (
     <a href={product.href} className="product-card">
       <div className="product-image-wrap">
-        <img src={product.image} alt={product.name} loading="lazy" className="product-image" />
+        {product.image
+          ? <img src={product.image} alt={product.name} loading="lazy" className="product-image" />
+          : <div className="product-image-placeholder" />
+        }
         {product.badge && (
           <span className={`product-badge product-badge--${product.badgeType}`}>{product.badge}</span>
         )}
@@ -39,7 +54,10 @@ function ProductCard({ product }) {
         </div>
       </div>
       <div className="product-actions">
-        <button className="product-quick-add" onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(product); openCart(); }}>
+        <button
+          className="product-quick-add"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(product); openCart(); }}
+        >
           Add to Cart
         </button>
       </div>
@@ -48,6 +66,19 @@ function ProductCard({ product }) {
 }
 
 export default function FeaturedProducts() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getFeaturedProducts(8)
+      .then((data) => setProducts(data.map(mapProduct)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return null;
+  if (!products.length) return null;
+
   return (
     <section className="featured-products-section">
       <div className="container">

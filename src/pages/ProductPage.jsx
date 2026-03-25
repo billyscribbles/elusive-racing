@@ -1,16 +1,69 @@
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, Package, Tag } from 'lucide-react';
-import { useState } from 'react';
-import DUMMY_PRODUCTS from '../lib/dummyProducts';
+import { useState, useEffect } from 'react';
+import { getProductByHandle, getProducts } from '../lib/woocommerce';
 import useCartStore from '../store/cartStore';
 import './ProductPage.css';
+
+function mapProduct(p) {
+  const price = parseFloat(p.priceRange.minVariantPrice.amount) || 0;
+  const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount) || 0;
+  return {
+    id: p.id,
+    name: p.title,
+    brand: p.vendor || '',
+    sku: p.sku || '',
+    price,
+    originalPrice: compareAt > price ? compareAt : null,
+    image: p.featuredImage?.url ?? null,
+    href: `/products/${p.handle}`,
+    description: p.description || '',
+    tags: p.tags ?? [],
+    categories: p.categories ?? [],
+    variantId: p.variants?.[0]?.id ?? null,
+    backorder: p.stockStatus === 'onbackorder',
+    inStock: p.stockStatus === 'instock',
+  };
+}
 
 export default function ProductPage() {
   const { handle } = useParams();
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
+  const [product, setProduct] = useState(null);
+  const [related, setRelated] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const product = DUMMY_PRODUCTS.find((p) => p.href === `/products/${handle}`);
+  useEffect(() => {
+    setLoading(true);
+    getProductByHandle(handle)
+      .then((data) => {
+        const mapped = mapProduct(data);
+        setProduct(mapped);
+        // Fetch related from first category if available
+        const catId = data.categories?.[0]?.id;
+        return getProducts({ count: 5, ...(catId && { category: catId }) });
+      })
+      .then((data) => {
+        const mapped = (data.edges ?? [])
+          .map(({ node }) => mapProduct(node))
+          .filter((p) => p.href !== `/products/${handle}`)
+          .slice(0, 4);
+        setRelated(mapped);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [handle]);
+
+  if (loading) {
+    return (
+      <div className="product-page">
+        <div className="container">
+          <p style={{ color: 'var(--color-text-muted)', padding: '60px 0' }}>Loading product…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -107,31 +160,14 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* Vehicle Fitment */}
-            {product.vehicles?.length > 0 && (
-              <div className="product-page-section">
-                <h3 className="product-page-section-title">Vehicle Fitment</h3>
-                <div className="product-page-chips">
-                  {product.vehicles.map((v) => (
-                    <Link key={v} to={`/shop?vehicles=${encodeURIComponent(v)}`} className="product-page-chip product-page-chip--vehicle">
-                      {v}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Category */}
-            {(product.category || product.subcategory) && (
+            {/* Categories */}
+            {product.categories?.length > 0 && (
               <div className="product-page-section">
                 <h3 className="product-page-section-title">Category</h3>
                 <div className="product-page-chips">
-                  {product.category && (
-                    <Link to={`/shop`} className="product-page-chip">{product.category}</Link>
-                  )}
-                  {product.subcategory && (
-                    <Link to={`/shop?sub=${encodeURIComponent(product.subcategory)}`} className="product-page-chip">{product.subcategory}</Link>
-                  )}
+                  {product.categories.map((c) => (
+                    <Link key={c.id} to={`/shop?category=${c.handle}`} className="product-page-chip">{c.title}</Link>
+                  ))}
                 </div>
               </div>
             )}
@@ -153,13 +189,11 @@ export default function ProductPage() {
         </div>
 
         {/* Related products */}
-        <div className="product-related">
-          <h2 className="product-related-title">More from {product.brand}</h2>
-          <div className="product-related-grid">
-            {DUMMY_PRODUCTS
-              .filter((p) => p.brand === product.brand && p.id !== product.id)
-              .slice(0, 4)
-              .map((p) => {
+        {related.length > 0 && (
+          <div className="product-related">
+            <h2 className="product-related-title">Related Products</h2>
+            <div className="product-related-grid">
+              {related.map((p) => {
                 const rel_discount = p.originalPrice
                   ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
                   : null;
@@ -179,8 +213,9 @@ export default function ProductPage() {
                   </Link>
                 );
               })}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

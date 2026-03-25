@@ -1,50 +1,23 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { customerAccessTokenCreate } from '../lib/shopify';
+import { Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import './AccountPage.css';
 
-const TOKEN_KEY = 'shopify_customer_token';
+const WC_ACCOUNT_URL = `${import.meta.env.VITE_WC_URL}/my-account`;
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const redirect = new URLSearchParams(location.search).get('redirect') || '/my-account/dashboard';
-
   const [form, setForm] = useState({ email: '', password: '', remember: false });
   const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState('idle'); // idle | submitting | error
-  const [errorMsg, setErrorMsg] = useState('');
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    setStatus('submitting');
-    setErrorMsg('');
-
-    try {
-      const result = await customerAccessTokenCreate({ email: form.email, password: form.password });
-
-      if (result.customerUserErrors?.length) {
-        setErrorMsg(result.customerUserErrors[0].message);
-        setStatus('error');
-        return;
-      }
-
-      const { accessToken, expiresAt } = result.customerAccessToken;
-      const storage = form.remember ? localStorage : sessionStorage;
-      storage.setItem(TOKEN_KEY, accessToken);
-      storage.setItem(`${TOKEN_KEY}_expires`, expiresAt);
-
-      navigate(redirect);
-    } catch {
-      setErrorMsg('Something went wrong. Please try again.');
-      setStatus('error');
-    }
+    // Redirect to WooCommerce my-account for authentication
+    window.location.href = WC_ACCOUNT_URL;
   }
 
   return (

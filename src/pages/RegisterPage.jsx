@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { customerCreate, customerAccessTokenCreate } from '../lib/shopify';
 import './AccountPage.css';
 
-const TOKEN_KEY = 'shopify_customer_token';
+const WC_REGISTER_URL = `${import.meta.env.VITE_WC_URL}/my-account`;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -19,60 +18,16 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [status, setStatus] = useState('idle'); // idle | submitting | success | error
-  const [errorMsg, setErrorMsg] = useState('');
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    setErrorMsg('');
-
-    if (form.password !== form.confirmPassword) {
-      setErrorMsg('Passwords do not match.');
-      setStatus('error');
-      return;
-    }
-
-    if (form.password.length < 5) {
-      setErrorMsg('Password must be at least 5 characters.');
-      setStatus('error');
-      return;
-    }
-
-    setStatus('submitting');
-
-    try {
-      const result = await customerCreate({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        password: form.password,
-        acceptsMarketing: form.newsletter,
-      });
-
-      if (result.customerUserErrors?.length) {
-        setErrorMsg(result.customerUserErrors[0].message);
-        setStatus('error');
-        return;
-      }
-
-      // Auto-login after registration
-      const loginResult = await customerAccessTokenCreate({ email: form.email, password: form.password });
-      if (loginResult.customerAccessToken) {
-        const { accessToken, expiresAt } = loginResult.customerAccessToken;
-        localStorage.setItem(TOKEN_KEY, accessToken);
-        localStorage.setItem(`${TOKEN_KEY}_expires`, expiresAt);
-      }
-
-      setStatus('success');
-    } catch {
-      setErrorMsg('Something went wrong. Please try again.');
-      setStatus('error');
-    }
+    // Redirect to WooCommerce my-account for registration
+    window.location.href = WC_REGISTER_URL + '?action=register';
   }
 
   if (status === 'success') {

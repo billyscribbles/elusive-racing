@@ -99,7 +99,7 @@ export default function WholesalePage() {
     setStatus('submitting');
 
     // Wholesale applications are reviewed manually — no live API call yet.
-    // Replace this with your backend/Shopify wholesale flow when ready.
+    // Replace this with your backend/WooCommerce wholesale flow when ready.
     await new Promise((r) => setTimeout(r, 1200));
     setStatus('success');
   }

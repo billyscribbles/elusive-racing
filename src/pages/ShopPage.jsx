@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts } from '../lib/shopify';
-import DUMMY_PRODUCTS from '../lib/dummyProducts';
+import { getProducts } from '../lib/woocommerce';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -34,8 +33,8 @@ const VEHICLE_MODELS = [
 ];
 
 
-function mapShopifyProduct(node) {
-  const variant = node.variants?.edges[0]?.node;
+function mapProduct(node) {
+  const variant = node.variants?.[0];
   const price = parseFloat(node.priceRange.minVariantPrice.amount);
   const compareAt = parseFloat(node.compareAtPriceRange?.minVariantPrice?.amount ?? 0);
   const isBackorder = (node.tags ?? []).some((t) =>
@@ -45,7 +44,7 @@ function mapShopifyProduct(node) {
     id: node.id,
     name: node.title,
     brand: node.vendor,
-    sku: variant?.sku || '',
+    sku: node.sku || variant?.sku || '',
     price,
     originalPrice: compareAt > price ? compareAt : null,
     image: node.featuredImage?.url ?? null,
@@ -59,8 +58,6 @@ function mapShopifyProduct(node) {
     variantId: variant?.id ?? null,
   };
 }
-
-const DUMMY_VENDORS = [...new Set(DUMMY_PRODUCTS.map((p) => p.brand))].sort();
 
 const SORT_OPTIONS = [
   { label: 'Best Selling',    value: 'best-selling' },
@@ -212,18 +209,15 @@ export default function ShopPage() {
   const activeBrands   = parseList(brandsParam);
   const activeVehicles = parseList(vehiclesParam);
 
-  // Products: fetch from Shopify, fall back to dummy data
-  const [products, setProducts] = useState(DUMMY_PRODUCTS);
-  const [productsLoading, setProductsLoading] = useState(true);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    getProducts({ count: 250 })
+    getProducts({ count: 100 })
       .then((data) => {
-        const mapped = (data.edges ?? []).map(({ node }) => mapShopifyProduct(node));
-        if (mapped.length > 0) setProducts(mapped);
+        const mapped = (data.edges ?? []).map(({ node }) => mapProduct(node));
+        setProducts(mapped);
       })
-      .catch(() => {}) // keep dummy products on error
-      .finally(() => setProductsLoading(false));
+      .catch(() => {});
   }, []);
 
   const vendors = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
