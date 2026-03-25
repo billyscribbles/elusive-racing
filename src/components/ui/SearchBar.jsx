@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Loader } from 'lucide-react';
+import { Search, Loader2, X } from 'lucide-react';
 import { searchProducts as wcSearch } from '../../lib/woocommerce';
 import './SearchBar.css';
 
@@ -76,7 +76,7 @@ export default function SearchBar() {
         <Search className="search-icon" size={18} strokeWidth={2} />
         <input
           type="search"
-          className="search-input"
+          className={`search-input${loading ? ' search-input--loading' : ''}`}
           placeholder="Search products..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -84,7 +84,18 @@ export default function SearchBar() {
           onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
           autoComplete="off"
         />
-        {loading && <Loader className="search-spinner" size={15} strokeWidth={2} />}
+        {loading && <Loader2 className="search-spinner" size={17} strokeWidth={2} />}
+        {!loading && query.length > 0 && (
+          <button
+            type="button"
+            className="search-clear"
+            onClick={() => { setQuery(''); setResults([]); setOpen(false); }}
+            aria-label="Clear search"
+            tabIndex={-1}
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        )}
       </div>
 
       {open && (
