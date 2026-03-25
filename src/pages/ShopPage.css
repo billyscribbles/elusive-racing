@@ -195,8 +195,6 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
 }
 
 .shop-filter-check-list::-webkit-scrollbar { width: 3px; }
@@ -344,16 +342,57 @@
 /* ── Toolbar ── */
 .shop-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-.shop-toolbar-row {
+.shop-toolbar-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex: 1;
   flex-wrap: wrap;
+  min-width: 0;
+}
+
+.shop-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-light);
+  border-radius: 5px;
+}
+
+.shop-toolbar-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 36px;
+}
+
+.shop-toolbar-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.shop-toolbar-label {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--color-light);
+  white-space: nowrap;
 }
 
 .shop-filter-toggle {
@@ -390,65 +429,119 @@
 
 .shop-active-filters {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .shop-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  gap: 4px;
+  padding: 4px 8px 4px 10px;
+  background: var(--color-dark);
+  border: none;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-primary);
   font-weight: 600;
-  color: var(--color-dark);
+  color: #fff;
+  letter-spacing: 0.3px;
 }
 
 .shop-chip button {
   display: flex;
   align-items: center;
-  color: var(--color-light);
+  color: rgba(255,255,255,0.5);
   transition: color 0.15s;
+  margin-left: 2px;
 }
 
-.shop-chip button:hover { color: var(--color-red); }
+.shop-chip button:hover { color: #fff; }
 
-/* Sort */
-.shop-sort {}
+.shop-chip--sale { background: var(--color-red); }
 
-.shop-sort-select-wrap {
+/* Sort/per-page selects inside toolbar-control */
+/* ── Custom Dropdown ── */
+.dd {
   position: relative;
+}
+
+.dd-trigger {
   display: flex;
   align-items: center;
-}
-
-.shop-sort-select {
-  appearance: none;
-  padding: 9px 34px 9px 14px;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 15px;
+  gap: 6px;
+  height: 36px;
+  padding: 0 2px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
   font-family: var(--font-primary);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-dark);
   cursor: pointer;
+  white-space: nowrap;
   outline: none;
-  transition: border-color 0.2s;
+  min-width: 40px;
 }
 
-.shop-sort-select:focus { border-color: var(--color-red); }
+.dd-trigger:hover { color: var(--color-red); }
 
-.shop-sort-chevron {
-  position: absolute;
-  right: 11px;
-  pointer-events: none;
+.dd-chevron {
   color: var(--color-mid);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
 }
+
+.dd-chevron--open {
+  transform: rotate(180deg);
+}
+
+.dd-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  overflow: hidden;
+  z-index: 200;
+  animation: dd-open 0.14s ease;
+}
+
+@keyframes dd-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dd-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--color-mid);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+
+.dd-item:hover {
+  background: var(--color-bg);
+  color: var(--color-dark);
+}
+
+.dd-item--active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
 
 /* ── Product grid ── */
 .shop-product-grid {
@@ -742,57 +835,56 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 36px 0 8px;
-  flex-wrap: wrap;
-}
-
-.shop-toolbar-pagination {
-  display: flex;
-  align-items: center;
   gap: 4px;
+  padding: 40px 0 12px;
   flex-wrap: wrap;
 }
 
 .shop-page-btn {
-  min-width: 38px;
-  height: 38px;
-  padding: 0 10px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
   background: #fff;
   font-family: var(--font-primary);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-dark);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-mid);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
 .shop-page-btn:hover:not(:disabled):not(.active) {
   border-color: var(--color-dark);
-  background: var(--color-bg);
+  color: var(--color-dark);
 }
 
 .shop-page-btn.active {
-  background: var(--color-dark);
-  border-color: var(--color-dark);
+  background: var(--color-red);
+  border-color: var(--color-red);
   color: #fff;
 }
 
+.shop-page-btn--nav {
+  color: var(--color-dark);
+  border-color: var(--color-border);
+}
+
 .shop-page-btn--nav:disabled {
-  opacity: 0.3;
+  opacity: 0.25;
   cursor: not-allowed;
 }
 
 .shop-page-ellipsis {
   color: var(--color-light);
-  font-size: 15px;
-  padding: 0 2px;
-  line-height: 38px;
+  font-size: 13px;
+  padding: 0 4px;
+  line-height: 36px;
+  user-select: none;
 }
 
 /* ── Load More ── */
@@ -901,4 +993,13 @@
   .shop-product-name { font-size: 15px; }
   .shop-product-price { font-size: 17px; }
   .shop-page-title { font-size: 22px; }
+  .shop-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .shop-toolbar-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }

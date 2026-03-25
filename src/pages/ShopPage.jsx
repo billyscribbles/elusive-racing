@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts, getCollections } from '../lib/woocommerce';
+import { getProducts, getCollections, getBrands } from '../lib/woocommerce';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -78,7 +78,43 @@ function buildPageNumbers(current, total) {
   }, []);
 }
 
-function CollapsibleSection({ title, defaultOpen = true, children }) {
+function Dropdown({ value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const selected = options.find((o) => String(o.value) === String(value));
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div className="dd" ref={ref}>
+      <button className="dd-trigger" onClick={() => setOpen((o) => !o)}>
+        <span>{selected?.label ?? value}</span>
+        <ChevronDown size={12} className={`dd-chevron${open ? ' dd-chevron--open' : ''}`} />
+      </button>
+      {open && (
+        <div className="dd-menu">
+          {options.map((o) => (
+            <button
+              key={o.value}
+              className={`dd-item${String(o.value) === String(value) ? ' dd-item--active' : ''}`}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="shop-filter-section">
@@ -171,13 +207,15 @@ export default function ShopPage() {
 
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
+  const [allBrands, setAllBrands]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
   const [apiTotalPages, setApiTotalPages] = useState(1);
 
-  // Fetch categories once on mount
+  // Fetch categories and brands once on mount
   useEffect(() => {
     getCollections(100).then(setCategories).catch(() => {});
+    getBrands().then(setAllBrands).catch(() => {});
   }, []);
 
   // Refetch products whenever any filter/sort/page changes
@@ -213,7 +251,9 @@ export default function ShopPage() {
     [products, brandsParam]
   );
 
-  const vendors = useMemo(() => [...new Set(products.map((p) => p.brand).filter(Boolean))].sort(), [products]);
+  const vendors = allBrands.length
+    ? allBrands
+    : [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
 
   const totalPages  = activeBrands.length ? Math.max(1, Math.ceil(filtered.length / perPageParam)) : apiTotalPages;
   const currentPage = pageParam;
@@ -347,7 +387,7 @@ export default function ShopPage() {
 
       {/* Categories */}
       {categories.length > 0 && (
-        <CollapsibleSection title="Categories" defaultOpen>
+        <CollapsibleSection title="Categories">
           <div className="shop-filter-check-list">
             <label className="shop-filter-check">
               <input type="radio" name="cat" checked={!subParam} onChange={() => setParam('sub', '')} />
@@ -376,7 +416,7 @@ export default function ShopPage() {
 
       {/* Brand */}
       {vendors.length > 0 && (
-        <CollapsibleSection title="Brand" defaultOpen>
+        <CollapsibleSection title="Brand">
           <div className="shop-filter-check-list">
             {vendors.map((v) => (
               <label key={v} className="shop-filter-check">
@@ -467,98 +507,69 @@ export default function ShopPage() {
 
           {/* Toolbar */}
           <div className="shop-toolbar">
-            <button className="shop-filter-toggle" onClick={() => setDrawerOpen(true)}>
-              <SlidersHorizontal size={15} />
-              Filters
-              {totalActiveFilters > 0 && <span className="shop-filter-badge">{totalActiveFilters}</span>}
-            </button>
-
-            {totalPages > 1 && (
-              <div className="shop-toolbar-pagination">
-                <button
-                  className="shop-page-btn shop-page-btn--nav"
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft size={15} />
-                </button>
-
-                {buildPageNumbers(currentPage, totalPages).map((item, i) =>
-                  item === '...'
-                    ? <span key={`ellipsis-top-${i}`} className="shop-page-ellipsis">…</span>
-                    : <button
-                        key={item}
-                        className={`shop-page-btn${currentPage === item ? ' active' : ''}`}
-                        onClick={() => goToPage(item)}
-                      >
-                        {item}
-                      </button>
+            <div className="shop-toolbar-left">
+              <button className="shop-filter-toggle" onClick={() => setDrawerOpen(true)}>
+                <SlidersHorizontal size={15} />
+                Filters
+                {totalActiveFilters > 0 && <span className="shop-filter-badge">{totalActiveFilters}</span>}
+              </button>
+              <div className="shop-active-filters">
+                {qParam && (
+                  <span className="shop-chip">
+                    <Search size={10} />"{qParam}"
+                    <button onClick={() => removeChip('q')}><X size={10} /></button>
+                  </span>
                 )}
-
-                <button
-                  className="shop-page-btn shop-page-btn--nav"
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronDown size={15} style={{ transform: 'rotate(-90deg)' }} />
-                </button>
-              </div>
-            )}
-
-            <div className="shop-active-filters">
-              {qParam && (
-                <span className="shop-chip">
-                  <Search size={11} />"{qParam}"
-                  <button onClick={() => removeChip('q')}><X size={11} /></button>
-                </span>
-              )}
-              {subParam && (
-                <span className="shop-chip">
-                  {subParam}
-                  <button onClick={() => removeChip('sub')}><X size={11} /></button>
-                </span>
-              )}
-              {activeBrands.map((b) => (
-                <span key={b} className="shop-chip">
-                  {b}
-                  <button onClick={() => removeChip('brands', b)}><X size={11} /></button>
-                </span>
-              ))}
-              {(minParam || maxParam) && (
-                <span className="shop-chip">
-                  ${minParam || '0'} – ${maxParam || '∞'}
-                  <button onClick={() => { removeChip('min_price'); removeChip('max_price'); const p = Object.fromEntries(searchParams.entries()); delete p.min_price; delete p.max_price; setSearchParams(p); }}><X size={11} /></button>
-                </span>
-              )}
-              {saleParam && (
-                <span className="shop-chip shop-chip--sale">
-                  <Tag size={11} /> On Sale
-                  <button onClick={() => removeChip('sale')}><X size={11} /></button>
-                </span>
-              )}
-              {backorderParam && (
-                <span className="shop-chip shop-chip--backorder">
-                  Backorder
-                  <button onClick={() => removeChip('backorder')}><X size={11} /></button>
-                </span>
-              )}
-            </div>
-
-            <div className="shop-per-page">
-              <div className="shop-sort-select-wrap">
-                <select value={perPageParam} onChange={(e) => setPerPage(Number(e.target.value))} className="shop-sort-select">
-                  {[8, 12, 24, 48].map((n) => <option key={n} value={n}>{n} per page</option>)}
-                </select>
-                <ChevronDown size={14} className="shop-sort-chevron" />
+                {subParam && (
+                  <span className="shop-chip">
+                    {subParam}
+                    <button onClick={() => removeChip('sub')}><X size={10} /></button>
+                  </span>
+                )}
+                {activeBrands.map((b) => (
+                  <span key={b} className="shop-chip">
+                    {b}
+                    <button onClick={() => removeChip('brands', b)}><X size={10} /></button>
+                  </span>
+                ))}
+                {(minParam || maxParam) && (
+                  <span className="shop-chip">
+                    ${minParam || '0'} – ${maxParam || '∞'}
+                    <button onClick={() => { const p = Object.fromEntries(searchParams.entries()); delete p.min_price; delete p.max_price; setSearchParams(p); }}><X size={10} /></button>
+                  </span>
+                )}
+                {saleParam && (
+                  <span className="shop-chip shop-chip--sale">
+                    <Tag size={10} /> Sale
+                    <button onClick={() => removeChip('sale')}><X size={10} /></button>
+                  </span>
+                )}
+                {backorderParam && (
+                  <span className="shop-chip">
+                    Backorder
+                    <button onClick={() => removeChip('backorder')}><X size={10} /></button>
+                  </span>
+                )}
               </div>
             </div>
 
-            <div className="shop-sort">
-              <div className="shop-sort-select-wrap">
-                <select value={sortParam} onChange={(e) => setSort(e.target.value)} className="shop-sort-select">
-                  {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <ChevronDown size={14} className="shop-sort-chevron" />
+            <div className="shop-toolbar-right">
+              <div className="shop-toolbar-control">
+                <span className="shop-toolbar-label">Show</span>
+                <Dropdown
+                  value={perPageParam}
+                  options={[8, 12, 24, 48].map((n) => ({ value: n, label: String(n) }))}
+                  onChange={(v) => setPerPage(Number(v))}
+                />
+              </div>
+              <div className="shop-toolbar-divider" />
+              <div className="shop-toolbar-control">
+                <span className="shop-toolbar-label">Sort</span>
+                <Dropdown
+                  value={sortParam}
+                  options={SORT_OPTIONS}
+                  onChange={(v) => setSort(v)}
+                />
               </div>
             </div>
           </div>
