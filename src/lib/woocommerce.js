@@ -10,6 +10,19 @@ const STORE_BASE = `${WC_URL}/wp-json/wc/store/v1`;
 
 const authHeader = 'Basic ' + btoa(`${KEY}:${SECRET}`);
 
+// ── In-memory cache ───────────────────────────────────────────────────────────
+let _categoryCache = null;       // resolved array of WC category objects
+let _categoryCachePromise = null; // in-flight fetch (deduplicates concurrent callers)
+
+export async function getCachedCategories() {
+  if (_categoryCache) return _categoryCache;
+  if (_categoryCachePromise) return _categoryCachePromise;
+  _categoryCachePromise = wcFetch('/products/categories?per_page=100&hide_empty=true')
+    .then(cats => { _categoryCache = cats; _categoryCachePromise = null; return cats; })
+    .catch(() => { _categoryCachePromise = null; return []; });
+  return _categoryCachePromise;
+}
+
 async function wcFetch(endpoint, options = {}) {
   const res = await fetch(`${REST_BASE}${endpoint}`, {
     ...options,
@@ -121,18 +134,16 @@ const SORT_MAP = {
   'a-z':          { orderby: 'title',      order: 'asc'  },
 };
 
-// Resolve category IDs by searching taxonomy names for each word in a query
+// Resolve category IDs by matching cached category names against query words — no API call
 async function resolveCategoryIds(query) {
-  const words = [...new Set([query, ...query.trim().split(/\s+/).filter(w => w.length > 2)])];
-  const searches = await Promise.all(
-    words.map(w =>
-      wcFetch(`/products/categories?search=${encodeURIComponent(w)}&per_page=15&hide_empty=true`)
-        .catch(() => [])
-    )
-  );
+  const cats = await getCachedCategories();
+  const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 2);
   const seen = new Set();
-  return searches.flat().filter(c => {
-    if (seen.has(c.id)) return false;
+  return cats.filter(c => {
+    const name = c.name.toLowerCase();
+    const slug = c.slug.toLowerCase();
+    const matches = words.some(w => name.includes(w) || slug.includes(w));
+    if (!matches || seen.has(c.id)) return false;
     seen.add(c.id);
     return true;
   }).map(c => c.id);
@@ -238,13 +249,6 @@ async function fetchProductsForTerms(endpoint, termIds, perTerm = 8) {
 export async function searchProducts(query, count = 24) {
   const q = encodeURIComponent(query);
 
-  // For multi-word queries, also search individual words in taxonomies
-  // e.g. "pod filter" → also try "pod" and "filter" so "Intake Systems & Pod Filters" is found
-  const words = [...new Set(
-    query.trim().split(/\s+/).filter(w => w.length > 2)
-  )];
-  const catTerms = [query, ...words].filter((v, i, a) => a.indexOf(v) === i);
-
   const [byText, bySku, byTag, ...byCats] = await Promise.allSettled([
     // 1. Full-text search (title + description)
     wcFetch(`/products?search=${q}&per_page=${count}`),
@@ -259,14 +263,9 @@ export async function searchProducts(query, count = 24) {
         : []
       ),
 
-    // 4. Category search — one request per term (full phrase + individual words)
-    ...catTerms.map(term =>
-      wcFetch(`/products/categories?search=${encodeURIComponent(term)}&per_page=15&hide_empty=true`)
-        .then(cats => cats.length
-          ? fetchProductsForTerms('category', cats.map(c => c.id), 8)
-          : []
-        )
-        .catch(() => [])
+    // 4. Category match — resolved from cache, no extra API round-trip
+    resolveCategoryIds(query).then(ids =>
+      ids.length ? fetchProductsForTerms('category', ids, 8) : []
     ),
   ]);
 
