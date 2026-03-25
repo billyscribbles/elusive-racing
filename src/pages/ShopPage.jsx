@@ -217,15 +217,16 @@ export default function ShopPage() {
     setLoading(true);
     const catObj = getCategoryBySlug(subParam);
     getProducts({
-      query:    qParam,
-      count:    perPageParam,
-      page:     pageParam,
-      category: catObj?.id ?? '',
-      sort:     sortParam,
-      onSale:   saleParam === '1',
-      inStock:  instockParam === '1',
-      minPrice: minParam,
-      maxPrice: maxParam,
+      query:      qParam,
+      count:      perPageParam,
+      page:       pageParam,
+      category:   catObj?.id ?? '',
+      brandNames: activeBrands,
+      sort:       sortParam,
+      onSale:     saleParam === '1',
+      inStock:    instockParam === '1',
+      minPrice:   minParam,
+      maxPrice:   maxParam,
     })
       .then((data) => {
         const mapped = (data.edges ?? []).map(({ node }) => mapProduct(node));
@@ -235,23 +236,15 @@ export default function ShopPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [qParam, subParam, saleParam, instockParam, minParam, maxParam, sortParam, pageParam, perPageParam]);
+  }, [qParam, subParam, brandsParam, saleParam, instockParam, minParam, maxParam, sortParam, pageParam, perPageParam]);
 
-  // Brand filter is client-side (WC has no native brand API param)
-  const filtered = useMemo(
-    () => activeBrands.length
-      ? products.filter((p) => activeBrands.includes(p.brand))
-      : products,
-    [products, brandsParam]
-  );
+  const filtered = useMemo(() => products, [products]);
 
   const vendors = BRAND_NAMES;
 
-  const totalPages  = activeBrands.length ? Math.max(1, Math.ceil(filtered.length / perPageParam)) : apiTotalPages;
+  const totalPages  = apiTotalPages;
   const currentPage = pageParam;
-  const paginated   = activeBrands.length
-    ? filtered.slice((currentPage - 1) * perPageParam, currentPage * perPageParam)
-    : filtered;
+  const paginated   = filtered;
 
   // Uncontrolled ref for search — avoids re-rendering on every keystroke
   const searchInputRef = useRef(null);
@@ -492,9 +485,6 @@ export default function ShopPage() {
                   onChange={() => toggleBrand(v)}
                 />
                 <span>{v}</span>
-                <span className="shop-filter-count">
-                  ({products.filter((p) => p.brand === v).length})
-                </span>
               </label>
             ))}
           </div>
@@ -558,7 +548,7 @@ export default function ShopPage() {
           <h1 className="shop-page-title">{pageTitle}</h1>
           {!loading && (
             <p className="shop-page-count">
-              {activeBrands.length ? filtered.length : totalProducts} product{totalProducts !== 1 ? 's' : ''}
+              {totalProducts} product{totalProducts !== 1 ? 's' : ''}
               {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
             </p>
           )}

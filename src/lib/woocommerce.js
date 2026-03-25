@@ -2,6 +2,8 @@
 // REST API (/wc/v3) — authenticated, used for products/categories (read)
 // Store API (/wc/store/v1) — no auth, used for cart (session-cookie based)
 
+import { BRANDS } from '../data/brands.js';
+
 const WC_URL = import.meta.env.VITE_WC_URL;
 const KEY = import.meta.env.VITE_WC_CONSUMER_KEY;
 const SECRET = import.meta.env.VITE_WC_CONSUMER_SECRET;
@@ -141,6 +143,18 @@ const SORT_MAP = {
   'a-z':          { orderby: 'title',      order: 'asc'  },
 };
 
+// Resolve brand names matching query words — synchronous, no API call
+function resolveBrandNames(query) {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
+  return BRANDS
+    .filter(b => {
+      const name = b.name.toLowerCase();
+      const slug = b.slug.toLowerCase();
+      return words.some(w => name.includes(w) || slug.includes(w));
+    })
+    .map(b => b.name);
+}
+
 // Resolve category IDs by matching cached category names against query words — no API call
 async function resolveCategoryIds(query) {
   const cats = await getCachedCategories();
@@ -161,6 +175,7 @@ export async function getProducts({
   count = 24,
   page = 1,
   category = '',
+  brandNames = [],   // array of brand name strings
   sort = 'best-selling',
   onSale = false,
   minPrice = '',
@@ -168,16 +183,56 @@ export async function getProducts({
 } = {}) {
   const { orderby, order } = SORT_MAP[sort] ?? SORT_MAP['best-selling'];
 
+  // When multiple brands selected, run one request per brand and merge
+  if (brandNames.length > 1) {
+    const perBrand = Math.ceil((count * 2) / brandNames.length);
+    const batches = await Promise.all(
+      brandNames.map(brand => {
+        const searchTerm = query ? `${brand} ${query}` : brand;
+        const p = new URLSearchParams({
+          search: searchTerm,
+          per_page: perBrand,
+          page,
+          orderby,
+          order,
+          ...(category && { category }),
+          ...(onSale   && { on_sale: 'true' }),
+          ...(minPrice && { min_price: minPrice }),
+          ...(maxPrice && { max_price: maxPrice }),
+        });
+        return wcFetch(`/products?${p}`).catch(() => []);
+      })
+    );
+    const seen = new Set();
+    const merged = batches.flat().filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+    const slice = merged.slice((page - 1) * count, page * count);
+    return {
+      edges: slice.map(p => ({ node: normalizeProduct(p) })),
+      total: merged.length,
+      totalPages: Math.max(1, Math.ceil(merged.length / count)),
+      pageInfo: { hasNextPage: page * count < merged.length },
+    };
+  }
+
+  // Single brand: combine brand name with text query into search param
+  const searchTerm = brandNames.length === 1
+    ? (query ? `${brandNames[0]} ${query}` : brandNames[0])
+    : query;
+
   const params = new URLSearchParams({
     per_page: Math.min(count, 100),
     page,
     orderby,
     order,
-    ...(query    && { search: query }),
-    ...(category && { category }),
-    ...(onSale   && { on_sale: 'true' }),
-    ...(minPrice && { min_price: minPrice }),
-    ...(maxPrice && { max_price: maxPrice }),
+    ...(searchTerm && { search: searchTerm }),
+    ...(category   && { category }),
+    ...(onSale     && { on_sale: 'true' }),
+    ...(minPrice   && { min_price: minPrice }),
+    ...(maxPrice   && { max_price: maxPrice }),
   });
 
   let raw        = await wcFetch(`/products?${params}`);
@@ -185,10 +240,9 @@ export async function getProducts({
   let totalPages = raw.__totalPages;
 
   // If text search returned nothing, expand to category/tag name matching
-  if (query && raw.length === 0) {
+  if (query && !brandNames.length && raw.length === 0) {
     const catIds = await resolveCategoryIds(query);
     if (catIds.length) {
-      // Fetch from each matching category and merge, honouring page/count
       const perCat = Math.ceil((count * 2) / catIds.length);
       const batches = await Promise.all(
         catIds.map(id => {
@@ -256,7 +310,10 @@ async function fetchProductsForTerms(endpoint, termIds, perTerm = 8) {
 export async function searchProducts(query, count = 24) {
   const q = encodeURIComponent(query);
 
-  const [byText, bySku, byTag, ...byCats] = await Promise.allSettled([
+  // Brand name matches — synchronous, no API call
+  const matchedBrands = resolveBrandNames(query);
+
+  const [byText, bySku, byTag, ...rest] = await Promise.allSettled([
     // 1. Full-text search (title + description)
     wcFetch(`/products?search=${q}&per_page=${count}`),
 
@@ -274,16 +331,21 @@ export async function searchProducts(query, count = 24) {
     resolveCategoryIds(query).then(ids =>
       ids.length ? fetchProductsForTerms('category', ids, 8) : []
     ),
+
+    // 5. Brand name match — search by brand name as text
+    ...matchedBrands.map(brand =>
+      wcFetch(`/products?search=${encodeURIComponent(brand)}&per_page=8`).catch(() => [])
+    ),
   ]);
 
-  const textResults = byText.status === 'fulfilled' ? byText.value : [];
-  const skuResults  = bySku.status  === 'fulfilled' ? bySku.value  : [];
-  const tagResults  = byTag.status  === 'fulfilled' ? byTag.value  : [];
-  const catResults  = byCats.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+  const textResults  = byText.status === 'fulfilled' ? byText.value : [];
+  const skuResults   = bySku.status  === 'fulfilled' ? bySku.value  : [];
+  const tagResults   = byTag.status  === 'fulfilled' ? byTag.value  : [];
+  const otherResults = rest.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
-  // Priority: SKU exact → text match → tag/category match
+  // Priority: SKU exact → text match → tag/category/brand match
   const seen = new Set();
-  const merged = [...skuResults, ...textResults, ...tagResults, ...catResults].filter(p => {
+  const merged = [...skuResults, ...textResults, ...tagResults, ...otherResults].filter(p => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
     return true;
