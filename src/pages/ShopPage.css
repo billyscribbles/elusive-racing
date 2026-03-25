@@ -648,8 +648,71 @@
 .shop-quick-add:hover { background: var(--color-red); }
 .shop-quick-add--added { background: #1a6e2e !important; }
 
-/* Skeleton */
-.shop-product-card--skeleton { pointer-events: none; }
+/* ── Skeleton ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #e8e8e8 25%, #f4f4f4 50%, #e8e8e8 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 4px;
+}
+
+.shop-product-card--skeleton {
+  pointer-events: none;
+}
+
+.shop-product-card--skeleton .shop-product-image-wrap {
+  background: transparent;
+}
+
+.skeleton-image {
+  width: 100%;
+  aspect-ratio: 4/3;
+}
+
+.skeleton-brand {
+  height: 11px;
+  width: 55px;
+  margin-bottom: 10px;
+}
+
+.skeleton-name-1 {
+  height: 14px;
+  width: 90%;
+  margin-bottom: 6px;
+}
+
+.skeleton-name-2 {
+  height: 14px;
+  width: 65%;
+  margin-bottom: 14px;
+}
+
+.skeleton-price {
+  height: 20px;
+  width: 70px;
+  margin-top: auto;
+}
+
+.skeleton-btn {
+  height: 36px;
+  width: 100%;
+  border-radius: 3px;
+}
+
+/* Fade-in when real products appear */
+.shop-product-card--loaded {
+  animation: fadeInUp 0.3s ease both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 .skeleton-block {
   background: linear-gradient(90deg, #ebebeb 25%, #f5f5f5 50%, #ebebeb 75%);
