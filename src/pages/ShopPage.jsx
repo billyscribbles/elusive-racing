@@ -2,59 +2,32 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts } from '../lib/woocommerce';
+import { getProducts, getCollections } from '../lib/woocommerce';
 import './ShopPage.css';
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
-const CATEGORY_TREE = [
-  {
-    label: 'Engine',
-    sub: ['Chains, Belts & Tensioners', 'Gaskets', 'Mounts', 'Oil & Water Pumps', 'Accessories'],
-  },
-  {
-    label: 'Drivetrain',
-    sub: ['Mounts', 'Bearings & Seals', 'Gears & Final Drive', 'Synchros', 'Accessories'],
-  },
-  {
-    label: 'Body & Accessories',
-    sub: ['Exterior', 'Interior', 'Engine Bay', 'Accessories'],
-  },
-];
-
-const VEHICLE_MODELS = [
-  'Civic EK (96–00)',
-  'Civic EG (92–95)',
-  'Civic FD2/FN2 (06–11)',
-  'Integra DC2 (94–01)',
-  'Integra DC5 (02–06)',
-  'Accord CL9 (03–07)',
-  'S2000 AP1/AP2',
-];
-
 
 function mapProduct(node) {
   const variant = node.variants?.[0];
-  const price = parseFloat(node.priceRange.minVariantPrice.amount);
+  const price = parseFloat(node.priceRange.minVariantPrice.amount) || 0;
   const compareAt = parseFloat(node.compareAtPriceRange?.minVariantPrice?.amount ?? 0);
-  const isBackorder = (node.tags ?? []).some((t) =>
-    t.toLowerCase().includes('backorder')
-  );
+  const isBackorder = node.stockStatus === 'onbackorder' ||
+    (node.tags ?? []).some((t) => t.toLowerCase().includes('backorder'));
   return {
     id: node.id,
     name: node.title,
-    brand: node.vendor,
-    sku: node.sku || variant?.sku || '',
+    brand: node.vendor || '',
+    sku: node.sku || '',
     price,
     originalPrice: compareAt > price ? compareAt : null,
     image: node.featuredImage?.url ?? null,
     href: `/products/${node.handle}`,
     description: node.description || '',
-    category: 'General',
-    subcategory: null,
-    vehicles: [],
+    categories: node.categories ?? [],
     tags: node.tags ?? [],
     backorder: isBackorder,
+    dateCreated: node.dateCreated || '',
     variantId: variant?.id ?? null,
   };
 }
@@ -73,34 +46,6 @@ function parseList(str) {
   return str ? str.split(',').map((s) => s.trim()).filter(Boolean) : [];
 }
 
-function filterAndSort(products, { q, brands, sub, vehicles, model, minPrice, maxPrice, sale, backorder, sort }) {
-  let result = [...products];
-
-  if (q) {
-    const lower = q.toLowerCase();
-    result = result.filter((p) =>
-      p.name.toLowerCase().includes(lower) ||
-      p.brand.toLowerCase().includes(lower) ||
-      p.sku.toLowerCase().includes(lower) ||
-      p.description.toLowerCase().includes(lower) ||
-      p.tags.some((t) => t.toLowerCase().includes(lower))
-    );
-  }
-  if (brands.length)   result = result.filter((p) => brands.includes(p.brand));
-  if (sub)             result = result.filter((p) => p.subcategory === sub);
-  if (vehicles.length) result = result.filter((p) => p.vehicles.some((v) => vehicles.includes(v)));
-  if (model)           result = result.filter((p) => p.vehicles.some((v) => v.toLowerCase() === model.toLowerCase()));
-  if (sale)            result = result.filter((p) => p.originalPrice !== null);
-  if (backorder)       result = result.filter((p) => p.backorder === true);
-  if (minPrice)        result = result.filter((p) => p.price >= parseFloat(minPrice));
-  if (maxPrice)        result = result.filter((p) => p.price <= parseFloat(maxPrice));
-
-  if (sort === 'price-asc')  result.sort((a, b) => a.price - b.price);
-  if (sort === 'price-desc') result.sort((a, b) => b.price - a.price);
-  if (sort === 'a-z')        result.sort((a, b) => a.name.localeCompare(b.name));
-
-  return result;
-}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -191,13 +136,9 @@ function ProductCard({ product }) {
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const qParam        = searchParams.get('q')         ?? '';
-  const brandsParam   = searchParams.get('brands')    ?? '';
-  const subParam      = searchParams.get('sub')       ?? '';
-  const vehiclesParam = searchParams.get('vehicles')  ?? '';
-  const makeParam     = searchParams.get('make')      ?? '';
-  const modelParam    = searchParams.get('model')     ?? '';
-  const yearParam     = searchParams.get('year')      ?? '';
+  const qParam         = searchParams.get('q')         ?? '';
+  const brandsParam    = searchParams.get('brands')    ?? '';
+  const subParam       = searchParams.get('sub')       ?? '';
   const saleParam      = searchParams.get('sale')      ?? '';
   const backorderParam = searchParams.get('backorder') ?? '';
   const sortParam      = searchParams.get('sort')      ?? 'best-selling';
@@ -207,52 +148,68 @@ export default function ShopPage() {
   const perPageParam   = parseInt(searchParams.get('per_page') ?? '12', 10);
 
   const activeBrands   = parseList(brandsParam);
-  const activeVehicles = parseList(vehiclesParam);
 
-  const [products, setProducts] = useState([]);
+  const [products, setProducts]     = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [apiTotalPages, setApiTotalPages] = useState(1);
 
+  // Fetch categories once on mount
   useEffect(() => {
-    getProducts({ count: 100 })
+    getCollections(100).then(setCategories).catch(() => {});
+  }, []);
+
+  // Refetch products whenever any filter/sort/page changes
+  useEffect(() => {
+    setLoading(true);
+    const catObj = categories.find((c) => c.handle === subParam);
+    getProducts({
+      query:    qParam,
+      count:    perPageParam,
+      page:     pageParam,
+      category: catObj?.id ?? '',
+      sort:     sortParam,
+      onSale:   saleParam === '1',
+      minPrice: minParam,
+      maxPrice: maxParam,
+    })
       .then((data) => {
         const mapped = (data.edges ?? []).map(({ node }) => mapProduct(node));
         setProducts(mapped);
+        setTotalProducts(data.total ?? 0);
+        setApiTotalPages(data.totalPages ?? 1);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [qParam, subParam, saleParam, minParam, maxParam, sortParam, pageParam, perPageParam, categories.length]);
 
-  const vendors = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
+  // Brand filter is client-side (WC has no native brand API param)
+  const filtered = useMemo(
+    () => activeBrands.length
+      ? products.filter((p) => activeBrands.includes(p.brand))
+      : products,
+    [products, brandsParam]
+  );
 
-  // Uncontrolled ref for search — avoids re-rendering ShopPage on every keystroke
+  const vendors = useMemo(() => [...new Set(products.map((p) => p.brand).filter(Boolean))].sort(), [products]);
+
+  const totalPages  = activeBrands.length ? Math.max(1, Math.ceil(filtered.length / perPageParam)) : apiTotalPages;
+  const currentPage = pageParam;
+  const paginated   = activeBrands.length
+    ? filtered.slice((currentPage - 1) * perPageParam, currentPage * perPageParam)
+    : filtered;
+
+  // Uncontrolled ref for search — avoids re-rendering on every keystroke
   const searchInputRef = useRef(null);
   const [localMin,    setLocalMin]    = useState(minParam);
   const [localMax,    setLocalMax]    = useState(maxParam);
   const [drawerOpen,  setDrawerOpen]  = useState(false);
 
-  // Sync input value when URL changes (e.g. clear all, navigate with ?q=)
   useEffect(() => {
     if (searchInputRef.current) searchInputRef.current.value = qParam;
   }, [qParam]);
   useEffect(() => { setLocalMin(minParam); setLocalMax(maxParam); }, [minParam, maxParam]);
-
-  const filtered = useMemo(
-    () => filterAndSort(products, {
-      q: qParam,
-      brands: activeBrands,
-      sub: subParam,
-      vehicles: activeVehicles,
-      model: modelParam,
-      minPrice: minParam,
-      maxPrice: maxParam,
-      sale: saleParam === '1',
-      backorder: backorderParam === '1',
-      sort: sortParam,
-    }),
-    [products, qParam, brandsParam, subParam, vehiclesParam, modelParam, minParam, maxParam, saleParam, backorderParam, sortParam]
-  );
-
-  const totalPages  = Math.max(1, Math.ceil(filtered.length / perPageParam));
-  const currentPage = Math.min(pageParam, totalPages);
-  const paginated   = filtered.slice((currentPage - 1) * perPageParam, currentPage * perPageParam);
 
   function setParam(key, value) {
     const p = Object.fromEntries(searchParams.entries());
@@ -280,13 +237,6 @@ export default function ShopPage() {
       ? activeBrands.filter((b) => b !== brand)
       : [...activeBrands, brand];
     setParam('brands', next.join(','));
-  }
-
-  function toggleVehicle(v) {
-    const next = activeVehicles.includes(v)
-      ? activeVehicles.filter((x) => x !== v)
-      : [...activeVehicles, v];
-    setParam('vehicles', next.join(','));
   }
 
   function toggleParam(key) {
@@ -329,9 +279,6 @@ export default function ShopPage() {
     if (key === 'brands') {
       const next = parseList(params.brands).filter((b) => b !== value);
       if (next.length) params.brands = next.join(','); else delete params.brands;
-    } else if (key === 'vehicles') {
-      const next = parseList(params.vehicles).filter((v) => v !== value);
-      if (next.length) params.vehicles = next.join(','); else delete params.vehicles;
     } else {
       delete params[key];
     }
@@ -339,13 +286,8 @@ export default function ShopPage() {
   }
 
   const totalActiveFilters =
-    activeBrands.length + activeVehicles.length +
-    [subParam, minParam || maxParam, saleParam, backorderParam, qParam, makeParam, modelParam, yearParam].filter(Boolean).length;
-
-  // Count products per subcategory for badges
-  function subCount(sub) {
-    return products.filter((p) => p.subcategory === sub).length;
-  }
+    activeBrands.length +
+    [subParam, minParam || maxParam, saleParam, backorderParam, qParam].filter(Boolean).length;
 
   const FilterPanel = () => (
     <div className="shop-filter-panel">
@@ -383,58 +325,54 @@ export default function ShopPage() {
       </CollapsibleSection>
 
       {/* Categories */}
-      <CollapsibleSection title="Categories" defaultOpen>
-        <div className="shop-cat-tree">
-          {CATEGORY_TREE.map((cat) => (
-            <CategoryNode
-              key={cat.label}
-              cat={cat}
-              activeSub={subParam}
-              onSelect={(val) => setParam('sub', val)}
-              subCount={subCount}
-            />
-          ))}
-        </div>
-      </CollapsibleSection>
+      {categories.length > 0 && (
+        <CollapsibleSection title="Categories" defaultOpen>
+          <div className="shop-filter-check-list">
+            <label className="shop-filter-check">
+              <input type="radio" name="cat" checked={!subParam} onChange={() => setParam('sub', '')} />
+              <span>All Categories</span>
+              <span className="shop-filter-count">({products.length})</span>
+            </label>
+            {categories.map((cat) => {
+              const count = products.filter((p) => p.categories.some((c) => c.handle === cat.handle)).length;
+              if (count === 0) return null;
+              return (
+                <label key={cat.id} className="shop-filter-check">
+                  <input
+                    type="radio"
+                    name="cat"
+                    checked={subParam === cat.handle}
+                    onChange={() => setParam('sub', subParam === cat.handle ? '' : cat.handle)}
+                  />
+                  <span>{cat.title}</span>
+                  <span className="shop-filter-count">({count})</span>
+                </label>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {/* Brand */}
-      <CollapsibleSection title="Brand" defaultOpen>
-        <div className="shop-filter-check-list">
-          {vendors.map((v) => (
-            <label key={v} className="shop-filter-check">
-              <input
-                type="checkbox"
-                checked={activeBrands.includes(v)}
-                onChange={() => toggleBrand(v)}
-              />
-              <span>{v}</span>
-              <span className="shop-filter-count">
-                ({products.filter((p) => p.brand === v).length})
-              </span>
-            </label>
-          ))}
-        </div>
-      </CollapsibleSection>
-
-      {/* Vehicle */}
-      <CollapsibleSection title="Vehicle Model" defaultOpen={false}>
-        <div className="shop-filter-check-list">
-          {VEHICLE_MODELS.map((v) => {
-            const count = products.filter((p) => p.vehicles.includes(v)).length;
-            return (
+      {vendors.length > 0 && (
+        <CollapsibleSection title="Brand" defaultOpen>
+          <div className="shop-filter-check-list">
+            {vendors.map((v) => (
               <label key={v} className="shop-filter-check">
                 <input
                   type="checkbox"
-                  checked={activeVehicles.includes(v)}
-                  onChange={() => toggleVehicle(v)}
+                  checked={activeBrands.includes(v)}
+                  onChange={() => toggleBrand(v)}
                 />
                 <span>{v}</span>
-                <span className="shop-filter-count">({count})</span>
+                <span className="shop-filter-count">
+                  ({products.filter((p) => p.brand === v).length})
+                </span>
               </label>
-            );
-          })}
-        </div>
-      </CollapsibleSection>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {/* Price */}
       <CollapsibleSection title="Price Range" defaultOpen={false}>
@@ -479,9 +417,29 @@ export default function ShopPage() {
 
   const pageTitle = qParam
     ? `Search: "${qParam}"`
-    : subParam || activeBrands.length === 1
-    ? subParam || activeBrands[0]
+    : subParam
+    ? (categories.find((c) => c.handle === subParam)?.title ?? subParam)
+    : activeBrands.length === 1
+    ? activeBrands[0]
     : 'Shop All Products';
+
+  if (loading) {
+    return (
+      <div className="shop-page">
+        <div className="shop-page-header">
+          <div className="container">
+            <h1 className="shop-page-title">Shop All Products</h1>
+          </div>
+        </div>
+        <div className="container shop-layout">
+          <aside className="shop-sidebar" />
+          <div className="shop-main">
+            <p style={{ color: 'var(--color-text-muted)', padding: '40px 0' }}>Loading products…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="shop-page">
@@ -490,7 +448,7 @@ export default function ShopPage() {
         <div className="container">
           <h1 className="shop-page-title">{pageTitle}</h1>
           <p className="shop-page-count">
-            {filtered.length} product{filtered.length !== 1 ? 's' : ''}
+            {activeBrands.length ? filtered.length : totalProducts} product{totalProducts !== 1 ? 's' : ''}
             {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
           </p>
         </div>
@@ -563,30 +521,6 @@ export default function ShopPage() {
                   <button onClick={() => removeChip('brands', b)}><X size={11} /></button>
                 </span>
               ))}
-              {activeVehicles.map((v) => (
-                <span key={v} className="shop-chip">
-                  {v}
-                  <button onClick={() => removeChip('vehicles', v)}><X size={11} /></button>
-                </span>
-              ))}
-              {makeParam && (
-                <span className="shop-chip shop-chip--vehicle">
-                  {makeParam}
-                  <button onClick={() => removeChip('make')}><X size={11} /></button>
-                </span>
-              )}
-              {modelParam && (
-                <span className="shop-chip shop-chip--vehicle">
-                  {modelParam}
-                  <button onClick={() => removeChip('model')}><X size={11} /></button>
-                </span>
-              )}
-              {yearParam && (
-                <span className="shop-chip shop-chip--vehicle">
-                  {yearParam}
-                  <button onClick={() => removeChip('year')}><X size={11} /></button>
-                </span>
-              )}
               {(minParam || maxParam) && (
                 <span className="shop-chip">
                   ${minParam || '0'} – ${maxParam || '∞'}
@@ -627,7 +561,9 @@ export default function ShopPage() {
           </div>
 
           <div className="shop-product-grid">
-            {filtered.length === 0
+            {loading
+              ? <p className="shop-no-results">Loading products…</p>
+              : paginated.length === 0
               ? <p className="shop-no-results">No products found. Try adjusting your filters.</p>
               : paginated.map((p) => <ProductCard key={p.id} product={p} />)
             }
@@ -683,29 +619,3 @@ export default function ShopPage() {
   );
 }
 
-function CategoryNode({ cat, activeSub, onSelect, subCount }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="shop-cat-node">
-      <button className="shop-cat-parent" onClick={() => setOpen((o) => !o)}>
-        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-        <span>{cat.label}</span>
-      </button>
-      {open && (
-        <ul className="shop-cat-children">
-          {cat.sub.map((s) => (
-            <li key={s}>
-              <button
-                className={`shop-cat-child${activeSub === s ? ' active' : ''}`}
-                onClick={() => onSelect(activeSub === s ? '' : s)}
-              >
-                <span>{s}</span>
-                <span className="shop-cat-count">{subCount(s)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}

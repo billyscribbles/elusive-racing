@@ -20,7 +20,11 @@ async function wcFetch(endpoint, options = {}) {
     },
   });
   if (!res.ok) throw new Error(`WooCommerce API error: ${res.status} ${endpoint}`);
-  return res.json();
+  const data = await res.json();
+  // Attach pagination totals from WC headers
+  data.__total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+  data.__totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+  return data;
 }
 
 async function storeFetch(path, options = {}) {
@@ -40,16 +44,21 @@ async function storeFetch(path, options = {}) {
 
 // Normalize a WC product into a shape similar to what the app expects
 function normalizeProduct(p) {
+  const brand = p.brands?.[0]?.name
+    ?? p.attributes?.find(a => ['brand', 'pa_brand', 'Brand', 'PA_Brand'].includes(a.name))?.options?.[0]
+    ?? '';
+
   return {
     id: String(p.id),
     title: p.name,
     handle: p.slug,
-    vendor: p.brands?.[0]?.name ?? p.tags?.find(t => t.name)?.name ?? '',
+    vendor: brand,
     description: p.short_description?.replace(/<[^>]+>/g, '') ?? '',
     descriptionHtml: p.description ?? '',
     sku: p.sku,
     onSale: p.on_sale,
-    stockStatus: p.stock_status, // 'instock' | 'outofstock' | 'onbackorder'
+    stockStatus: p.stock_status,
+    dateCreated: p.date_created ?? '',
     priceRange: {
       minVariantPrice: {
         amount: p.price || p.regular_price || '0',
@@ -103,19 +112,48 @@ function normalizeProductDetail(p) {
 
 // ── Products ──────────────────────────────────────────────────────────────────
 
-export async function getProducts({ query = '', count = 24, page = 1, category = '', orderby = 'popularity' } = {}) {
+// Map UI sort values to WC API orderby/order params
+const SORT_MAP = {
+  'best-selling': { orderby: 'popularity', order: 'desc' },
+  'newest':       { orderby: 'date',       order: 'desc' },
+  'price-asc':    { orderby: 'price',      order: 'asc'  },
+  'price-desc':   { orderby: 'price',      order: 'desc' },
+  'a-z':          { orderby: 'title',      order: 'asc'  },
+};
+
+export async function getProducts({
+  query = '',
+  count = 24,
+  page = 1,
+  category = '',
+  sort = 'best-selling',
+  onSale = false,
+  minPrice = '',
+  maxPrice = '',
+} = {}) {
+  const { orderby, order } = SORT_MAP[sort] ?? SORT_MAP['best-selling'];
+
   const params = new URLSearchParams({
-    per_page: Math.min(count, 100), // WC REST API max is 100
+    per_page: Math.min(count, 100),
     page,
     orderby,
-    ...(query && { search: query }),
+    order,
+    ...(query    && { search: query }),
     ...(category && { category }),
+    ...(onSale   && { on_sale: 'true' }),
+    ...(minPrice && { min_price: minPrice }),
+    ...(maxPrice && { max_price: maxPrice }),
   });
 
-  const products = await wcFetch(`/products?${params}`);
+  const raw = await wcFetch(`/products?${params}`);
+  const total      = raw.__total;
+  const totalPages = raw.__totalPages;
+
   return {
-    edges: products.map(p => ({ node: normalizeProduct(p) })),
-    pageInfo: { hasNextPage: products.length === count },
+    edges: raw.map(p => ({ node: normalizeProduct(p) })),
+    total,
+    totalPages,
+    pageInfo: { hasNextPage: page < totalPages },
   };
 }
 
