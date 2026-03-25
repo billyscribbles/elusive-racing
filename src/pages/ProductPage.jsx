@@ -59,7 +59,25 @@ export default function ProductPage() {
     return (
       <div className="product-page">
         <div className="container">
-          <p style={{ color: 'var(--color-text-muted)', padding: '60px 0' }}>Loading product…</p>
+          <div className="product-skeleton-breadcrumb">
+            <div className="skel skel--line" style={{ width: 180 }} />
+          </div>
+          <div className="product-layout">
+            <div className="product-image-col">
+              <div className="product-image-main">
+                <div className="skel skel--block" style={{ width: '100%', aspectRatio: '1 / 1' }} />
+              </div>
+            </div>
+            <div className="product-info-col">
+              <div className="skel skel--line" style={{ width: 80, height: 14, marginBottom: 10 }} />
+              <div className="skel skel--line" style={{ width: '80%', height: 28, marginBottom: 6 }} />
+              <div className="skel skel--line" style={{ width: '60%', height: 28, marginBottom: 18 }} />
+              <div className="skel skel--line" style={{ width: 100, height: 13, marginBottom: 24 }} />
+              <div className="skel skel--line" style={{ width: 120, height: 36, marginBottom: 16 }} />
+              <div className="skel skel--line" style={{ width: 140, height: 18, marginBottom: 24 }} />
+              <div className="skel skel--block" style={{ width: '100%', height: 52, borderRadius: 6 }} />
+            </div>
+          </div>
         </div>
       </div>
     );

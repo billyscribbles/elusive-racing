@@ -16,6 +16,8 @@ const authHeader = 'Basic ' + btoa(`${KEY}:${SECRET}`);
 let _categoryCache = null;       // resolved array of WC category objects
 let _categoryCachePromise = null; // in-flight fetch (deduplicates concurrent callers)
 
+const _productCache = new Map();  // slug → normalizedProduct (session cache)
+
 export async function getCachedCategories() {
   if (_categoryCache) return _categoryCache;
   if (_categoryCachePromise) return _categoryCachePromise;
@@ -287,17 +289,23 @@ export async function getFeaturedProducts(count = 8) {
 }
 
 export async function getProductByHandle(slug) {
+  if (_productCache.has(slug)) return _productCache.get(slug);
+
   const products = await wcFetch(`/products?slug=${encodeURIComponent(slug)}`);
   if (!products.length) throw new Error(`Product not found: ${slug}`);
   const p = products[0];
 
-  // Fetch variations if it's a variable product
+  // Fetch variations if it's a variable product — slim payload with _fields
   if (p.type === 'variable' && p.variations?.length) {
-    const variations = await wcFetch(`/products/${p.id}/variations?per_page=100`);
+    const variations = await wcFetch(
+      `/products/${p.id}/variations?per_page=100&_fields=id,price,regular_price,sale_price,stock_status,stock_quantity,attributes`
+    );
     p.variations = variations;
   }
 
-  return normalizeProductDetail(p);
+  const result = normalizeProductDetail(p);
+  _productCache.set(slug, result);
+  return result;
 }
 
 async function fetchProductsForTerms(endpoint, termIds, perTerm = 8) {
