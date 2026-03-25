@@ -121,6 +121,23 @@ const SORT_MAP = {
   'a-z':          { orderby: 'title',      order: 'asc'  },
 };
 
+// Resolve category IDs by searching taxonomy names for each word in a query
+async function resolveCategoryIds(query) {
+  const words = [...new Set([query, ...query.trim().split(/\s+/).filter(w => w.length > 2)])];
+  const searches = await Promise.all(
+    words.map(w =>
+      wcFetch(`/products/categories?search=${encodeURIComponent(w)}&per_page=15&hide_empty=true`)
+        .catch(() => [])
+    )
+  );
+  const seen = new Set();
+  return searches.flat().filter(c => {
+    if (seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
+  }).map(c => c.id);
+}
+
 export async function getProducts({
   query = '',
   count = 24,
@@ -145,9 +162,42 @@ export async function getProducts({
     ...(maxPrice && { max_price: maxPrice }),
   });
 
-  const raw = await wcFetch(`/products?${params}`);
-  const total      = raw.__total;
-  const totalPages = raw.__totalPages;
+  let raw        = await wcFetch(`/products?${params}`);
+  let total      = raw.__total;
+  let totalPages = raw.__totalPages;
+
+  // If text search returned nothing, expand to category/tag name matching
+  if (query && raw.length === 0) {
+    const catIds = await resolveCategoryIds(query);
+    if (catIds.length) {
+      // Fetch from each matching category and merge, honouring page/count
+      const perCat = Math.ceil((count * 2) / catIds.length);
+      const batches = await Promise.all(
+        catIds.map(id => {
+          const p = new URLSearchParams({
+            category: id,
+            per_page: perCat,
+            page,
+            orderby,
+            order,
+            ...(onSale   && { on_sale: 'true' }),
+            ...(minPrice && { min_price: minPrice }),
+            ...(maxPrice && { max_price: maxPrice }),
+          });
+          return wcFetch(`/products?${p}`).catch(() => []);
+        })
+      );
+      const seen = new Set();
+      const merged = batches.flat().filter(p => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+      raw        = merged.slice(0, count);
+      total      = merged.length;
+      totalPages = Math.max(1, Math.ceil(merged.length / count));
+    }
+  }
 
   return {
     edges: raw.map(p => ({ node: normalizeProduct(p) })),
@@ -178,9 +228,62 @@ export async function getProductByHandle(slug) {
   return normalizeProductDetail(p);
 }
 
+async function fetchProductsForTerms(endpoint, termIds, perTerm = 8) {
+  const batches = await Promise.all(
+    termIds.map(id => wcFetch(`/products?${endpoint}=${id}&per_page=${perTerm}`).catch(() => []))
+  );
+  return batches.flat();
+}
+
 export async function searchProducts(query, count = 24) {
-  const products = await wcFetch(`/products?search=${encodeURIComponent(query)}&per_page=${count}`);
-  return products.map(p => normalizeProduct(p));
+  const q = encodeURIComponent(query);
+
+  // For multi-word queries, also search individual words in taxonomies
+  // e.g. "pod filter" → also try "pod" and "filter" so "Intake Systems & Pod Filters" is found
+  const words = [...new Set(
+    query.trim().split(/\s+/).filter(w => w.length > 2)
+  )];
+  const catTerms = [query, ...words].filter((v, i, a) => a.indexOf(v) === i);
+
+  const [byText, bySku, byTag, ...byCats] = await Promise.allSettled([
+    // 1. Full-text search (title + description)
+    wcFetch(`/products?search=${q}&per_page=${count}`),
+
+    // 2. Exact SKU match
+    wcFetch(`/products?sku=${q}&per_page=10`),
+
+    // 3. Tag search (full phrase)
+    wcFetch(`/products/tags?search=${q}&per_page=20&hide_empty=true`)
+      .then(tags => tags.length
+        ? fetchProductsForTerms('tag', tags.map(t => t.id), 8)
+        : []
+      ),
+
+    // 4. Category search — one request per term (full phrase + individual words)
+    ...catTerms.map(term =>
+      wcFetch(`/products/categories?search=${encodeURIComponent(term)}&per_page=15&hide_empty=true`)
+        .then(cats => cats.length
+          ? fetchProductsForTerms('category', cats.map(c => c.id), 8)
+          : []
+        )
+        .catch(() => [])
+    ),
+  ]);
+
+  const textResults = byText.status === 'fulfilled' ? byText.value : [];
+  const skuResults  = bySku.status  === 'fulfilled' ? bySku.value  : [];
+  const tagResults  = byTag.status  === 'fulfilled' ? byTag.value  : [];
+  const catResults  = byCats.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+
+  // Priority: SKU exact → text match → tag/category match
+  const seen = new Set();
+  const merged = [...skuResults, ...textResults, ...tagResults, ...catResults].filter(p => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
+
+  return merged.slice(0, count).map(p => normalizeProduct(p));
 }
 
 export async function getBrands() {
