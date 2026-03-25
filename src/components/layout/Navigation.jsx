@@ -24,6 +24,9 @@ function BrandsMegaMenu() {
             </a>
           ))}
         </div>
+        <div className="brands-mega-footer">
+          <a href="/brands" className="brands-see-all">See all brands →</a>
+        </div>
       </div>
     </div>
   );

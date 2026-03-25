@@ -251,7 +251,8 @@ export default function ShopPage() {
   const [localMin,    setLocalMin]    = useState(minParam);
   const [localMax,    setLocalMax]    = useState(maxParam);
   const [drawerOpen,  setDrawerOpen]  = useState(false);
-  const [catSearch,   setCatSearch]   = useState('');
+  const [catSearch,    setCatSearch]    = useState('');
+  const [brandSearch,  setBrandSearch]  = useState('');
 
   useEffect(() => {
     if (searchInputRef.current) searchInputRef.current.value = qParam;
@@ -475,18 +476,35 @@ export default function ShopPage() {
 
       {/* Brand */}
       {vendors.length > 0 && (
-        <CollapsibleSection title="Brand">
-          <div className="shop-filter-check-list">
-            {vendors.map((v) => (
-              <label key={v} className="shop-filter-check">
-                <input
-                  type="checkbox"
-                  checked={activeBrands.includes(v)}
-                  onChange={() => toggleBrand(v)}
-                />
-                <span>{v}</span>
-              </label>
-            ))}
+        <CollapsibleSection title="Brand" defaultOpen={!!activeBrands.length}>
+          <div className="shop-cat-search-wrap">
+            <Search size={13} className="shop-cat-search-icon" />
+            <input
+              type="text"
+              className="shop-cat-search-input"
+              placeholder="Search brands..."
+              value={brandSearch}
+              onChange={(e) => setBrandSearch(e.target.value)}
+            />
+            {brandSearch && (
+              <button className="shop-cat-search-clear" onClick={() => setBrandSearch('')} aria-label="Clear">
+                <X size={11} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+          <div className="shop-filter-check-list shop-filter-check-list--scroll">
+            {vendors
+              .filter(v => !brandSearch || v.toLowerCase().includes(brandSearch.toLowerCase()))
+              .map((v) => (
+                <label key={v} className="shop-filter-check">
+                  <input
+                    type="checkbox"
+                    checked={activeBrands.includes(v)}
+                    onChange={() => toggleBrand(v)}
+                  />
+                  <span>{v}</span>
+                </label>
+              ))}
           </div>
         </CollapsibleSection>
       )}

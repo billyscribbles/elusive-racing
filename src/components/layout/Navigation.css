@@ -108,6 +108,26 @@
   align-items: center;
 }
 
+.brands-mega-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.brands-see-all {
+  font-size: 13px;
+  color: var(--color-red);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  transition: opacity 0.15s;
+}
+
+.brands-see-all:hover {
+  opacity: 0.75;
+}
+
 .brand-item {
   display: flex;
   align-items: center;
