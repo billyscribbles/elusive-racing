@@ -17,8 +17,15 @@ let _categoryCachePromise = null; // in-flight fetch (deduplicates concurrent ca
 export async function getCachedCategories() {
   if (_categoryCache) return _categoryCache;
   if (_categoryCachePromise) return _categoryCachePromise;
-  _categoryCachePromise = wcFetch('/products/categories?per_page=100&hide_empty=true')
-    .then(cats => { _categoryCache = cats; _categoryCachePromise = null; return cats; })
+  _categoryCachePromise = Promise.all([
+    wcFetch('/products/categories?per_page=100&hide_empty=true'),
+    wcFetch('/products/categories?per_page=100&page=2&hide_empty=true').catch(() => []),
+  ])
+    .then(([p1, p2]) => {
+      _categoryCache = [...p1, ...p2];
+      _categoryCachePromise = null;
+      return _categoryCache;
+    })
     .catch(() => { _categoryCachePromise = null; return []; });
   return _categoryCachePromise;
 }
