@@ -291,7 +291,12 @@ export default function PaymentPage() {
     return (
       <div className="pp-page">
         <div className="container">
-          <p className="pp-empty">Your cart is empty. <a href="/shop">Continue shopping</a></p>
+          <div className="pp-empty">
+            <div className="pp-empty-icon">🛒</div>
+            <h2 className="pp-empty-title">Your cart is empty</h2>
+            <p className="pp-empty-text">Looks like you haven't added anything yet.</p>
+            <a href="/shop" className="pp-empty-btn">Continue Shopping</a>
+          </div>
         </div>
       </div>
     );
