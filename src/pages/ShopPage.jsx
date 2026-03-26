@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts } from '../lib/woocommerce';
+import { getProducts, prefetchProduct } from '../lib/woocommerce';
 import { CATEGORIES, CATEGORIES_FLAT, getCategoryBySlug } from '../data/categories';
 import { BRAND_NAMES } from '../data/brands';
 import './ShopPage.css';
@@ -26,6 +26,7 @@ function mapProduct(node) {
     price,
     originalPrice: compareAt > price ? compareAt : null,
     image: node.featuredImage?.url ?? null,
+    slug: node.handle,
     href: `/products/${node.handle}`,
     description: node.description || '',
     categories: node.categories ?? [],
@@ -150,7 +151,7 @@ function ProductCard({ product, index = 0 }) {
   }
 
   return (
-    <a href={product.href} className="shop-product-card shop-product-card--loaded" style={{ animationDelay: `${Math.min(index, 11) * 40}ms` }}>
+    <a href={product.href} className="shop-product-card shop-product-card--loaded" style={{ animationDelay: `${Math.min(index, 11) * 40}ms` }} onMouseEnter={() => prefetchProduct(product.slug)}>
       <div className="shop-product-image-wrap">
         {product.image
           ? <img src={product.image} alt={product.name} loading="lazy" className="shop-product-image" />

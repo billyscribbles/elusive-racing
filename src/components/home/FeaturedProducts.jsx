@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import useCartStore from '../../store/cartStore';
-import { getFeaturedProducts } from '../../lib/woocommerce';
+import { getFeaturedProducts, prefetchProduct } from '../../lib/woocommerce';
 import './FeaturedProducts.css';
 
 function mapProduct(p) {
@@ -17,6 +17,7 @@ function mapProduct(p) {
     price,
     originalPrice,
     image: p.featuredImage?.url ?? null,
+    slug: p.handle,
     href: `/products/${p.handle}`,
     badge: originalPrice ? 'Sale' : p.stockStatus === 'onbackorder' ? 'Backorder' : null,
     badgeType: originalPrice ? 'sale' : p.stockStatus === 'onbackorder' ? 'backorder' : null,
@@ -34,7 +35,7 @@ function ProductCard({ product }) {
     : null;
 
   return (
-    <a href={product.href} className="product-card">
+    <a href={product.href} className="product-card" onMouseEnter={() => prefetchProduct(product.slug)}>
       <div className="product-image-wrap">
         {product.image
           ? <img src={product.image} alt={product.name} loading="lazy" className="product-image" />

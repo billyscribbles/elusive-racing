@@ -26,6 +26,11 @@ const CATEGORY_LIST_FIELDS = 'id,name,slug,description,image,count';
 const CATEGORY_FILTER_FIELDS = 'id,name,slug,parent';
 
 // ── In-memory cache ───────────────────────────────────────────────────────────
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const _apiCache    = new Map(); // url  → { data, expiresAt }  (all wcFetch responses)
+const _searchCache = new Map(); // query → { results, expiresAt }
+
 let _categoryCache = null;       // resolved array of WC category objects
 let _categoryCachePromise = null; // in-flight fetch (deduplicates concurrent callers)
 
@@ -48,7 +53,15 @@ export async function getCachedCategories() {
 }
 
 async function wcFetch(endpoint, options = {}) {
-  const res = await fetch(`${REST_BASE}${endpoint}`, {
+  const url = `${REST_BASE}${endpoint}`;
+
+  // Return cached response if still fresh (GET requests only)
+  if (!options.method || options.method === 'GET') {
+    const cached = _apiCache.get(url);
+    if (cached && Date.now() < cached.expiresAt) return cached.data;
+  }
+
+  const res = await fetch(url, {
     ...options,
     headers: {
       Authorization: authHeader,
@@ -61,6 +74,8 @@ async function wcFetch(endpoint, options = {}) {
   // Attach pagination totals from WC headers
   data.__total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
   data.__totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+
+  _apiCache.set(url, { data, expiresAt: Date.now() + CACHE_TTL });
   return data;
 }
 
@@ -365,6 +380,10 @@ async function fetchProductsForTerms(endpoint, termIds, perTerm = 8) {
 }
 
 export async function searchProducts(query, count = 24) {
+  const cacheKey = `${query}::${count}`;
+  const cached = _searchCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) return cached.results;
+
   const q = encodeURIComponent(query);
 
   // Brand name matches — synchronous, no API call
@@ -413,7 +432,14 @@ export async function searchProducts(query, count = 24) {
     return true;
   });
 
-  return merged.slice(0, count).map(p => normalizeProduct(p));
+  const results = merged.slice(0, count).map(p => normalizeProduct(p));
+  _searchCache.set(cacheKey, { results, expiresAt: Date.now() + CACHE_TTL });
+  return results;
+}
+
+// Silently prefetch a product into cache (call on card hover)
+export function prefetchProduct(slug) {
+  if (!_productCache.has(slug)) getProductByHandle(slug).catch(() => {});
 }
 
 export async function getBrands() {

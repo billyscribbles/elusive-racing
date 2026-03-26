@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, Package, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getProductByHandle, getProducts } from '../lib/woocommerce';
+import { getProductByHandle, getProducts, prefetchProduct } from '../lib/woocommerce';
 import useCartStore from '../store/cartStore';
 import './ProductPage.css';
 
@@ -69,11 +69,12 @@ export default function ProductPage() {
 
   useEffect(() => {
     setLoading(true);
+    setRelated([]);
     getProductByHandle(handle)
       .then((data) => {
-        const mapped = mapProduct(data);
-        setProduct(mapped);
-        // Fetch related from first category if available
+        setProduct(mapProduct(data));
+        setLoading(false);
+        // Fetch related in background — doesn't block product display
         const catId = data.categories?.[0]?.id;
         return getProducts({ count: 5, ...(catId && { category: catId }) });
       })
@@ -84,8 +85,7 @@ export default function ProductPage() {
           .slice(0, 4);
         setRelated(mapped);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => setLoading(false));
   }, [handle]);
 
   if (loading) {
@@ -353,7 +353,7 @@ export default function ProductPage() {
                   ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
                   : null;
                 return (
-                  <Link key={p.id} to={p.href} className="product-related-card">
+                  <Link key={p.id} to={p.href} className="product-related-card" onMouseEnter={() => prefetchProduct(p.href.split('/products/')[1])}>
                     <div className="product-related-img">
                       {p.image
                         ? <img src={p.image} alt={p.name} loading="lazy" />
