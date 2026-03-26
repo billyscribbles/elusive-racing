@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
 import { getFeaturedProducts, prefetchProduct } from '../../lib/woocommerce';
 import './FeaturedProducts.css';
@@ -35,7 +36,7 @@ function ProductCard({ product }) {
     : null;
 
   return (
-    <a href={product.href} className="product-card" onMouseEnter={() => prefetchProduct(product.slug)}>
+    <Link to={product.href} className="product-card" onMouseEnter={() => prefetchProduct(product.slug)}>
       <div className="product-image-wrap">
         {product.image
           ? <img src={product.image} alt={product.name} loading="lazy" className="product-image" />
@@ -72,7 +73,7 @@ function ProductCard({ product }) {
           </button>
         )}
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -95,7 +96,7 @@ export default function FeaturedProducts() {
       <div className="container">
         <div className="section-header">
           <h2 className="section-title">Featured Products</h2>
-          <p className="section-subtitle">Hand-picked performance parts from top brands</p>
+          <p className="section-subtitle">High-performance parts engineered by Elusive Racing</p>
         </div>
         <div className="products-grid">
           {products.map((product) => (

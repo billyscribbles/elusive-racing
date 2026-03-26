@@ -535,6 +535,22 @@
   margin: 12px 0;
 }
 
+.product-details-body .wp-video {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.product-details-body iframe,
+.product-details-body video {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  display: block;
+  margin: 16px 0;
+  border-radius: 4px;
+  border: none;
+}
+
 .product-details-table {
   width: 100%;
   border-collapse: collapse;
