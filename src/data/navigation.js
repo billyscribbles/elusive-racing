@@ -4,11 +4,13 @@ export const navItems = [
     href: '/shop',
     hasMega: true,
     type: 'brands',
+    image: null,
   },
   {
     label: 'Engine',
     href: '/shop?sub=engine',
     hasMega: false,
+    image: '/menu/menu-honda-engine.jpg',
     links: [
       { label: 'Engine Internals', href: '/shop?sub=engine-internals' },
       { label: 'Engine Parts', href: '/shop?sub=engine-parts' },
@@ -23,6 +25,7 @@ export const navItems = [
     label: 'Suspension',
     href: '/shop?sub=suspension',
     hasMega: false,
+    image: '/menu/menu-coilovers.jpg',
     links: [
       { label: 'Coilovers', href: '/shop?sub=coilovers' },
       { label: 'Springs', href: '/shop?sub=springs' },
@@ -43,6 +46,7 @@ export const navItems = [
     label: 'Honda OEM',
     href: '/shop?sub=honda-oem',
     hasMega: false,
+    image: '/menu/menu-honda-body.jpg',
     links: [
       { label: 'Engine', href: '/shop?sub=engine-honda-oem' },
       { label: 'Drivetrain', href: '/shop?sub=drivetrain-honda-oem' },
@@ -53,6 +57,7 @@ export const navItems = [
     label: 'Interior',
     href: '/shop?sub=interior',
     hasMega: false,
+    image: '/menu/menu-seat.jpg',
     links: [
       { label: 'Steering Wheels', href: '/shop?sub=steering-wheels' },
       { label: 'Seat & Rails', href: '/shop?sub=seat-rails' },
@@ -68,6 +73,7 @@ export const navItems = [
     label: 'Drivetrain',
     href: '/shop?sub=drivetrain',
     hasMega: false,
+    image: '/menu/menu-clutch.jpg',
     links: [
       { label: 'Clutch & Flywheel', href: '/shop?sub=clutch-flywheel' },
       { label: 'Clutch Lines', href: '/shop?sub=clutch-lines' },
@@ -85,6 +91,7 @@ export const navItems = [
     label: 'Brakes',
     href: '/shop?sub=brakes',
     hasMega: false,
+    image: '/menu/menu-brake-pads.jpg',
     links: [
       { label: 'Brake Pads', href: '/shop?sub=brake-pads' },
       { label: 'Rotors', href: '/shop?sub=rotors' },
@@ -98,6 +105,7 @@ export const navItems = [
     label: 'Exterior',
     href: '/shop?sub=exterior',
     hasMega: false,
+    image: '/menu/menu-master.jpg',
     links: [
       { label: 'Aerodynamics', href: '/shop?sub=aerodynamics' },
       { label: 'Body Panels', href: '/shop?sub=body-panels' },
@@ -113,6 +121,7 @@ export const navItems = [
     label: 'Electronics',
     href: '/shop?sub=electronics',
     hasMega: false,
+    image: '/menu/menu-ecu.jpg',
     links: [
       { label: 'ECU & Converters', href: '/shop?sub=ecu-converters' },
       { label: 'Gauges', href: '/shop?sub=gauges' },
@@ -127,6 +136,7 @@ export const navItems = [
     label: 'Cooling',
     href: '/shop?sub=cooling',
     hasMega: false,
+    image: '/menu/menu-radiator.jpg',
     links: [
       { label: 'Radiators & Overflow Bottles', href: '/shop?sub=radiators' },
       { label: 'Intercooler', href: '/shop?sub=intercooler' },
@@ -141,6 +151,7 @@ export const navItems = [
     label: 'Merchandise',
     href: '/shop?sub=merchandise',
     hasMega: false,
+    image: '/menu/menu-hoodie.jpg',
     links: [
       { label: 'Hoodies & Jackets', href: '/shop?sub=hoodies-jackets' },
       { label: 'T-Shirts', href: '/shop?sub=tees' },
@@ -152,6 +163,7 @@ export const navItems = [
     label: 'Lighting',
     href: '/shop?sub=lighting',
     hasMega: false,
+    image: '/menu/menu-lighting.jpg',
     links: [
       { label: 'LED', href: '/shop?sub=led' },
       { label: 'Tail / Brake', href: '/shop?sub=tail-brake' },
@@ -161,6 +173,7 @@ export const navItems = [
     label: 'Clearance',
     href: '/shop?sub=clearance',
     hasMega: false,
+    image: '/menu/menu-maintenacne.jpg',
     links: [
       { label: 'Used Parts', href: '/shop?sub=used-parts' },
     ],
@@ -169,6 +182,7 @@ export const navItems = [
     label: 'Services',
     href: '/services',
     hasMega: false,
+    image: '/menu/menu-headers.jpg',
     links: [],
     highlight: true,
   },
