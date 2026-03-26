@@ -371,38 +371,9 @@ export async function getProducts({
 }
 
 export async function getFeaturedProducts(count = 8) {
-  // Fetch Elusive Racing products (by brand taxonomy or vendor search), highest price first
-  const [byBrandTax, bySearch] = await Promise.all([
-    // Try Perfect Brands taxonomy first
-    wcFetch('/brands?per_page=100&page=1&orderby=name&order=asc')
-      .then(brands => {
-        const match = brands.find(b => b.name.toLowerCase().includes('elusive'));
-        if (!match) return [];
-        return wcFetch(`/products?brand=${match.id}&per_page=${count * 2}&orderby=price&order=desc&_fields=${PRODUCT_LIST_FIELDS}`);
-      })
-      .catch(() => []),
-    // Also search by vendor/title
-    wcFetch(`/products?search=Elusive+Racing&per_page=${count * 2}&orderby=price&order=desc&_fields=${PRODUCT_LIST_FIELDS}`)
-      .catch(() => []),
-  ]);
-
-  // Merge, dedupe, keep highest-priced
-  const seen = new Set();
-  const merged = [...byBrandTax, ...bySearch].filter(p => {
-    if (seen.has(p.id)) return false;
-    seen.add(p.id);
-    return true;
-  });
-
-  // Sort by price descending and take top `count`
-  merged.sort((a, b) => parseFloat(b.price || 0) - parseFloat(a.price || 0));
-  const elusiveProducts = merged.slice(0, count);
-
-  if (elusiveProducts.length >= 4) return elusiveProducts.map(p => normalizeProduct(p));
-
-  // Fallback: featured products, then best-selling
-  const featured = await wcFetch(`/products?per_page=${count}&orderby=popularity&featured=true&_fields=${PRODUCT_LIST_FIELDS}`);
-  const list = featured.length ? featured : await wcFetch(`/products?per_page=${count}&orderby=popularity&_fields=${PRODUCT_LIST_FIELDS}`);
+  const products = await wcFetch(`/products?per_page=${count}&orderby=popularity&featured=true&_fields=${PRODUCT_LIST_FIELDS}`);
+  // Fall back to best-selling if no featured products
+  const list = products.length ? products : await wcFetch(`/products?per_page=${count}&orderby=popularity&_fields=${PRODUCT_LIST_FIELDS}`);
   return list.map(p => normalizeProduct(p));
 }
 

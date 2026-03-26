@@ -82,7 +82,7 @@ export default function FeaturedProducts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getFeaturedProducts(8)
+    getFeaturedProducts(4)
       .then((data) => setProducts(data.map(mapProduct)))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -96,7 +96,7 @@ export default function FeaturedProducts() {
       <div className="container">
         <div className="section-header">
           <h2 className="section-title">Featured Products</h2>
-          <p className="section-subtitle">High-performance parts engineered by Elusive Racing</p>
+          <p className="section-subtitle">Hand-picked performance parts from top brands</p>
         </div>
         <div className="products-grid">
           {products.map((product) => (
