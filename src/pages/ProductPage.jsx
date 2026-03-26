@@ -3,6 +3,7 @@ import { ShoppingBag, ChevronRight, Package, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getProductByHandle, getProducts, prefetchProduct } from '../lib/woocommerce';
 import useCartStore from '../store/cartStore';
+import { brands as BRAND_LIST } from '../data/navigation';
 import './ProductPage.css';
 
 function mapProduct(p) {
@@ -176,6 +177,21 @@ export default function ProductPage() {
 
           {/* Image */}
           <div className="product-image-col">
+            {(() => {
+              const brandEntry = BRAND_LIST.find(b => b.name.toLowerCase() === product.brand.toLowerCase());
+              return brandEntry?.logo ? (
+                <div className="product-page-brand-above-image">
+                  <Link to={brandEntry.href} className="product-page-brand-logo-link">
+                    <img
+                      src={brandEntry.logo}
+                      alt={product.brand}
+                      className="product-page-brand-logo"
+                      onError={e => { e.target.parentElement.style.display = 'none'; }}
+                    />
+                  </Link>
+                </div>
+              ) : null;
+            })()}
             <div className="product-image-main">
               {product.image
                 ? <img src={product.image} alt={product.name} />
@@ -186,7 +202,17 @@ export default function ProductPage() {
 
           {/* Info */}
           <div className="product-info-col">
-            <span className="product-page-brand">{product.brand}</span>
+            {(() => {
+              const brandEntry = BRAND_LIST.find(b => b.name.toLowerCase() === product.brand.toLowerCase());
+              return (
+                <Link
+                  to={brandEntry?.href ?? `/shop?brands=${encodeURIComponent(product.brand)}`}
+                  className="product-page-brand"
+                >
+                  {product.brand}
+                </Link>
+              );
+            })()}
             <h1 className="product-page-name">{product.name}</h1>
 
             {product.sku && (
