@@ -19,12 +19,7 @@ export default function TopBar() {
           </a>
         </div>
 
-        {/* Centre — shipping message */}
-        <div className="topbar-center">
-          <span>Free shipping on orders over $150 AUD within Australia</span>
-        </div>
-
-        {/* Right — account links */}
+{/* Right — account links */}
         <div className="topbar-right">
           <a href="/wholesale-registration" className="topbar-link">WHOLESALE</a>
           <span className="topbar-divider">|</span>

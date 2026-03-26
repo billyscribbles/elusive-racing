@@ -1,12 +1,7 @@
-import { Truck, ShieldCheck, CreditCard, Headphones } from 'lucide-react';
+import { ShieldCheck, CreditCard, Headphones } from 'lucide-react';
 import './PromoStrip.css';
 
 const promos = [
-  {
-    icon: <Truck size={28} strokeWidth={1.75} />,
-    title: 'Free Shipping',
-    subtitle: 'On orders over $150 AUD',
-  },
   {
     icon: <ShieldCheck size={28} strokeWidth={1.75} />,
     title: 'Genuine Parts',
