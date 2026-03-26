@@ -32,6 +32,21 @@ function mapProduct(p) {
   };
 }
 
+function CopySkuButton({ sku }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(sku).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <button className="sku-copy-btn" onClick={handleCopy} title="Copy SKU">
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  );
+}
+
 export default function ProductPage() {
   const { handle } = useParams();
   const addItem = useCartStore((s) => s.addItem);
@@ -168,7 +183,10 @@ export default function ProductPage() {
             <h1 className="product-page-name">{product.name}</h1>
 
             {product.sku && (
-              <p className="product-page-sku">SKU: {product.sku}</p>
+              <p className="product-page-sku">
+                SKU: {product.sku}
+                <CopySkuButton sku={product.sku} />
+              </p>
             )}
 
             <div className="product-page-pricing">

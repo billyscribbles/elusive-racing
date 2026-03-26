@@ -119,9 +119,29 @@
   font-family: monospace;
   letter-spacing: 0.5px;
   background: #f7f7f7;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 3px 10px;
   border-radius: 3px;
+}
+
+.sku-copy-btn {
+  font-size: 11px;
+  font-family: inherit;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sku-copy-btn:hover {
+  background: #d94040;
+  color: #fff;
+  border-color: #d94040;
 }
 
 .product-page-pricing {

@@ -245,9 +245,27 @@ export async function getProducts({
     ...(maxPrice   && { max_price: maxPrice }),
   });
 
-  let raw        = await wcFetch(`/products?${params}&_fields=${PRODUCT_LIST_FIELDS}`);
-  let total      = raw.__total;
-  let totalPages = raw.__totalPages;
+  // Run text search and SKU lookup in parallel when a query is present
+  const [textRaw, skuRaw] = await Promise.all([
+    wcFetch(`/products?${params}&_fields=${PRODUCT_LIST_FIELDS}`),
+    searchTerm
+      ? wcFetch(`/products?sku=${encodeURIComponent(searchTerm)}&per_page=10&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => [])
+      : Promise.resolve([]),
+  ]);
+
+  // Merge SKU hits first (exact match priority), then text results
+  let raw;
+  if (skuRaw.length) {
+    const seen = new Set(skuRaw.map(p => p.id));
+    raw = [...skuRaw, ...textRaw.filter(p => !seen.has(p.id))];
+    raw.__total = raw.length;
+    raw.__totalPages = Math.max(1, Math.ceil(raw.length / count));
+  } else {
+    raw = textRaw;
+  }
+
+  let total      = raw.__total      ?? textRaw.__total;
+  let totalPages = raw.__totalPages ?? textRaw.__totalPages;
 
   // If text search returned nothing, expand to category/tag name matching
   if (query && !brandNames.length && raw.length === 0) {
