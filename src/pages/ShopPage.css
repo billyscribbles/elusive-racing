@@ -824,9 +824,11 @@
   transition: background 0.2s;
 }
 
-.shop-quick-add { gap: 6px; }
+.shop-quick-add { gap: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .shop-quick-add:hover { background: var(--color-red); }
 .shop-quick-add--added { background: #1a6e2e !important; }
+.shop-quick-add--variants { background: #222; color: #ccc; cursor: default; }
+.shop-quick-add--variants:hover { background: #333; }
 
 /* ── Skeleton ── */
 @keyframes shimmer {

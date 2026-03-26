@@ -11,7 +11,9 @@ import './ShopPage.css';
 
 
 function mapProduct(node) {
-  const variant = node.variants?.[0];
+  const variants = node.variants ?? [];
+  const isDefaultOnly = variants.length === 1 && variants[0].title === 'Default';
+  const hasVariants = variants.length > 1 || (variants.length === 1 && !isDefaultOnly);
   const price = parseFloat(node.priceRange.minVariantPrice.amount) || 0;
   const compareAt = parseFloat(node.compareAtPriceRange?.minVariantPrice?.amount ?? 0);
   const isBackorder = node.stockStatus === 'onbackorder' ||
@@ -30,7 +32,8 @@ function mapProduct(node) {
     tags: node.tags ?? [],
     backorder: isBackorder,
     dateCreated: node.dateCreated || '',
-    variantId: variant?.id ?? null,
+    variantId: isDefaultOnly ? variants[0]?.id : null,
+    hasVariants,
   };
 }
 
@@ -177,12 +180,18 @@ function ProductCard({ product, index = 0 }) {
         </div>
       </div>
       <div className="shop-product-actions">
-        <button
-          className={`shop-quick-add${added ? ' shop-quick-add--added' : ''}`}
-          onClick={handleAddToCart}
-        >
-          {added ? <>&#10003; Added</> : <><ShoppingBag size={13} /> Add to Cart</>}
-        </button>
+        {product.hasVariants ? (
+          <span className="shop-quick-add shop-quick-add--variants">
+            Select Variant
+          </span>
+        ) : (
+          <button
+            className={`shop-quick-add${added ? ' shop-quick-add--added' : ''}`}
+            onClick={handleAddToCart}
+          >
+            {added ? <>&#10003; Added</> : <><ShoppingBag size={13} /> Add to Cart</>}
+          </button>
+        )}
       </div>
     </a>
   );

@@ -7,6 +7,9 @@ function mapProduct(p) {
   const price = parseFloat(p.priceRange.minVariantPrice.amount) || 0;
   const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount) || 0;
   const originalPrice = compareAt > price ? compareAt : null;
+  const variants = p.variants ?? [];
+  const isDefaultOnly = variants.length === 1 && variants[0].title === 'Default';
+  const hasVariants = variants.length > 1 || (variants.length === 1 && !isDefaultOnly);
   return {
     id: p.id,
     name: p.title,
@@ -17,7 +20,8 @@ function mapProduct(p) {
     href: `/products/${p.handle}`,
     badge: originalPrice ? 'Sale' : p.stockStatus === 'onbackorder' ? 'Backorder' : null,
     badgeType: originalPrice ? 'sale' : p.stockStatus === 'onbackorder' ? 'backorder' : null,
-    variantId: p.variants?.[0]?.id ?? null,
+    variantId: isDefaultOnly ? variants[0]?.id : null,
+    hasVariants,
   };
 }
 
@@ -54,12 +58,18 @@ function ProductCard({ product }) {
         </div>
       </div>
       <div className="product-actions">
-        <button
-          className="product-quick-add"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(product); openCart(); }}
-        >
-          Add to Cart
-        </button>
+        {product.hasVariants ? (
+          <span className="product-quick-add product-quick-add--variants">
+            Select Variant
+          </span>
+        ) : (
+          <button
+            className="product-quick-add"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(product); openCart(); }}
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </a>
   );

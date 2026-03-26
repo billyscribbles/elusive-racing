@@ -8,6 +8,9 @@ import './ProductPage.css';
 function mapProduct(p) {
   const price = parseFloat(p.priceRange.minVariantPrice.amount) || 0;
   const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount) || 0;
+  const variants = p.variants ?? [];
+  const isDefaultOnly = variants.length === 1 && variants[0].title === 'Default';
+  const hasVariants = variants.length > 1 || (variants.length === 1 && !isDefaultOnly);
   return {
     id: p.id,
     name: p.title,
@@ -20,7 +23,10 @@ function mapProduct(p) {
     description: p.description || '',
     tags: p.tags ?? [],
     categories: p.categories ?? [],
-    variantId: p.variants?.[0]?.id ?? null,
+    // auto-select the only variant when there's no real choice
+    variantId: isDefaultOnly ? variants[0].id : null,
+    variants,
+    hasVariants,
     backorder: p.stockStatus === 'onbackorder',
     inStock: p.stockStatus === 'instock',
   };
@@ -31,8 +37,14 @@ export default function ProductPage() {
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
   const [product, setProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Reset variant selection when navigating to a different product
+  useEffect(() => {
+    setSelectedVariant(null);
+  }, [handle]);
 
   useEffect(() => {
     setLoading(true);
@@ -95,18 +107,30 @@ export default function ProductPage() {
     );
   }
 
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const activeVariant = selectedVariant ?? (product.hasVariants ? null : product.variants?.[0]);
+  const displayPrice = activeVariant?.price?.amount
+    ? parseFloat(activeVariant.price.amount)
+    : product.price ?? 0;
+  const displayOriginalPrice = activeVariant?.compareAtPrice?.amount
+    ? parseFloat(activeVariant.compareAtPrice.amount)
+    : product.originalPrice ?? null;
+  const effectiveOriginal = displayOriginalPrice > displayPrice ? displayOriginalPrice : null;
+  const discount = effectiveOriginal
+    ? Math.round(((effectiveOriginal - displayPrice) / effectiveOriginal) * 100)
     : null;
+  const canAddToCart = !product.hasVariants || !!selectedVariant;
 
   function handleAddToCart() {
+    if (!canAddToCart) return;
+    const variantId = selectedVariant?.id ?? product.variantId;
     addItem({
       id: product.id,
       name: product.name,
       brand: product.brand,
-      price: product.price,
+      price: displayPrice,
       image: product.image,
-      variantId: product.variantId ?? null,
+      variantId: variantId ?? null,
+      variantTitle: selectedVariant?.title ?? null,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -148,10 +172,10 @@ export default function ProductPage() {
             )}
 
             <div className="product-page-pricing">
-              <span className="product-page-price">${product.price.toFixed(2)}</span>
-              {product.originalPrice && (
+              <span className="product-page-price">${displayPrice.toFixed(2)}</span>
+              {effectiveOriginal && (
                 <>
-                  <span className="product-page-original">${product.originalPrice.toFixed(2)}</span>
+                  <span className="product-page-original">${effectiveOriginal.toFixed(2)}</span>
                   <span className="product-page-discount">-{discount}%</span>
                 </>
               )}
@@ -162,9 +186,45 @@ export default function ProductPage() {
               {product.backorder ? 'Available on Backorder' : 'In Stock'}
             </div>
 
+            {/* Variant selector */}
+            {product.hasVariants && (
+              <div className="product-page-variants">
+                <div className="product-page-section-title">
+                  {product.variants[0]?.selectedOptions?.[0]?.name || 'Variant'}
+                  {selectedVariant && (
+                    <span className="product-page-variant-selected-label">
+                      — {selectedVariant.title}
+                    </span>
+                  )}
+                </div>
+                <div className="product-page-variant-options">
+                  {product.variants.map((v) => (
+                    <button
+                      key={v.id}
+                      className={`product-page-variant-btn${selectedVariant?.id === v.id ? ' product-page-variant-btn--active' : ''}${!v.availableForSale ? ' product-page-variant-btn--unavailable' : ''}`}
+                      onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? null : v)}
+                      disabled={!v.availableForSale}
+                      title={!v.availableForSale ? 'Out of stock' : ''}
+                    >
+                      {v.title}
+                      {v.price?.amount && parseFloat(v.price.amount) !== product.price && (
+                        <span className="product-page-variant-price">
+                          ${parseFloat(v.price.amount).toFixed(2)}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {!selectedVariant && (
+                  <p className="product-page-variant-hint">Please select an option above</p>
+                )}
+              </div>
+            )}
+
             <button
-              className={`product-page-atc${added ? ' product-page-atc--added' : ''}`}
+              className={`product-page-atc${added ? ' product-page-atc--added' : ''}${!canAddToCart ? ' product-page-atc--disabled' : ''}`}
               onClick={handleAddToCart}
+              disabled={!canAddToCart}
             >
               <ShoppingBag size={18} />
               {added ? 'Added to Cart' : 'Add to Cart'}

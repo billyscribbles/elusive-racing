@@ -143,6 +143,16 @@
   background: var(--color-red);
 }
 
+.product-quick-add--variants {
+  background: #222;
+  color: #ccc;
+  cursor: default;
+}
+
+.product-quick-add--variants:hover {
+  background: #333;
+}
+
 .product-info {
   padding: 16px;
 }
