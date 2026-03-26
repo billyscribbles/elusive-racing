@@ -371,9 +371,14 @@ export async function getProducts({
 }
 
 export async function getFeaturedProducts(count = 8) {
-  const products = await wcFetch(`/products?per_page=${count}&orderby=popularity&featured=true&_fields=${PRODUCT_LIST_FIELDS}`);
-  // Fall back to best-selling if no featured products
-  const list = products.length ? products : await wcFetch(`/products?per_page=${count}&orderby=popularity&_fields=${PRODUCT_LIST_FIELDS}`);
+  // Fetch products tagged "featured"
+  const tags = await wcFetch(`/products/tags?slug=featured&_fields=id`).catch(() => []);
+  if (tags.length) {
+    const products = await wcFetch(`/products?tag=${tags[0].id}&per_page=${count}&orderby=price&order=desc&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => []);
+    if (products.length) return products.map(p => normalizeProduct(p));
+  }
+  // Fall back to best-selling
+  const list = await wcFetch(`/products?per_page=${count}&orderby=popularity&_fields=${PRODUCT_LIST_FIELDS}`);
   return list.map(p => normalizeProduct(p));
 }
 

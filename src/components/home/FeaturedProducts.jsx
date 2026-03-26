@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
 import { getFeaturedProducts, prefetchProduct } from '../../lib/woocommerce';
@@ -80,13 +80,20 @@ function ProductCard({ product }) {
 export default function FeaturedProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const carouselRef = useRef(null);
 
   useEffect(() => {
-    getFeaturedProducts(4)
+    getFeaturedProducts(10)
       .then((data) => setProducts(data.map(mapProduct)))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  function scroll(dir) {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 280, behavior: 'smooth' });
+  }
 
   if (loading) return null;
   if (!products.length) return null;
@@ -98,10 +105,14 @@ export default function FeaturedProducts() {
           <h2 className="section-title">Featured Products</h2>
           <p className="section-subtitle">Hand-picked performance parts from top brands</p>
         </div>
-        <div className="products-grid">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        <div className="carousel-wrapper">
+          <button className="carousel-arrow carousel-arrow--left" onClick={() => scroll(-1)} aria-label="Scroll left">&#8249;</button>
+          <div className="products-carousel" ref={carouselRef}>
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+          <button className="carousel-arrow carousel-arrow--right" onClick={() => scroll(1)} aria-label="Scroll right">&#8250;</button>
         </div>
         <div className="products-cta">
           <a href="/shop" className="btn-primary">View All Products</a>
