@@ -219,9 +219,9 @@
 }
 
 .product-page-stock--backorder {
-  color: #9a6200;
-  background: #fff8e6;
-  border: 1px solid #f0d080;
+  color: #fff;
+  background: #7c5cbf;
+  border: 1px solid #a07fd4;
 }
 
 /* Variant selector */
