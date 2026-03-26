@@ -1,7 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, Loader2, X, Tag, Layers } from 'lucide-react';
 import { searchProducts as wcSearch } from '../../lib/woocommerce';
+import { BRANDS } from '../../data/brands';
+import { CATEGORIES_FLAT } from '../../data/categories';
 import './SearchBar.css';
+
+function getLocalSuggestions(query) {
+  const q = query.toLowerCase().trim();
+  if (q.length < 2) return { brands: [], categories: [] };
+
+  const brands = BRANDS
+    .filter(b => b.name.toLowerCase().includes(q))
+    .slice(0, 4);
+
+  const categories = CATEGORIES_FLAT
+    .filter(c => c.name.toLowerCase().includes(q))
+    .slice(0, 4);
+
+  return { brands, categories };
+}
 
 function mapResult(p) {
   const price = parseFloat(p.priceRange?.minVariantPrice?.amount) || 0;
@@ -25,6 +42,7 @@ async function searchProducts(query) {
 export default function SearchBar() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState({ brands: [], categories: [] });
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -34,9 +52,15 @@ export default function SearchBar() {
     clearTimeout(debounceRef.current);
     if (query.trim().length < 2) {
       setResults([]);
+      setSuggestions({ brands: [], categories: [] });
       setOpen(false);
       return;
     }
+
+    // Instant local suggestions — no debounce needed
+    const local = getLocalSuggestions(query);
+    setSuggestions(local);
+    setOpen(true);
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
@@ -100,45 +124,81 @@ export default function SearchBar() {
 
       {open && (
         <div className="search-dropdown">
-          {results.length === 0 ? (
-            <div className="search-no-results">No results for "{query}"</div>
-          ) : (
-            <>
-              {results.map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    className="search-result-item"
-                    onClick={() => { setOpen(false); setQuery(''); window.location.href = product.href; }}
-                  >
-                    <div className="search-result-image">
-                      {product.image ? (
-                        <img src={product.image} alt={product.name} />
-                      ) : (
-                        <div className="search-result-no-image" />
-                      )}
-                    </div>
-                    <div className="search-result-info">
-                      <span className="search-result-brand">{product.brand}</span>
-                      <span className="search-result-name">{product.name}</span>
-                    </div>
-                    <div className="search-result-pricing">
-                      <span className="search-result-price">${product.price.toFixed(2)}</span>
-                      {product.originalPrice && product.originalPrice > product.price && (
-                        <span className="search-result-compare">${product.originalPrice.toFixed(2)}</span>
-                      )}
-                    </div>
-                  </button>
+          {/* Brand & category suggestions */}
+          {(suggestions.brands.length > 0 || suggestions.categories.length > 0) && (
+            <div className="search-suggestions">
+              {suggestions.brands.map((b) => (
+                <a
+                  key={b.id}
+                  className="search-suggestion-item"
+                  href={`/shop?brands=${encodeURIComponent(b.name)}`}
+                  onClick={() => { setOpen(false); setQuery(''); }}
+                >
+                  <Tag size={13} className="search-suggestion-icon" />
+                  <span className="search-suggestion-label">{b.name}</span>
+                  <span className="search-suggestion-type">Brand</span>
+                </a>
               ))}
-              <a
-                href={`/search?q=${encodeURIComponent(query)}`}
-                className="search-view-all"
-                onClick={() => setOpen(false)}
-              >
-                View all results for "{query}"
-              </a>
+              {suggestions.categories.map((c) => (
+                <a
+                  key={c.id}
+                  className="search-suggestion-item"
+                  href={`/shop?sub=${encodeURIComponent(c.slug)}`}
+                  onClick={() => { setOpen(false); setQuery(''); }}
+                >
+                  <Layers size={13} className="search-suggestion-icon" />
+                  <span className="search-suggestion-label">{c.name}</span>
+                  <span className="search-suggestion-type">Category</span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Product results */}
+          {results.length > 0 && (
+            <>
+              <div className="search-section-label">Products</div>
+              {results.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  className="search-result-item"
+                  onClick={() => { setOpen(false); setQuery(''); window.location.href = product.href; }}
+                >
+                  <div className="search-result-image">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} />
+                    ) : (
+                      <div className="search-result-no-image" />
+                    )}
+                  </div>
+                  <div className="search-result-info">
+                    <span className="search-result-brand">{product.brand}</span>
+                    <span className="search-result-name">{product.name}</span>
+                  </div>
+                  <div className="search-result-pricing">
+                    <span className="search-result-price">${product.price.toFixed(2)}</span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="search-result-compare">${product.originalPrice.toFixed(2)}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
             </>
           )}
+
+          {/* No results at all */}
+          {results.length === 0 && suggestions.brands.length === 0 && suggestions.categories.length === 0 && !loading && (
+            <div className="search-no-results">No results for "{query}"</div>
+          )}
+
+          <a
+            href={`/search?q=${encodeURIComponent(query)}`}
+            className="search-view-all"
+            onClick={() => setOpen(false)}
+          >
+            View all results for "{query}"
+          </a>
         </div>
       )}
     </form>
