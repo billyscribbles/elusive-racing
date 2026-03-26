@@ -121,12 +121,12 @@ export default function SearchBar() {
                     <div className="search-result-info">
                       <span className="search-result-brand">{product.brand}</span>
                       <span className="search-result-name">{product.name}</span>
-                      <div className="search-result-pricing">
-                        <span className="search-result-price">${product.price.toFixed(2)}</span>
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="search-result-compare">${product.originalPrice.toFixed(2)}</span>
-                        )}
-                      </div>
+                    </div>
+                    <div className="search-result-pricing">
+                      <span className="search-result-price">${product.price.toFixed(2)}</span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span className="search-result-compare">${product.originalPrice.toFixed(2)}</span>
+                      )}
                     </div>
                   </button>
               ))}
