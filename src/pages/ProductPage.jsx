@@ -139,7 +139,7 @@ export default function ProductPage() {
   const discount = effectiveOriginal
     ? Math.round(((effectiveOriginal - displayPrice) / effectiveOriginal) * 100)
     : null;
-  const canAddToCart = !product.hasVariants || !!selectedVariant;
+  const canAddToCart = (!product.hasVariants || !!selectedVariant) && displayPrice > 0;
 
   function handleAddToCart() {
     if (!canAddToCart) return;
