@@ -184,9 +184,11 @@ function normalizeProductDetail(p) {
 const SORT_MAP = {
   'best-selling': { orderby: 'popularity', order: 'desc' },
   'newest':       { orderby: 'date',       order: 'desc' },
+  'rating':       { orderby: 'rating',     order: 'desc' },
   'price-asc':    { orderby: 'price',      order: 'asc'  },
   'price-desc':   { orderby: 'price',      order: 'desc' },
   'a-z':          { orderby: 'title',      order: 'asc'  },
+  'z-a':          { orderby: 'title',      order: 'desc' },
 };
 
 // Resolve brand names matching query words — synchronous, no API call

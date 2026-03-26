@@ -41,9 +41,11 @@ function mapProduct(node) {
 const SORT_OPTIONS = [
   { label: 'Best Selling',    value: 'best-selling' },
   { label: 'Newest',          value: 'newest'       },
+  { label: 'Top Rated',       value: 'rating'       },
   { label: 'Price: Low–High', value: 'price-asc'    },
   { label: 'Price: High–Low', value: 'price-desc'   },
   { label: 'A–Z',             value: 'a-z'          },
+  { label: 'Z–A',             value: 'z-a'          },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
