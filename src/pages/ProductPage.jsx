@@ -20,7 +20,10 @@ function mapProduct(p) {
     originalPrice: compareAt > price ? compareAt : null,
     image: p.featuredImage?.url ?? null,
     href: `/products/${p.handle}`,
-    description: p.description || '',
+    description: p.descriptionHtml || p.description || '',
+    weight: p.weight || null,
+    dimensions: p.dimensions || null,
+    vehicleAttributes: p.vehicleAttributes ?? [],
     tags: p.tags ?? [],
     categories: p.categories ?? [],
     // auto-select the only variant when there's no real choice
@@ -57,10 +60,11 @@ export default function ProductPage() {
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Reset variant selection and qty when navigating to a different product
+  // Reset state and scroll to top when navigating to a different product
   useEffect(() => {
     setSelectedVariant(null);
     setQty(1);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [handle]);
 
   useEffect(() => {
@@ -258,14 +262,6 @@ export default function ProductPage() {
               </button>
             </div>
 
-            {/* Description */}
-            {product.description && (
-              <div className="product-page-section">
-                <h3 className="product-page-section-title">Description</h3>
-                <p className="product-page-description">{product.description}</p>
-              </div>
-            )}
-
             {/* Categories */}
             {product.categories?.length > 0 && (
               <div className="product-page-section">
@@ -293,6 +289,59 @@ export default function ProductPage() {
             )}
           </div>
         </div>
+
+        {/* Description — full width */}
+        {product.description && (
+          <div className="product-details-description">
+            <h3 className="product-details-heading">Description</h3>
+            <div className="product-details-body" dangerouslySetInnerHTML={{ __html: product.description }} />
+          </div>
+        )}
+
+        {/* Weight, dimensions, vehicle fitment */}
+        {(product.weight || product.dimensions || product.vehicleAttributes?.length > 0) && (
+          <div className="product-details-strip">
+
+            {(product.weight || product.dimensions) && (
+              <div className="product-details-block">
+                <h3 className="product-details-heading">Shipping & Dimensions</h3>
+                <table className="product-details-table">
+                  <tbody>
+                    {product.weight && (
+                      <tr><td>Weight</td><td>{product.weight} kg</td></tr>
+                    )}
+                    {product.dimensions?.length && (
+                      <tr><td>Length</td><td>{product.dimensions.length} cm</td></tr>
+                    )}
+                    {product.dimensions?.width && (
+                      <tr><td>Width</td><td>{product.dimensions.width} cm</td></tr>
+                    )}
+                    {product.dimensions?.height && (
+                      <tr><td>Height</td><td>{product.dimensions.height} cm</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {product.vehicleAttributes?.length > 0 && (
+              <div className="product-details-block">
+                <h3 className="product-details-heading">Vehicle Fitment</h3>
+                {product.vehicleAttributes.map(attr => (
+                  <div key={attr.name} className="product-details-fitment">
+                    <span className="product-details-fitment-label">{attr.name}</span>
+                    <div className="product-details-fitment-values">
+                      {attr.values.map(v => (
+                        <span key={v} className="product-page-chip">{v}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+        )}
 
         {/* Related products */}
         {related.length > 0 && (

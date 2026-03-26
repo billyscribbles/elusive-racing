@@ -431,6 +431,140 @@
   font-size: 11px;
 }
 
+/* Description — full width */
+.product-details-description {
+  border: 1px solid #ebebeb;
+  border-radius: 6px;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+/* Product details strip */
+.product-details-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0;
+  border: 1px solid #ebebeb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+
+.product-details-block {
+  padding: 28px 32px;
+  border-right: 1px solid #ebebeb;
+}
+
+.product-details-block:last-child {
+  border-right: none;
+}
+
+.product-details-heading {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 14px;
+}
+
+.product-details-body {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.7;
+}
+
+.product-details-body p {
+  margin-bottom: 12px;
+}
+
+.product-details-body p:last-child {
+  margin-bottom: 0;
+}
+
+.product-details-body ul,
+.product-details-body ol {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.product-details-body li {
+  margin-bottom: 4px;
+}
+
+.product-details-body a {
+  color: var(--color-red);
+  text-decoration: underline;
+}
+
+.product-details-body strong {
+  font-weight: 700;
+  color: #222;
+}
+
+.product-details-body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  margin: 12px 0;
+}
+
+.product-details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.product-details-table td {
+  padding: 6px 0;
+  color: #444;
+}
+
+.product-details-table td:first-child {
+  color: #999;
+  width: 90px;
+}
+
+.product-details-fitment {
+  margin-bottom: 12px;
+}
+
+.product-details-fitment:last-child {
+  margin-bottom: 0;
+}
+
+.product-details-fitment-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.product-details-fitment-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .product-details-strip {
+    grid-template-columns: 1fr;
+  }
+  .product-details-block {
+    border-right: none;
+    border-bottom: 1px solid #ebebeb;
+    padding: 20px;
+  }
+  .product-details-block:last-child {
+    border-bottom: none;
+  }
+}
+
 /* Related products */
 .product-related {
   border-top: 2px solid #f0f0f0;

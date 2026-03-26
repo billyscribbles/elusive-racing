@@ -192,13 +192,15 @@ export default function SearchBar() {
             <div className="search-no-results">No results for "{query}"</div>
           )}
 
-          <a
-            href={`/search?q=${encodeURIComponent(query)}`}
-            className="search-view-all"
-            onClick={() => setOpen(false)}
-          >
-            View all results for "{query}"
-          </a>
+          {!(results.length === 1 && suggestions.brands.length === 0 && suggestions.categories.length === 0) && (
+            <a
+              href={`/search?q=${encodeURIComponent(query)}`}
+              className="search-view-all"
+              onClick={() => setOpen(false)}
+            >
+              View all results for "{query}"
+            </a>
+          )}
         </div>
       )}
     </form>

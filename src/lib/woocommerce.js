@@ -12,11 +12,16 @@ const STORE_BASE = `${WC_URL}/wp-json/wc/store/v1`;
 
 const authHeader = 'Basic ' + btoa(`${KEY}:${SECRET}`);
 
+// Decode HTML entities returned by the WC REST API (e.g. &amp; → &)
+function decodeHtml(str) {
+  return (str ?? '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+}
+
 // ── Field masks — only fetch what normalizeProduct/normalizeProductDetail need ──
 const PRODUCT_LIST_FIELDS =
   'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,variations,date_created,short_description';
 const PRODUCT_DETAIL_FIELDS =
-  `${PRODUCT_LIST_FIELDS},description,type`;
+  `${PRODUCT_LIST_FIELDS},description,type,weight,dimensions`;
 const CATEGORY_LIST_FIELDS = 'id,name,slug,description,image,count';
 const CATEGORY_FILTER_FIELDS = 'id,name,slug,parent';
 
@@ -82,11 +87,13 @@ function normalizeProduct(p) {
 
   return {
     id: String(p.id),
-    title: p.name,
+    title: decodeHtml(p.name),
     handle: p.slug,
-    vendor: brand,
+    vendor: decodeHtml(brand),
     description: p.short_description?.replace(/<[^>]+>/g, '') ?? '',
-    descriptionHtml: p.description ?? '',
+    descriptionHtml: (p.description ?? '')
+      .replace(/src="(\/[^"]+)"/g, `src="${WC_URL}$1"`)
+      .replace(/<img /g, '<img onerror="this.style.display=\'none\'" '),
     sku: p.sku,
     onSale: p.on_sale,
     stockStatus: p.stock_status,
@@ -107,17 +114,31 @@ function normalizeProduct(p) {
       ? { url: p.images[0].src, altText: p.images[0].alt || p.name }
       : null,
     images: p.images?.map(img => ({ url: img.src, altText: img.alt || p.name })) ?? [],
-    tags: p.tags?.map(t => t.name) ?? [],
-    categories: p.categories?.map(c => ({ id: String(c.id), title: c.name, handle: c.slug })) ?? [],
+    tags: p.tags?.map(t => decodeHtml(t.name)) ?? [],
+    categories: p.categories?.map(c => ({ id: String(c.id), title: decodeHtml(c.name), handle: c.slug })) ?? [],
     variants: p.variations?.length
       ? p.variations.map(v => ({ id: String(v.id) }))
       : [{ id: String(p.id), title: 'Default', availableForSale: p.stock_status === 'instock' }],
   };
 }
 
+// Attribute names that represent vehicle fitment (not variant selectors)
+const VEHICLE_ATTR_NAMES = ['vehicle', 'vehicles', 'fitment', 'compatible', 'application', 'fits', 'make', 'model', 'year'];
+
 function normalizeProductDetail(p) {
+  const dims = p.dimensions ?? {};
+  const hasDims = dims.length || dims.width || dims.height;
+
+  // Pull vehicle/fitment from attributes (anything not used as a variant selector)
+  const vehicleAttrs = (p.attributes ?? []).filter(a =>
+    VEHICLE_ATTR_NAMES.some(v => a.name.toLowerCase().includes(v))
+  );
+
   return {
     ...normalizeProduct(p),
+    weight: p.weight || null,
+    dimensions: hasDims ? { length: dims.length, width: dims.width, height: dims.height } : null,
+    vehicleAttributes: vehicleAttrs.map(a => ({ name: a.name, values: a.options ?? [] })),
     variants: p.attributes?.length
       ? (p.variations ?? []).map(v => ({
           id: String(v.id),
@@ -195,7 +216,7 @@ export async function getProducts({
 
   // When multiple brands selected, run one request per brand and merge
   if (brandNames.length > 1) {
-    const perBrand = Math.ceil((count * 2) / brandNames.length);
+    const perBrand = Math.min(100, Math.ceil((count * 2) / brandNames.length));
     const batches = await Promise.all(
       brandNames.map(brand => {
         const searchTerm = query ? `${brand} ${query}` : brand;
@@ -234,7 +255,9 @@ export async function getProducts({
     : query;
 
   const params = new URLSearchParams({
-    per_page: Math.min(count, 100),
+    // When searching by text, fetch the API max (100) so results ranked lower
+    // in WooCommerce's scoring don't get silently cut off at per_page=24.
+    per_page: searchTerm ? 100 : Math.min(count, 100),
     page,
     orderby,
     order,
@@ -377,9 +400,14 @@ export async function searchProducts(query, count = 24) {
   const tagResults   = byTag.status  === 'fulfilled' ? byTag.value  : [];
   const otherResults = rest.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
-  // Priority: SKU exact → text match → tag/category/brand match
+  // Only use tag/category/brand fallbacks when text+SKU search finds nothing.
+  // If we already have direct matches, the fallbacks just add noise.
+  const primaryHits = skuResults.length + textResults.length;
+  const fallbacks = primaryHits === 0 ? [...tagResults, ...otherResults] : [];
+
+  // Priority: SKU exact → text match → fallbacks only if needed
   const seen = new Set();
-  const merged = [...skuResults, ...textResults, ...tagResults, ...otherResults].filter(p => {
+  const merged = [...skuResults, ...textResults, ...fallbacks].filter(p => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
     return true;
@@ -405,9 +433,9 @@ export async function getCollections(count = 50) {
   const categories = await wcFetch(`/products/categories?per_page=${count}&orderby=count&order=desc&hide_empty=true&_fields=${CATEGORY_LIST_FIELDS}`);
   return categories.map(c => ({
     id: String(c.id),
-    title: c.name,
+    title: decodeHtml(c.name),
     handle: c.slug,
-    description: c.description,
+    description: decodeHtml(c.description),
     image: c.image ? { url: c.image.src, altText: c.image.alt || c.name } : null,
     count: c.count,
   }));
