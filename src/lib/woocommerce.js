@@ -12,6 +12,14 @@ const STORE_BASE = `${WC_URL}/wp-json/wc/store/v1`;
 
 const authHeader = 'Basic ' + btoa(`${KEY}:${SECRET}`);
 
+// ── Field masks — only fetch what normalizeProduct/normalizeProductDetail need ──
+const PRODUCT_LIST_FIELDS =
+  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,variations,date_created,short_description';
+const PRODUCT_DETAIL_FIELDS =
+  `${PRODUCT_LIST_FIELDS},description,type`;
+const CATEGORY_LIST_FIELDS = 'id,name,slug,description,image,count';
+const CATEGORY_FILTER_FIELDS = 'id,name,slug,parent';
+
 // ── In-memory cache ───────────────────────────────────────────────────────────
 let _categoryCache = null;       // resolved array of WC category objects
 let _categoryCachePromise = null; // in-flight fetch (deduplicates concurrent callers)
@@ -22,8 +30,8 @@ export async function getCachedCategories() {
   if (_categoryCache) return _categoryCache;
   if (_categoryCachePromise) return _categoryCachePromise;
   _categoryCachePromise = Promise.all([
-    wcFetch('/products/categories?per_page=100&hide_empty=true'),
-    wcFetch('/products/categories?per_page=100&page=2&hide_empty=true').catch(() => []),
+    wcFetch(`/products/categories?per_page=100&hide_empty=true&_fields=${CATEGORY_FILTER_FIELDS}`),
+    wcFetch(`/products/categories?per_page=100&page=2&hide_empty=true&_fields=${CATEGORY_FILTER_FIELDS}`).catch(() => []),
   ])
     .then(([p1, p2]) => {
       _categoryCache = [...p1, ...p2];
@@ -202,7 +210,7 @@ export async function getProducts({
           ...(minPrice && { min_price: minPrice }),
           ...(maxPrice && { max_price: maxPrice }),
         });
-        return wcFetch(`/products?${p}`).catch(() => []);
+        return wcFetch(`/products?${p}&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => []);
       })
     );
     const seen = new Set();
@@ -237,7 +245,7 @@ export async function getProducts({
     ...(maxPrice   && { max_price: maxPrice }),
   });
 
-  let raw        = await wcFetch(`/products?${params}`);
+  let raw        = await wcFetch(`/products?${params}&_fields=${PRODUCT_LIST_FIELDS}`);
   let total      = raw.__total;
   let totalPages = raw.__totalPages;
 
@@ -258,7 +266,7 @@ export async function getProducts({
             ...(minPrice && { min_price: minPrice }),
             ...(maxPrice && { max_price: maxPrice }),
           });
-          return wcFetch(`/products?${p}`).catch(() => []);
+          return wcFetch(`/products?${p}&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => []);
         })
       );
       const seen = new Set();
@@ -282,16 +290,16 @@ export async function getProducts({
 }
 
 export async function getFeaturedProducts(count = 8) {
-  const products = await wcFetch(`/products?per_page=${count}&orderby=popularity&featured=true`);
+  const products = await wcFetch(`/products?per_page=${count}&orderby=popularity&featured=true&_fields=${PRODUCT_LIST_FIELDS}`);
   // Fall back to best-selling if no featured products
-  const list = products.length ? products : await wcFetch(`/products?per_page=${count}&orderby=popularity`);
+  const list = products.length ? products : await wcFetch(`/products?per_page=${count}&orderby=popularity&_fields=${PRODUCT_LIST_FIELDS}`);
   return list.map(p => normalizeProduct(p));
 }
 
 export async function getProductByHandle(slug) {
   if (_productCache.has(slug)) return _productCache.get(slug);
 
-  const products = await wcFetch(`/products?slug=${encodeURIComponent(slug)}`);
+  const products = await wcFetch(`/products?slug=${encodeURIComponent(slug)}&_fields=${PRODUCT_DETAIL_FIELDS}`);
   if (!products.length) throw new Error(`Product not found: ${slug}`);
   const p = products[0];
 
@@ -310,7 +318,7 @@ export async function getProductByHandle(slug) {
 
 async function fetchProductsForTerms(endpoint, termIds, perTerm = 8) {
   const batches = await Promise.all(
-    termIds.map(id => wcFetch(`/products?${endpoint}=${id}&per_page=${perTerm}`).catch(() => []))
+    termIds.map(id => wcFetch(`/products?${endpoint}=${id}&per_page=${perTerm}&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => []))
   );
   return batches.flat();
 }
@@ -323,10 +331,10 @@ export async function searchProducts(query, count = 24) {
 
   const [byText, bySku, byTag, ...rest] = await Promise.allSettled([
     // 1. Full-text search (title + description)
-    wcFetch(`/products?search=${q}&per_page=${count}`),
+    wcFetch(`/products?search=${q}&per_page=${count}&_fields=${PRODUCT_LIST_FIELDS}`),
 
     // 2. Exact SKU match
-    wcFetch(`/products?sku=${q}&per_page=10`),
+    wcFetch(`/products?sku=${q}&per_page=10&_fields=${PRODUCT_LIST_FIELDS}`),
 
     // 3. Tag search (full phrase)
     wcFetch(`/products/tags?search=${q}&per_page=20&hide_empty=true`)
@@ -342,7 +350,7 @@ export async function searchProducts(query, count = 24) {
 
     // 5. Brand name match — search by brand name as text
     ...matchedBrands.map(brand =>
-      wcFetch(`/products?search=${encodeURIComponent(brand)}&per_page=8`).catch(() => [])
+      wcFetch(`/products?search=${encodeURIComponent(brand)}&per_page=8&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => [])
     ),
   ]);
 
@@ -376,7 +384,7 @@ export async function getBrands() {
 // ── Categories / Collections ──────────────────────────────────────────────────
 
 export async function getCollections(count = 50) {
-  const categories = await wcFetch(`/products/categories?per_page=${count}&orderby=count&order=desc&hide_empty=true`);
+  const categories = await wcFetch(`/products/categories?per_page=${count}&orderby=count&order=desc&hide_empty=true&_fields=${CATEGORY_LIST_FIELDS}`);
   return categories.map(c => ({
     id: String(c.id),
     title: c.name,
@@ -388,11 +396,11 @@ export async function getCollections(count = 50) {
 }
 
 export async function getCollectionByHandle(slug, productCount = 24) {
-  const categories = await wcFetch(`/products/categories?slug=${encodeURIComponent(slug)}`);
+  const categories = await wcFetch(`/products/categories?slug=${encodeURIComponent(slug)}&_fields=${CATEGORY_LIST_FIELDS}`);
   if (!categories.length) throw new Error(`Category not found: ${slug}`);
   const cat = categories[0];
 
-  const products = await wcFetch(`/products?category=${cat.id}&per_page=${productCount}&orderby=popularity`);
+  const products = await wcFetch(`/products?category=${cat.id}&per_page=${productCount}&orderby=popularity&_fields=${PRODUCT_LIST_FIELDS}`);
 
   return {
     id: String(cat.id),
