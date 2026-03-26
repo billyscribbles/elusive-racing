@@ -148,18 +148,6 @@ export const navItems = [
     ],
   },
   {
-    label: 'Merchandise',
-    href: '/shop?sub=merchandise',
-    hasMega: false,
-    image: '/menu/menu-hoodie.jpg',
-    links: [
-      { label: 'Hoodies & Jackets', href: '/shop?sub=hoodies-jackets' },
-      { label: 'T-Shirts', href: '/shop?sub=tees' },
-      { label: 'Caps', href: '/shop?sub=caps' },
-      { label: 'Accessories', href: '/shop?sub=accessories-merchandise' },
-    ],
-  },
-  {
     label: 'Lighting',
     href: '/shop?sub=lighting',
     hasMega: false,
@@ -167,15 +155,6 @@ export const navItems = [
     links: [
       { label: 'LED', href: '/shop?sub=led' },
       { label: 'Tail / Brake', href: '/shop?sub=tail-brake' },
-    ],
-  },
-  {
-    label: 'Clearance',
-    href: '/shop?sub=clearance',
-    hasMega: false,
-    image: '/menu/menu-maintenacne.jpg',
-    links: [
-      { label: 'Used Parts', href: '/shop?sub=used-parts' },
     ],
   },
   {
