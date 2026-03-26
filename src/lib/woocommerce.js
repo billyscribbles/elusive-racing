@@ -201,6 +201,22 @@ function resolveBrandNames(query) {
     .map(b => b.name);
 }
 
+// Score a raw WC product by how closely its brand matches the query.
+// Used to re-sort search results so brand-name searches surface that brand's
+// products ahead of unrelated products that merely mention it in descriptions.
+function scoreBrandRelevance(p, query) {
+  const qNorm = query.trim().toLowerCase().replace(/\s+/g, '');
+  if (!qNorm) return 0;
+  const brand = (p.brands?.[0]?.name
+    ?? p.attributes?.find(a => ['brand', 'pa_brand', 'Brand', 'PA_Brand'].includes(a.name))?.options?.[0]
+    ?? '').toLowerCase().replace(/\s+/g, '');
+  if (!brand) return 0;
+  if (brand === qNorm) return 3;
+  if (brand.startsWith(qNorm) || qNorm.startsWith(brand)) return 2;
+  if (brand.includes(qNorm)) return 1;
+  return 0;
+}
+
 // Resolve category IDs by matching cached category names against query words — no API call
 async function resolveCategoryIds(query) {
   const cats = await getCachedCategories();
@@ -302,6 +318,13 @@ export async function getProducts({
     raw = textRaw;
   }
 
+  // Re-sort by brand relevance for pure text searches (no brand filter active).
+  // WC fetches up to 100 results — Skunk2 products are in there but ranked low
+  // because WC scores by title+description, not by brand match.
+  if (query && !brandNames.length) {
+    raw.sort((a, b) => scoreBrandRelevance(b, query) - scoreBrandRelevance(a, query));
+  }
+
   let total      = raw.__total      ?? textRaw.__total;
   let totalPages = raw.__totalPages ?? textRaw.__totalPages;
 
@@ -389,7 +412,7 @@ export async function searchProducts(query, count = 24) {
   // Brand name matches — synchronous, no API call
   const matchedBrands = resolveBrandNames(query);
 
-  const [byText, bySku, byTag, ...rest] = await Promise.allSettled([
+  const [byText, bySku, byTag, byCat, ...byBrand] = await Promise.allSettled([
     // 1. Full-text search (title + description)
     wcFetch(`/products?search=${q}&per_page=${count}&_fields=${PRODUCT_LIST_FIELDS}`),
 
@@ -408,29 +431,47 @@ export async function searchProducts(query, count = 24) {
       ids.length ? fetchProductsForTerms('category', ids, 8) : []
     ),
 
-    // 5. Brand name match — search by brand name as text
+    // 5. Brand name match — fetch a larger set then filter client-side to actual
+    // brand products (text search returns anything mentioning the brand name)
     ...matchedBrands.map(brand =>
-      wcFetch(`/products?search=${encodeURIComponent(brand)}&per_page=8&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => [])
+      wcFetch(`/products?search=${encodeURIComponent(brand)}&per_page=50&_fields=${PRODUCT_LIST_FIELDS}`).catch(() => [])
     ),
   ]);
 
   const textResults  = byText.status === 'fulfilled' ? byText.value : [];
   const skuResults   = bySku.status  === 'fulfilled' ? bySku.value  : [];
   const tagResults   = byTag.status  === 'fulfilled' ? byTag.value  : [];
-  const otherResults = rest.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+  const catResults   = byCat.status  === 'fulfilled' ? byCat.value  : [];
 
-  // Only use tag/category/brand fallbacks when text+SKU search finds nothing.
-  // If we already have direct matches, the fallbacks just add noise.
-  const primaryHits = skuResults.length + textResults.length;
-  const fallbacks = primaryHits === 0 ? [...tagResults, ...otherResults] : [];
+  // Filter brand results to products whose brand field actually matches one of
+  // the resolved brand names. The text search used to fetch them returns any
+  // product that mentions the brand in its title or description (e.g. K-Tuned
+  // products that mention "Skunk2" compatibility), so we must verify the match.
+  const matchedBrandNorms = matchedBrands.map(b => b.toLowerCase().replace(/\s+/g, ''));
+  const brandResults = byBrand
+    .flatMap(r => r.status === 'fulfilled' ? r.value : [])
+    .filter(p => {
+      const b = (p.brands?.[0]?.name ?? '').toLowerCase().replace(/\s+/g, '');
+      return b && matchedBrandNorms.some(mb => b === mb || b.startsWith(mb) || mb.startsWith(b));
+    });
 
-  // Priority: SKU exact → text match → fallbacks only if needed
+  // Brand results are always included when we matched a known brand name —
+  // they go first so brand-name searches surface that brand's products before
+  // unrelated products that merely mention the brand in their description.
+  const primaryHits = skuResults.length + textResults.length + brandResults.length;
+  const fallbacks = primaryHits === 0 ? [...tagResults, ...catResults] : [];
+
+  // Priority: SKU exact → brand-matched → text match → fallbacks only if needed
   const seen = new Set();
-  const merged = [...skuResults, ...textResults, ...fallbacks].filter(p => {
+  const merged = [...skuResults, ...brandResults, ...textResults, ...fallbacks].filter(p => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
     return true;
   });
+
+  // Re-sort by brand relevance — safety net so brand-name searches always
+  // surface that brand's products first regardless of WC's text scoring.
+  merged.sort((a, b) => scoreBrandRelevance(b, query) - scoreBrandRelevance(a, query));
 
   const results = merged.slice(0, count).map(p => normalizeProduct(p));
   _searchCache.set(cacheKey, { results, expiresAt: Date.now() + CACHE_TTL });

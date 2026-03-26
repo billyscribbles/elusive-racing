@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, X, Tag, Layers } from 'lucide-react';
 import { searchProducts as wcSearch } from '../../lib/woocommerce';
 import { BRANDS } from '../../data/brands';
@@ -40,6 +41,7 @@ async function searchProducts(query) {
 }
 
 export default function SearchBar() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [suggestions, setSuggestions] = useState({ brands: [], categories: [] });
@@ -90,7 +92,7 @@ export default function SearchBar() {
     e.preventDefault();
     if (query.trim()) {
       setOpen(false);
-      window.location.href = `/search?q=${encodeURIComponent(query)}`;
+      navigate(`/search?q=${encodeURIComponent(query)}`);
     }
   };
 
@@ -159,11 +161,11 @@ export default function SearchBar() {
             <>
               <div className="search-section-label">Products</div>
               {results.map((product) => (
-                <button
+                <a
                   key={product.id}
-                  type="button"
+                  href={product.href}
                   className="search-result-item"
-                  onClick={() => { setOpen(false); setQuery(''); window.location.href = product.href; }}
+                  onClick={() => { setOpen(false); setQuery(''); }}
                 >
                   <div className="search-result-image">
                     {product.image ? (
@@ -182,7 +184,7 @@ export default function SearchBar() {
                       <span className="search-result-compare">${product.originalPrice.toFixed(2)}</span>
                     )}
                   </div>
-                </button>
+                </a>
               ))}
             </>
           )}
