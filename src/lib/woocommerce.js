@@ -567,3 +567,139 @@ export async function removeFromCart(key) {
 export function getCheckoutUrl() {
   return `${WC_URL}/checkout`;
 }
+
+// Place an order via WooCommerce Store API (no redirect).
+// Syncs cart, sets customer info, then POSTs to /checkout.
+// paymentMethod: 'stripe_cc' | 'bacs'
+// paymentData: array of { key, value } pairs (e.g. Stripe PaymentMethod ID)
+export async function placeOrder({ items, contact, shipping, fulfillment, paymentMethod, paymentData = [] }) {
+  // 1. Clear existing WC session cart
+  const existingCart = await storeFetch('/cart').catch(() => null);
+  if (existingCart?.items?.length) {
+    await Promise.all(
+      existingCart.items.map((item) =>
+        storeFetch('/cart/remove-item', {
+          method: 'POST',
+          body: JSON.stringify({ key: item.key }),
+        }).catch(() => {})
+      )
+    );
+  }
+
+  // 2. Add local cart items to WC
+  await Promise.all(
+    items.map((item) => {
+      const productId = parseInt(item.id, 10);
+      const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
+      return storeFetch('/cart/add-item', {
+        method: 'POST',
+        body: JSON.stringify({ id: variantId ?? productId, quantity: item.quantity }),
+      }).catch(() => {});
+    })
+  );
+
+  // 3. Build address
+  const addr = fulfillment === 'delivery' ? {
+    address_1: shipping.address1 || '',
+    address_2: shipping.address2 || '',
+    city:      shipping.city     || '',
+    state:     shipping.state    || '',
+    postcode:  shipping.postcode || '',
+    country:   'AU',
+  } : {
+    address_1: '1/32 Graham Rd',
+    address_2: '',
+    city:      'Clayton South',
+    state:     'VIC',
+    postcode:  '3169',
+    country:   'AU',
+  };
+
+  const billingAddress = {
+    first_name: contact.firstName || '',
+    last_name:  contact.lastName  || '',
+    email:      contact.email     || '',
+    phone:      contact.phone     || '',
+    ...addr,
+  };
+
+  // 4. Place order via Store API
+  const result = await storeFetch('/checkout', {
+    method: 'POST',
+    body: JSON.stringify({
+      billing_address:  billingAddress,
+      shipping_address: { first_name: contact.firstName || '', last_name: contact.lastName || '', ...addr },
+      customer_note:    '',
+      payment_method:   paymentMethod,
+      payment_data:     paymentData,
+    }),
+  });
+
+  return result;
+}
+
+// Sync local cart + customer info to WooCommerce, then return the checkout URL.
+// Call this right before redirecting to checkout.
+export async function syncToWooCommerceCheckout(items, contact, shipping, fulfillment) {
+  // 1. Clear any existing WC cart session
+  const existingCart = await storeFetch('/cart').catch(() => null);
+  if (existingCart?.items?.length) {
+    await Promise.all(
+      existingCart.items.map((item) =>
+        storeFetch('/cart/remove-item', {
+          method: 'POST',
+          body: JSON.stringify({ key: item.key }),
+        }).catch(() => {})
+      )
+    );
+  }
+
+  // 2. Add all local cart items to WooCommerce
+  await Promise.all(
+    items.map((item) => {
+      const productId = parseInt(item.id, 10);
+      const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
+      return storeFetch('/cart/add-item', {
+        method: 'POST',
+        body: JSON.stringify({ id: variantId ?? productId, quantity: item.quantity }),
+      }).catch(() => {});
+    })
+  );
+
+  // 3. Pre-fill customer billing/shipping info
+  const addr = fulfillment === 'delivery' ? {
+    address_1: shipping.address1 || '',
+    address_2: shipping.address2 || '',
+    city:      shipping.city     || '',
+    state:     shipping.state    || '',
+    postcode:  shipping.postcode || '',
+    country:   'AU',
+  } : {
+    address_1: '1/32 Graham Rd',
+    address_2: '',
+    city:      'Clayton South',
+    state:     'VIC',
+    postcode:  '3169',
+    country:   'AU',
+  };
+
+  await storeFetch('/cart/update-customer', {
+    method: 'PUT',
+    body: JSON.stringify({
+      billing_address: {
+        first_name: contact.firstName || '',
+        last_name:  contact.lastName  || '',
+        email:      contact.email     || '',
+        phone:      contact.phone     || '',
+        ...addr,
+      },
+      shipping_address: {
+        first_name: contact.firstName || '',
+        last_name:  contact.lastName  || '',
+        ...addr,
+      },
+    }),
+  }).catch(() => {});
+
+  return getCheckoutUrl();
+}

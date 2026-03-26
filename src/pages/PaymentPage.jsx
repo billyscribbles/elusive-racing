@@ -1,20 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCheckoutUrl } from '../lib/woocommerce';
-import { ArrowLeft, Lock, ShieldCheck, CreditCard, Truck, Store, Check } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { placeOrder } from '../lib/woocommerce';
+import { ArrowLeft, Lock, ShieldCheck, Truck, Store, Check, AlertCircle } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import './PaymentPage.css';
 
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  : null;
+
 const PAYMENT_METHODS = [
-  { id: 'card',     label: 'Credit / Debit Card',   badge: null },
-  { id: 'afterpay', label: 'Afterpay',               badge: { text: 'Buy now, pay later', color: '#b2fcf0', textColor: '#016450' } },
-  { id: 'zip',      label: 'Zip',                    badge: { text: 'Own it now, pay later', color: '#f0e6ff', textColor: '#6a0dad' } },
-  { id: 'paypal',   label: 'PayPal',                 badge: null },
-  { id: 'gpay',     label: 'Google Pay',             badge: null },
-  { id: 'applepay', label: 'Apple Pay',              badge: null },
-  { id: 'bank',     label: 'Direct Bank Transfer',   badge: { text: 'Manual payment', color: '#e8f4e8', textColor: '#2d6a2d' } },
+  { id: 'stripe_cc', label: 'Credit / Debit Card',  available: true  },
+  { id: 'bacs',      label: 'Direct Bank Transfer', available: true  },
+  { id: 'afterpay',  label: 'Afterpay',             available: false },
+  { id: 'zipmoney',  label: 'Zip',                  available: false },
+  { id: 'ppcp',      label: 'PayPal',               available: false },
+  { id: 'gpay',      label: 'Google Pay',           available: false },
+  { id: 'applepay',  label: 'Apple Pay',            available: false },
 ];
 
 function ShippingSummary() {
@@ -32,8 +38,7 @@ function ShippingSummary() {
         <span>
           {fulfillment === 'delivery'
             ? [shipping.address1, shipping.city, shipping.state, shipping.postcode].filter(Boolean).join(', ') || '—'
-            : '1/32 Graham Rd, Clayton South VIC 3169'
-          }
+            : '1/32 Graham Rd, Clayton South VIC 3169'}
         </span>
       </div>
       <a href="/checkout/contact" className="pp-shipping-edit">Edit</a>
@@ -79,12 +84,208 @@ function MiniOrderSummary() {
   );
 }
 
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      fontSize: '15px',
+      color: '#1a1a1a',
+      fontFamily: 'Open Sans, sans-serif',
+      '::placeholder': { color: '#aaa' },
+    },
+    invalid: { color: '#d94040' },
+  },
+};
+
+function PaymentForm() {
+  const stripe     = useStripe();
+  const elements   = useElements();
+  const navigate   = useNavigate();
+  const { items }  = useCartStore();
+  const { contact, shipping, fulfillment } = useCheckoutStore();
+
+  const [method,  setMethod]  = useState('stripe_cc');
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (method === 'stripe_cc') {
+        if (!stripe || !elements) {
+          setError('Stripe is not configured yet. Please add VITE_STRIPE_PUBLISHABLE_KEY to your .env file.');
+          setLoading(false);
+          return;
+        }
+        const cardElement = elements.getElement(CardElement);
+        const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: {
+            name:  `${contact.firstName} ${contact.lastName}`,
+            email: contact.email,
+            phone: contact.phone || undefined,
+          },
+        });
+        if (stripeError) {
+          setError(stripeError.message);
+          setLoading(false);
+          return;
+        }
+        await placeOrder({
+          items, contact, shipping, fulfillment,
+          paymentMethod: 'stripe_cc',
+          paymentData:   [{ key: 'stripe_payment_method', value: paymentMethod.id }],
+        });
+      } else if (method === 'bacs') {
+        await placeOrder({
+          items, contact, shipping, fulfillment,
+          paymentMethod: 'bacs',
+          paymentData:   [],
+        });
+      }
+
+      setSuccess(true);
+      navigate('/order-confirmation');
+    } catch (err) {
+      setError(err.message || 'Something went wrong placing your order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="pp-layout">
+
+        {/* Left col */}
+        <div className="pp-left">
+
+          <div className="pp-section">
+            <h2 className="pp-section-title">Delivery Details</h2>
+            <ShippingSummary />
+          </div>
+
+          <div className="pp-section">
+            <h2 className="pp-section-title">Payment Method</h2>
+            <div className="pp-method-list">
+              {PAYMENT_METHODS.map((m) => (
+                <label
+                  key={m.id}
+                  className={`pp-method${method === m.id ? ' active' : ''}${!m.available ? ' pp-method--disabled' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={m.id}
+                    checked={method === m.id}
+                    onChange={() => m.available && setMethod(m.id)}
+                    disabled={!m.available}
+                  />
+                  <div className="pp-method-radio">
+                    {method === m.id && m.available && <Check size={11} strokeWidth={3} />}
+                  </div>
+                  <span className="pp-method-label">{m.label}</span>
+                  {!m.available && (
+                    <span className="pp-method-badge pp-method-badge--unavailable">Coming soon</span>
+                  )}
+                </label>
+              ))}
+            </div>
+
+            {method === 'stripe_cc' && (
+              <div className="pp-card-form">
+                {stripePromise ? (
+                  <div className="pp-field">
+                    <label className="pp-label">Card details</label>
+                    <div className="pp-card-element-wrap">
+                      <CardElement options={CARD_ELEMENT_OPTIONS} />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="pp-field">
+                      <label className="pp-label">Card number</label>
+                      <input className="pp-input" placeholder="1234 5678 9012 3456" disabled />
+                    </div>
+                    <div className="pp-row-2">
+                      <div className="pp-field">
+                        <label className="pp-label">Expiry</label>
+                        <input className="pp-input" placeholder="MM / YY" disabled />
+                      </div>
+                      <div className="pp-field">
+                        <label className="pp-label">CVV</label>
+                        <input className="pp-input" placeholder="•••" disabled />
+                      </div>
+                    </div>
+                    <div className="pp-field">
+                      <label className="pp-label">Name on card</label>
+                      <input className="pp-input" placeholder="As it appears on your card" disabled />
+                    </div>
+                  </>
+                )}
+                <p className="pp-card-note">
+                  <Lock size={12} /> Your card details are encrypted and processed securely by Stripe.
+                </p>
+              </div>
+            )}
+
+            {method === 'bacs' && (
+              <div className="pp-bank-details">
+                <p className="pp-bank-note">Transfer the order total to our bank account. Your order will be confirmed once payment is received (1–2 business days).</p>
+                <div className="pp-bank-fields">
+                  {[
+                    ['Bank',         'Commonwealth Bank of Australia'],
+                    ['Account Name', 'Elusive Racing Pty Ltd'],
+                    ['BSB',          '063-000'],
+                    ['Account No.',  '1234 5678'],
+                    ['Reference',    'Your order number (provided after placing order)'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="pp-bank-row">
+                      <span className="pp-bank-key">{k}</span>
+                      <span className="pp-bank-val">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="pp-error">
+                <AlertCircle size={15} /> {error}
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Right: order summary + CTA */}
+        <div className="pp-summary-col">
+          <h2 className="pp-summary-heading">Order Summary</h2>
+          <MiniOrderSummary />
+          <div className="pp-cta">
+            <button type="submit" className="pp-checkout-btn" disabled={loading || success}>
+              <Lock size={15} /> {loading ? 'Processing…' : 'Complete Order'}
+            </button>
+            <div className="pp-trust">
+              <span><ShieldCheck size={13} /> Secure Checkout</span>
+              <span><Lock size={13} /> SSL Encrypted</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  );
+}
+
 export default function PaymentPage() {
-  const { items } = useCartStore();
-  const checkoutUrl = getCheckoutUrl();
-  const navigate = useNavigate();
+  const { items }   = useCartStore();
+  const navigate    = useNavigate();
   const { contact } = useCheckoutStore();
-  const [method, setMethod] = useState('card');
 
   if (items.length === 0) {
     return (
@@ -96,7 +297,6 @@ export default function PaymentPage() {
     );
   }
 
-  // Guard: if contact info not filled, redirect back
   if (!contact.email) {
     navigate('/checkout/contact');
     return null;
@@ -105,149 +305,15 @@ export default function PaymentPage() {
   return (
     <div className="pp-page">
       <div className="container">
-
         <div className="pp-header">
           <a href="/checkout/contact" className="pp-back"><ArrowLeft size={16} /> Back to Contact</a>
           <h1 className="pp-title">Payment</h1>
           <CheckoutSteps current={2} />
         </div>
 
-        <div className="pp-layout">
-
-          {/* Left col */}
-          <div className="pp-left">
-
-            {/* Shipping summary */}
-            <div className="pp-section">
-              <h2 className="pp-section-title">Delivery Details</h2>
-              <ShippingSummary />
-            </div>
-
-            {/* Payment method */}
-            <div className="pp-section">
-              <h2 className="pp-section-title">Payment Method</h2>
-              <div className="pp-method-list">
-                {PAYMENT_METHODS.map((m) => (
-                  <label key={m.id} className={`pp-method${method === m.id ? ' active' : ''}`}>
-                    <input type="radio" name="payment" value={m.id} checked={method === m.id} onChange={() => setMethod(m.id)} />
-                    <div className="pp-method-radio">
-                      {method === m.id && <Check size={11} strokeWidth={3} />}
-                    </div>
-                    <span className="pp-method-label">{m.label}</span>
-                    {m.badge && (
-                      <span className="pp-method-badge" style={{ background: m.badge.color, color: m.badge.textColor }}>
-                        {m.badge.text}
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
-
-              {method === 'card' && (
-                <div className="pp-card-form">
-                  <div className="pp-field">
-                    <label className="pp-label">Card number</label>
-                    <input className="pp-input" placeholder="1234 5678 9012 3456" maxLength={19} readOnly />
-                  </div>
-                  <div className="pp-row-2">
-                    <div className="pp-field">
-                      <label className="pp-label">Expiry</label>
-                      <input className="pp-input" placeholder="MM / YY" maxLength={7} readOnly />
-                    </div>
-                    <div className="pp-field">
-                      <label className="pp-label">CVV</label>
-                      <input className="pp-input" placeholder="•••" maxLength={4} readOnly />
-                    </div>
-                  </div>
-                  <div className="pp-field">
-                    <label className="pp-label">Name on card</label>
-                    <input className="pp-input" placeholder="As it appears on your card" readOnly />
-                  </div>
-                  <p className="pp-card-note">
-                    <Lock size={12} /> Your payment details are entered securely on our checkout page.
-                  </p>
-                </div>
-              )}
-
-              {method === 'afterpay' && (
-                <div className="pp-alt-note">
-                  Pay in 4 interest-free fortnightly instalments with Afterpay. Available for orders between $1 and $2,000. No interest ever.
-                </div>
-              )}
-
-              {method === 'zip' && (
-                <div className="pp-alt-note">
-                  Own it now, pay later with Zip. Split your purchase into flexible repayments. Available for orders up to $1,000.
-                </div>
-              )}
-
-              {method === 'paypal' && (
-                <div className="pp-alt-note">
-                  You&apos;ll be redirected to PayPal to complete your payment securely.
-                </div>
-              )}
-
-              {method === 'gpay' && (
-                <div className="pp-alt-note">
-                  Pay quickly and securely with Google Pay using your saved cards. You&apos;ll be redirected to complete payment.
-                </div>
-              )}
-
-              {method === 'applepay' && (
-                <div className="pp-alt-note">
-                  Pay with Touch ID or Face ID using Apple Pay. Available on Safari and Apple devices.
-                </div>
-              )}
-
-              {method === 'bank' && (
-                <div className="pp-bank-details">
-                  <p className="pp-bank-note">Transfer the order total directly to our bank account. Your order will be processed once payment is confirmed (1–2 business days).</p>
-                  <div className="pp-bank-fields">
-                    <div className="pp-bank-row">
-                      <span className="pp-bank-key">Bank</span>
-                      <span className="pp-bank-val">Commonwealth Bank of Australia</span>
-                    </div>
-                    <div className="pp-bank-row">
-                      <span className="pp-bank-key">Account Name</span>
-                      <span className="pp-bank-val">Elusive Racing Pty Ltd</span>
-                    </div>
-                    <div className="pp-bank-row">
-                      <span className="pp-bank-key">BSB</span>
-                      <span className="pp-bank-val">063-000</span>
-                    </div>
-                    <div className="pp-bank-row">
-                      <span className="pp-bank-key">Account No.</span>
-                      <span className="pp-bank-val">1234 5678</span>
-                    </div>
-                    <div className="pp-bank-row">
-                      <span className="pp-bank-key">Reference</span>
-                      <span className="pp-bank-val">Your order number (provided after placing order)</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          {/* Right: order summary + CTA */}
-          <div className="pp-summary-col">
-            <h2 className="pp-summary-heading">Order Summary</h2>
-            <MiniOrderSummary />
-
-            <div className="pp-cta">
-              <a href={checkoutUrl} className="pp-checkout-btn">
-                <Lock size={15} /> Complete Order
-              </a>
-
-              <div className="pp-trust">
-                <span><ShieldCheck size={13} /> Secure Checkout</span>
-                <span><Lock size={13} /> SSL Encrypted</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
+        <Elements stripe={stripePromise}>
+          <PaymentForm />
+        </Elements>
       </div>
     </div>
   );
