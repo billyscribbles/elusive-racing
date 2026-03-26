@@ -51,14 +51,16 @@ export default function ProductPage() {
   const { handle } = useParams();
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
+  const [qty, setQty] = useState(1);
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Reset variant selection when navigating to a different product
+  // Reset variant selection and qty when navigating to a different product
   useEffect(() => {
     setSelectedVariant(null);
+    setQty(1);
   }, [handle]);
 
   useEffect(() => {
@@ -146,6 +148,7 @@ export default function ProductPage() {
       image: product.image,
       variantId: variantId ?? null,
       variantTitle: selectedVariant?.title ?? null,
+      quantity: qty,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -239,14 +242,21 @@ export default function ProductPage() {
               </div>
             )}
 
-            <button
-              className={`product-page-atc${added ? ' product-page-atc--added' : ''}${!canAddToCart ? ' product-page-atc--disabled' : ''}`}
-              onClick={handleAddToCart}
-              disabled={!canAddToCart}
-            >
-              <ShoppingBag size={18} />
-              {added ? 'Added to Cart' : 'Add to Cart'}
-            </button>
+            <div className="product-page-qty-row">
+              <div className="product-page-qty">
+                <button className="product-page-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
+                <span className="product-page-qty-val">{qty}</span>
+                <button className="product-page-qty-btn" onClick={() => setQty(q => q + 1)} aria-label="Increase quantity">+</button>
+              </div>
+              <button
+                className={`product-page-atc${added ? ' product-page-atc--added' : ''}${!canAddToCart ? ' product-page-atc--disabled' : ''}`}
+                onClick={handleAddToCart}
+                disabled={!canAddToCart}
+              >
+                <ShoppingBag size={18} />
+                {added ? 'Added to Cart' : 'Add to Cart'}
+              </button>
+            </div>
 
             {/* Description */}
             {product.description && (

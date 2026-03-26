@@ -11,12 +11,13 @@ const useCartStore = create(
       closeCart: () => set({ isOpen: false }),
 
       addItem: (product) => {
+        const qty = product.quantity ?? 1;
         set((s) => {
-          const existing = s.items.find((i) => i.id === product.id);
+          const existing = s.items.find((i) => i.id === product.id && i.variantId === product.variantId);
           if (existing) {
-            return { items: s.items.map((i) => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i) };
+            return { items: s.items.map((i) => i.id === product.id && i.variantId === product.variantId ? { ...i, quantity: i.quantity + qty } : i) };
           }
-          return { items: [...s.items, { ...product, quantity: 1 }] };
+          return { items: [...s.items, { ...product, quantity: qty }] };
         });
       },
 
