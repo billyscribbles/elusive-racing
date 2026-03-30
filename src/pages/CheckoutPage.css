@@ -284,6 +284,143 @@
   color: var(--color-light);
 }
 
+/* Freight estimator */
+.co-freight-estimator {
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.co-freight-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 11px 14px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-light);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+.co-freight-toggle:hover { color: var(--color-text); }
+.co-freight-toggle .co-freight-chevron { margin-left: auto; transition: transform 0.2s; }
+.co-freight-toggle .co-freight-chevron.open { transform: rotate(180deg); }
+
+.co-freight-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.co-freight-tabs {
+  display: flex;
+  gap: 6px;
+  padding-top: 12px;
+}
+
+.co-freight-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-light);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.co-freight-tab.active,
+.co-freight-tab:hover {
+  border-color: var(--color-red);
+  color: var(--color-text);
+  background: rgba(217, 64, 64, 0.08);
+}
+
+.co-freight-inputs {
+  display: flex;
+  gap: 6px;
+}
+.co-freight-inputs--intl {
+  flex-direction: column;
+  gap: 6px;
+}
+
+.co-freight-select,
+.co-freight-input {
+  flex: 1;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.co-freight-select:focus,
+.co-freight-input:focus { border-color: var(--color-red); }
+.co-freight-select option { background: #1a1a1a; }
+
+.co-freight-calc-btn {
+  background: var(--color-red);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 14px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.co-freight-calc-btn:hover:not(:disabled) { background: #c03333; }
+.co-freight-calc-btn:disabled { opacity: 0.6; cursor: default; }
+.co-freight-calc-btn.loading { opacity: 0.7; }
+
+.co-freight-error {
+  font-size: 11px;
+  color: var(--color-red);
+  font-family: var(--font-primary);
+}
+
+.co-freight-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.co-freight-estimate-note {
+  font-size: 10px;
+  color: var(--color-light);
+  font-style: italic;
+}
+
+.co-freight-rate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--color-text);
+  background: rgba(255,255,255,0.04);
+  border-radius: 5px;
+  padding: 7px 10px;
+}
+
 .co-summary-total {
   display: flex;
   justify-content: space-between;
@@ -401,6 +538,85 @@
 }
 
 .co-fitment-btn:hover { background: #5a3fa0; }
+
+/* Booking iframe modal */
+.co-booking-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.co-booking-modal {
+  background: #1a1a1a;
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 860px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.co-booking-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border-light);
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.co-booking-close {
+  background: none;
+  border: none;
+  color: var(--color-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.co-booking-close:hover { color: var(--color-text); }
+
+.co-booking-skeleton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-light);
+  font-size: 13px;
+}
+
+.co-booking-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-red);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.co-booking-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+}
+.co-booking-frame--hidden { display: none; }
 
 /* Trust row */
 .co-trust-row {

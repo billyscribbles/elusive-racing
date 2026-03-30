@@ -568,6 +568,18 @@ export function getCheckoutUrl() {
   return `${WC_URL}/checkout`;
 }
 
+// ── Live shipping rates (proxied through our server to avoid CORS) ────────────
+// Returns { rates: [{ id, label, price }], taxAmount: number }
+export async function getWCShippingRates(items, address = {}) {
+  const res = await fetch('/api/shipping-rates', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, address }),
+  });
+  if (!res.ok) return { rates: [], taxAmount: 0 };
+  return res.json();
+}
+
 // Place an order via WooCommerce Store API (no redirect).
 // Syncs cart, sets customer info, then POSTs to /checkout.
 // paymentMethod: 'stripe_cc' | 'bacs'

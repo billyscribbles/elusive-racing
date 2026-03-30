@@ -280,6 +280,114 @@ async function handleChat(req, res) {
   });
 }
 
+// ── Shipping rates proxy ──────────────────────────────────────────────────────
+// Calls WooCommerce Store API server-side to avoid CORS/credential issues.
+// Each call manages its own ephemeral WC session via cookie.
+async function getShippingRatesServer(items, address) {
+  const storeBase = `${WC_URL}/wp-json/wc/store/v1`;
+  let sessionCookie = '';
+
+  async function storeReq(path, method = 'GET', body = null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(sessionCookie && { Cookie: sessionCookie }) },
+      ...(body && { body: JSON.stringify(body) }),
+    };
+    const res = await fetch(`${storeBase}${path}`, opts);
+
+    // Capture WC session cookie from the first response
+    if (!sessionCookie) {
+      const sc = res.headers.get('set-cookie');
+      if (sc) {
+        sessionCookie = sc.split(',')
+          .map(c => c.trim().split(';')[0])
+          .filter(Boolean)
+          .join('; ');
+      }
+    }
+    if (!res.ok) return null;
+    return res.json().catch(() => null);
+  }
+
+  // 1. Fetch current cart (establishes session cookie)
+  const existingCart = await storeReq('/cart');
+
+  // 2. Clear any existing items
+  if (existingCart?.items?.length) {
+    for (const item of existingCart.items) {
+      await storeReq('/cart/remove-item', 'POST', { key: item.key });
+    }
+  }
+
+  // 3. Add the customer's current cart items
+  for (const item of items) {
+    const productId = parseInt(item.id, 10);
+    const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
+    await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
+  }
+
+  // 4. Set the shipping address so WC can match a shipping zone / call UPS
+  await storeReq('/cart/update-customer', 'PUT', {
+    shipping_address: {
+      first_name: '', last_name: '',
+      address_1: address.address1 || '',
+      address_2: address.address2 || '',
+      city:      address.city     || '',
+      state:     address.state    || '',
+      postcode:  address.postcode || '',
+      country:   address.country  || 'AU',
+    },
+  });
+
+  // 5. Fetch rates and cart totals in parallel
+  const [ratesData, cartData] = await Promise.all([
+    storeReq('/cart/shipping-rates'),
+    storeReq('/cart'),
+  ]);
+
+  console.log('[shipping] address:', JSON.stringify(address));
+  console.log('[shipping] ratesData:', JSON.stringify(ratesData));
+  console.log('[shipping] cart totals:', JSON.stringify(cartData?.totals));
+
+  // WC Store API prices are in minor units (cents)
+  const scale = 100;
+  const rawRates = ratesData?.[0]?.shipping_rates ?? [];
+  const rates = rawRates.map(r => ({
+    id:       r.rate_id,
+    label:    r.name + (r.description ? ` — ${r.description}` : ''),
+    price:    parseInt(r.price || '0', 10) / scale,
+    methodId: r.method_id,
+  }));
+
+  const totals = cartData?.totals;
+  const taxAmount = totals ? parseInt(totals.total_tax || '0', 10) / scale : 0;
+
+  return { rates, taxAmount };
+}
+
+async function handleShippingRates(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { items, address } = JSON.parse(body);
+      const result = await getShippingRatesServer(items || [], address || {});
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      console.error('Shipping rates error:', err);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ rates: [], taxAmount: 0 }));
+    }
+  });
+}
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
@@ -305,6 +413,12 @@ const server = http.createServer((req, res) => {
   // Chat API route
   if (req.url === '/api/chat' || req.url.startsWith('/api/chat?')) {
     handleChat(req, res);
+    return;
+  }
+
+  // Shipping rates proxy
+  if (req.url === '/api/shipping-rates') {
+    handleShippingRates(req, res);
     return;
   }
 

@@ -169,6 +169,10 @@
   overflow: hidden;
 }
 
+.cp-freight-tabs--top {
+  margin-bottom: 16px;
+}
+
 .cp-freight-tab {
   flex: 1;
   display: flex;
@@ -231,6 +235,14 @@
   font-size: 12px;
   color: var(--color-red);
   font-family: var(--font-primary);
+}
+
+.cp-freight-estimate-note {
+  font-size: 11px;
+  color: var(--color-light);
+  font-family: var(--font-primary);
+  font-style: italic;
+  margin-bottom: 8px;
 }
 
 .cp-freight-rates {

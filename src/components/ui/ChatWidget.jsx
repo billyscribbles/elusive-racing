@@ -23,9 +23,20 @@ function loadMessages() {
   return [INITIAL_MESSAGE];
 }
 
+function hasHistory() {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) {
+      const msgs = JSON.parse(saved);
+      return Array.isArray(msgs) && msgs.length > 1;
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(hasHistory);
   const [messages, setMessages] = useState(loadMessages);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
