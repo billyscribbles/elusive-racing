@@ -19,65 +19,113 @@ const PORT = process.env.PORT || 8080;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SHOPIFY_DOMAIN = process.env.VITE_SHOPIFY_STORE_DOMAIN;
-const SHOPIFY_TOKEN  = process.env.VITE_SHOPIFY_STOREFRONT_TOKEN;
+const WC_URL    = process.env.VITE_WC_URL;
+const WC_KEY    = process.env.VITE_WC_CONSUMER_KEY;
+const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET;
 
-async function shopifySearch(query, count = 6) {
+const BRAND_TERMS = [
+  'skunk2', 'k-tuned', 'ktuned', 'hondata', 'exedy', 'bc racing', 'hks', 'arp', 'acl',
+  'spoon', 'mugen', 'bosch', 'ngk', 'mishimoto', 'cusco', 'project mu', 'tein', 'whiteline',
+  'hardrace', 'hasport', 'hybrid racing', 'cometic', 'wiseco', 'je piston', 'aem', 'greddy',
+  'eibach', 'kw suspension', 'bilstein', 'k&n', 'blox', 'toda', 'itr', 'password jdm',
+  'oem', 'honda', 'super pro', 'stance',
+];
+
+const PRODUCT_TERMS = [
+  'exhaust', 'clutch', 'flywheel', 'coilover', 'coilovers', 'spring', 'springs',
+  'sway bar', 'anti-roll', 'brake', 'rotor', 'pad', 'caliper', 'header', 'headers',
+  'intake', 'turbo', 'intercooler', 'blow off', 'blow-off', 'bov', 'suspension',
+  'engine', 'cam', 'camshaft', 'piston', 'rod', 'bearing', 'injector', 'fuel pump',
+  'fuel rail', 'radiator', 'ecu', 'tune', 'lsd', 'differential', 'driveshaft',
+  'air filter', 'cold air', 'manifold', 'throttle body', 'oil cooler', 'water pump',
+  'gauge', 'wideband', 'boost controller', 'muffler', 'downpipe', 'cat', 'o2',
+  'control arm', 'bushing', 'camber', 'caster', 'strut', 'shock', 'damper',
+];
+
+// Detect a bare SKU-like token in a message (e.g. "SK2-50207", "306-05-0260", "B16A-KIT")
+// Must be at least 4 chars, contain a digit, and may contain letters, digits, and hyphens/dots.
+function extractSku(message) {
+  const match = message.match(/\b([A-Z0-9][A-Z0-9\-.]{3,})\b/i);
+  return match ? match[1] : null;
+}
+
+// Extract focused search terms from a natural-language question.
+// e.g. "do you have any skunk2 exhaust in stock?" → "skunk2 exhaust"
+function extractSearchTerms(message) {
+  const lower = message.toLowerCase();
+
+  const foundBrands   = BRAND_TERMS.filter(b => lower.includes(b));
+  const foundProducts = PRODUCT_TERMS.filter(k => lower.includes(k));
+
+  if (foundBrands.length && foundProducts.length) {
+    return `${foundBrands[0]} ${foundProducts[0]}`;
+  }
+  if (foundBrands.length) return foundBrands[0];
+  if (foundProducts.length) return foundProducts[0];
+
+  // Fall back: strip filler words and use what's left
+  return message
+    .replace(/\b(do you have|do you stock|got any|show me|looking for|need a|need some|any|in stock|available|please|can you|could you|i need|i want|i'm looking for|i am looking for)\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+const WC_FIELDS = 'id,name,slug,sku,price,regular_price,on_sale,stock_status,brands,attributes';
+
+async function wcSearch(userMessage, count = 8) {
+  if (!WC_URL || !WC_KEY || !WC_SECRET) return [];
   try {
-    const res = await fetch(`https://${SHOPIFY_DOMAIN}/api/2025-01/graphql.json`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN,
-      },
-      body: JSON.stringify({
-        query: `
-          query ChatSearch($query: String!, $count: Int!) {
-            products(first: $count, query: $query, sortKey: BEST_SELLING) {
-              edges {
-                node {
-                  title
-                  handle
-                  vendor
-                  priceRange {
-                    minVariantPrice { amount currencyCode }
-                  }
-                  compareAtPriceRange {
-                    minVariantPrice { amount }
-                  }
-                  variants(first: 1) {
-                    edges { node { availableForSale } }
-                  }
-                  tags
-                }
-              }
-            }
-          }
-        `,
-        variables: { query, count },
-      }),
+    const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+    const headers = { Authorization: auth };
+    const sku = extractSku(userMessage);
+    const searchTerm = extractSearchTerms(userMessage);
+
+    // Always run text search; run SKU lookup in parallel when a SKU-like token is found
+    const [textRes, skuRes] = await Promise.all([
+      fetch(`${WC_URL}/wp-json/wc/v3/products?${new URLSearchParams({
+        search: searchTerm, per_page: count, orderby: 'popularity', order: 'desc', _fields: WC_FIELDS,
+      })}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+
+      sku
+        ? fetch(`${WC_URL}/wp-json/wc/v3/products?${new URLSearchParams({
+            sku, per_page: 5, _fields: WC_FIELDS,
+          })}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => [])
+        : Promise.resolve([]),
+    ]);
+
+    // SKU hits come first (exact match priority), deduplicate by id
+    const seen = new Set();
+    return [...skuRes, ...textRes].filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
     });
-    const { data } = await res.json();
-    return data?.products?.edges?.map(e => e.node) || [];
   } catch {
     return [];
   }
 }
 
 function isProductQuery(message) {
-  return /\b(stock|price|available|buy|order|part|clutch|coilover|coilovers|spring|sway bar|brake|rotor|pad|caliper|exhaust|header|intake|turbo|intercooler|blow.?off|suspension|engine|cam|piston|rod|bearing|injector|fuel pump|fuel rail|radiator|ecu|tune|hondata|k.?tuned|skunk2|exedy|bc racing|hks|arp|acl|spoon|mugen|bosch|ngk|mishimoto|cusco|project mu|tein|whiteline|hardrace|hasport|hybrid racing|cometic|wiseco|je piston|do you have|do you stock|got any|show me|what.*have|looking for|need a|need some)\b/i.test(message);
+  if (/\b(sku|part.?no|part.?number|part #|item.?no|item.?code)\b/i.test(message)) return true;
+  // Bare SKU-like token (e.g. "SK2-50207", "306-05-0260")
+  if (/\b[A-Z0-9][A-Z0-9\-.]{4,}\b/i.test(message)) return true;
+  return /\b(stock|price|available|buy|order|part|clutch|coilover|coilovers|spring|sway bar|brake|rotor|pad|caliper|exhaust|header|intake|turbo|intercooler|blow.?off|suspension|engine|cam|piston|rod|bearing|injector|fuel pump|fuel rail|radiator|ecu|tune|hondata|k.?tuned|skunk2|exedy|bc racing|hks|arp|acl|spoon|mugen|bosch|ngk|mishimoto|cusco|project mu|tein|whiteline|hardrace|hasport|hybrid racing|cometic|wiseco|je piston|do you have|do you stock|got any|show me|what.*have|looking for|need a|need some|link|url|product page|where can i|find it|where is it|the product)\b/i.test(message);
 }
 
 function buildProductContext(products) {
   if (!products.length) return '';
   const lines = products.map(p => {
-    const price = parseFloat(p.priceRange.minVariantPrice.amount).toFixed(2);
-    const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount || 0);
-    const saleTag = compareAt > parseFloat(p.priceRange.minVariantPrice.amount) ? ' (ON SALE)' : '';
-    const status = p.variants.edges[0]?.node?.availableForSale ? 'In Stock' : 'Backorder';
-    return `• ${p.title} — ${p.vendor} | $${price} AUD${saleTag} | ${status} | /products/${p.handle}`;
+    const price = parseFloat(p.price || p.regular_price || 0).toFixed(2);
+    const saleTag = p.on_sale ? ' (ON SALE)' : '';
+    const status = p.stock_status === 'instock' ? 'In Stock' : 'Backorder available';
+    const brand = p.brands?.[0]?.name
+      ?? p.attributes?.find(a => ['brand', 'pa_brand', 'Brand'].includes(a.name))?.options?.[0]
+      ?? '';
+    const brandPart = brand ? ` — ${brand}` : '';
+    const skuPart = p.sku ? ` | SKU: ${p.sku}` : '';
+    return `• ${p.name}${brandPart} | $${price} AUD${saleTag} | ${status}${skuPart} | [View product](/products/${p.slug})`;
   }).join('\n');
-  return `\n\nLIVE PRODUCT DATA FROM OUR STORE (use this to answer the customer):\n${lines}\n\nInclude relevant product names, prices, stock status and the product URL in your reply. Do not invent products not in this list.`;
+  return `\n\nLIVE PRODUCT DATA FROM OUR STORE (use this to answer the customer):\n${lines}\n\nIMPORTANT: Always include the markdown [View product] link inline when mentioning any product — do not wait to be asked. Format each product as: name, price, stock status, then the link on the same line. If a product shows "Backorder available", tell the customer we can backorder it. Do not invent products not in this list.`;
 }
 
 const SYSTEM_PROMPT = `You are the AI assistant for Elusive Racing, a specialist performance car parts retailer based in Clayton South, Melbourne, Australia. You help customers find the right parts, understand products, and get answers to common questions.
@@ -89,6 +137,19 @@ BUSINESS DETAILS:
 - Hours: Mon–Fri 9am–5pm, Sat 9am–2pm, Sun Closed
 - Facebook Messenger: m.me/ElusiveRacin
 - Online booking (workshop): /book on the website
+
+WORKSHOP SERVICES (performed at our Clayton South garage):
+We offer a full range of mechanical and fabrication services including:
+- General servicing & log book servicing
+- Major services
+- Engine builds & rebuilds
+- Drivetrain & transmission work
+- Suspension servicing & setup
+- Brake servicing
+- Exhaust & custom fabrication
+- Performance upgrades & tuning
+
+Customers can book online at /book or call 03 9574 1710.
 
 WHAT WE SELL:
 We stock 150+ performance and OEM brands focused on Honda/Japanese cars (Civic, Integra, NSX, S2000, etc.) but also supporting a wide range of vehicles. Categories include:
@@ -111,12 +172,12 @@ KEY BRANDS WE STOCK:
 K-Tuned, Skunk2, Hondata (authorised dealer), AEM, BC Racing, HKS, Exedy, ARP, ACL, Mugen, Spoon, Project Mu, Cusco, NGK, Bosch, Mishimoto, Greddy, Tein, KW, Bilstein, Eibach, and 100+ more.
 
 POLICIES:
-- Free shipping on orders over $150 AUD (Australia)
 - International shipping available
 - Orders dispatched within 1–2 business days
 - Returns accepted for faulty/incorrectly sent items — contact us within 14 days
 - Payments: Visa, Mastercard, Amex, PayPal, Afterpay, Zip, Apple Pay, Google Pay
 - Wholesale/trade accounts available — customers can register on the website
+- Backorders: if something is out of stock we can backorder it — lead times vary by brand, contact the team for an ETA
 
 YOUR ROLE:
 - Help customers find the right products and brands for their build
@@ -128,6 +189,7 @@ YOUR ROLE:
 - Write the way someone would talk in a real conversation. Short sentences. No filler phrases like "Certainly!", "Of course!", "Great question!" or "I'd be happy to help with that."
 - Keep responses concise — this is a chat widget, not an essay
 - Use minimal markdown: bullet points and **bold** are fine, but never use headings (##) or horizontal rules
+- Whenever you mention a specific product from the live product data, always include its [View product] link inline — never wait for the customer to ask for it
 
 FOLLOW-UP QUESTIONS:
 When a customer asks something vague, ask 1–2 short follow-up questions to narrow it down. Keep the whole response to 2–3 lines max — just ask the questions, skip the preamble. Examples:
@@ -167,7 +229,7 @@ STAFF HANDOFF:
 When a question is too complex, requires exact fitment confirmation, or the customer seems ready to buy, offer to connect them with the team. Keep it natural — one line at the end of your reply:
 - "For exact fitment on that, worth a quick chat with our team — call 03 9574 1710 or email sales@elusiveracing.com.au"
 - "If you're ready to go ahead, give our team a call on 03 9574 1710 and they'll sort you out"
-- For workshop/service/dyno enquiries: "You can book online at /book or call us on 03 9574 1710"`;
+- For workshop/service/booking enquiries: "You can book online at [elusiveracing.com.au/book](/book) or call us on 03 9574 1710"`;
 
 async function handleChat(req, res) {
   if (req.method !== 'POST') {
@@ -192,7 +254,7 @@ async function handleChat(req, res) {
       const latestUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
       let productContext = '';
       if (isProductQuery(latestUserMessage)) {
-        const products = await shopifySearch(latestUserMessage);
+        const products = await wcSearch(latestUserMessage);
         productContext = buildProductContext(products);
       }
 

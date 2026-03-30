@@ -13,10 +13,20 @@ const INITIAL_MESSAGE = {
   text: "Hey, welcome to Elusive Racing. What can I help you with today?\n\nIf you'd rather speak to someone directly, give us a call on **03 9574 1710**.",
 };
 
+const SESSION_KEY = 'er_chat_messages';
+
+function loadMessages() {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return [INITIAL_MESSAGE];
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState(loadMessages);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -24,6 +34,7 @@ export default function ChatWidget() {
   const windowRef = useRef(null);
 
   useEffect(() => {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(messages)); } catch { /* ignore */ }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
@@ -99,6 +110,7 @@ export default function ChatWidget() {
   };
 
   const clearChat = () => {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
     setMessages([INITIAL_MESSAGE]);
     setExpanded(false);
     setInput('');
