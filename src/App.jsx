@@ -21,6 +21,7 @@ import ContactUsPage from './pages/ContactUsPage';
 import TermsPage from './pages/TermsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AccountDashboard from './pages/AccountDashboard';
 import WholesalePage from './pages/WholesalePage';
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/my-account" element={<LoginPage />} />
           <Route path="/my-account/register" element={<RegisterPage />} />
+          <Route path="/my-account/dashboard" element={<AccountDashboard />} />
           <Route path="/wholesale-registration" element={<WholesalePage />} />
           <Route path="/checkout"         element={<CheckoutPage />} />
           <Route path="/checkout/contact" element={<ContactPage />} />

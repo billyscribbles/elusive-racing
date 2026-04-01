@@ -417,6 +417,143 @@ async function handleShippingRates(req, res) {
   });
 }
 
+// ── Auth: login + register (proxied to avoid CORS, keeps WC keys server-side) ─
+// Requires "JWT Authentication for WP REST API" plugin on the WordPress site.
+async function handleAuthLogin(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { email, password } = JSON.parse(body);
+      const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+
+      // 1. Authenticate via JWT plugin
+      const jwtRes = await fetch(`${WC_URL}/wp-json/jwt-auth/v1/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password }),
+      });
+
+      if (!jwtRes.ok) {
+        const err = await jwtRes.json().catch(() => ({}));
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message || 'Invalid email or password.' }));
+        return;
+      }
+
+      const jwt = await jwtRes.json();
+
+      // 2. Fetch WC customer record by email for name + saved addresses
+      const custRes = await fetch(
+        `${WC_URL}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&per_page=1`,
+        { headers: { Authorization: auth } }
+      );
+      let customer = null;
+      if (custRes.ok) {
+        const list = await custRes.json();
+        customer = list[0] ?? null;
+      }
+
+      const displayName = jwt.user_display_name || '';
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({
+        token: jwt.token,
+        user: {
+          id:        customer?.id   ?? null,
+          email:     jwt.user_email,
+          firstName: customer?.first_name || displayName.split(' ')[0] || '',
+          lastName:  customer?.last_name  || displayName.split(' ').slice(1).join(' ') || '',
+          billing:   customer?.billing  ?? null,
+          shipping:  customer?.shipping ?? null,
+        },
+      }));
+    } catch (err) {
+      console.error('Login error:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Login failed. Please try again.' }));
+    }
+  });
+}
+
+async function handleAuthRegister(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { email, password, firstName, lastName } = JSON.parse(body);
+      const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+
+      // 1. Create customer via WC REST API
+      const createRes = await fetch(`${WC_URL}/wp-json/wc/v3/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: auth },
+        body: JSON.stringify({ email, first_name: firstName, last_name: lastName, username: email, password }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message || 'Could not create account. Email may already be in use.' }));
+        return;
+      }
+
+      const customer = await createRes.json();
+
+      // 2. Auto-login via JWT
+      const jwtRes = await fetch(`${WC_URL}/wp-json/jwt-auth/v1/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password }),
+      });
+      const jwt = jwtRes.ok ? await jwtRes.json() : null;
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({
+        token: jwt?.token ?? null,
+        user: {
+          id:        customer.id,
+          email:     customer.email,
+          firstName: customer.first_name,
+          lastName:  customer.last_name,
+          billing:   customer.billing  ?? null,
+          shipping:  customer.shipping ?? null,
+        },
+      }));
+    } catch (err) {
+      console.error('Register error:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Registration failed. Please try again.' }));
+    }
+  });
+}
+
+async function handleGetOrders(req, res) {
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  const customerId = new URL(req.url, 'http://localhost').searchParams.get('customer');
+  if (!customerId) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Missing customer ID' }));
+    return;
+  }
+  try {
+    const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+    const ordersRes = await fetch(
+      `${WC_URL}/wp-json/wc/v3/orders?customer=${customerId}&per_page=20&orderby=date&order=desc`,
+      { headers: { Authorization: auth } }
+    );
+    if (!ordersRes.ok) throw new Error('WC orders fetch failed');
+    const orders = await ordersRes.json();
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify(orders));
+  } catch (err) {
+    console.error('Orders fetch error:', err);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Failed to fetch orders.' }));
+  }
+}
+
 // ── Stripe PaymentIntent ──────────────────────────────────────────────────────
 async function handleCreatePaymentIntent(req, res) {
   if (req.method !== 'POST') {
@@ -480,6 +617,11 @@ const server = http.createServer((req, res) => {
     handleShippingRates(req, res);
     return;
   }
+
+  // Auth routes
+  if (req.url === '/api/auth/login')    { handleAuthLogin(req, res);    return; }
+  if (req.url === '/api/auth/register') { handleAuthRegister(req, res); return; }
+  if (req.url.startsWith('/api/account/orders')) { handleGetOrders(req, res); return; }
 
   // Stripe PaymentIntent creation
   if (req.url === '/api/create-payment-intent') {

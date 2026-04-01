@@ -422,6 +422,16 @@
   font-size: 12px;
 }
 
+.mobile-menu-link--btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-primary);
+  padding: 0;
+}
+
 .mobile-submenu {
   background: var(--color-bg);
   padding: 12px 0;

@@ -70,6 +70,24 @@
   font-size: 12px;
 }
 
+.topbar-logout {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: #888;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.topbar-logout:hover { color: var(--color-white); }
+
 @media (max-width: 900px) {
   .topbar { display: none; }
 }

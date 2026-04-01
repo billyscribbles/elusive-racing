@@ -1,7 +1,19 @@
 import { FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
+import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import useAuthStore from '../../store/authStore';
 import './TopBar.css';
 
 export default function TopBar() {
+  const navigate   = useNavigate();
+  const { user, logout, isLoggedIn } = useAuthStore();
+  const loggedIn   = isLoggedIn();
+
+  function handleLogout() {
+    logout();
+    navigate('/my-account');
+  }
+
   return (
     <div className="topbar">
       <div className="container topbar-inner">
@@ -19,11 +31,23 @@ export default function TopBar() {
           </a>
         </div>
 
-{/* Right — account links */}
+        {/* Right — account links */}
         <div className="topbar-right">
           <a href="/wholesale-registration" className="topbar-link">WHOLESALE</a>
           <span className="topbar-divider">|</span>
-          <a href="/my-account" className="topbar-link">LOGIN / REGISTER</a>
+          {loggedIn ? (
+            <>
+              <a href="/my-account/dashboard" className="topbar-link">
+                Hi, {user.firstName}
+              </a>
+              <span className="topbar-divider">|</span>
+              <button className="topbar-logout" onClick={handleLogout} aria-label="Sign out">
+                <LogOut size={12} /> SIGN OUT
+              </button>
+            </>
+          ) : (
+            <a href="/my-account" className="topbar-link">LOGIN / REGISTER</a>
+          )}
         </div>
 
       </div>

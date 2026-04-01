@@ -1,8 +1,38 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { navItems, featuredBrands, vehicleData } from '../../data/navigation';
 import CartIcon from '../ui/CartIcon';
+import useAuthStore from '../../store/authStore';
 import './Navigation.css';
+
+function MobileAuthLink() {
+  const navigate   = useNavigate();
+  const { user, logout, isLoggedIn } = useAuthStore();
+  const loggedIn   = isLoggedIn();
+
+  function handleLogout() { logout(); navigate('/my-account'); }
+
+  if (loggedIn) {
+    return (
+      <>
+        <li className="mobile-menu-item mobile-menu-item--secondary">
+          <a href="/my-account/dashboard" className="mobile-menu-link">MY ACCOUNT</a>
+        </li>
+        <li className="mobile-menu-item mobile-menu-item--secondary">
+          <button className="mobile-menu-link mobile-menu-link--btn" onClick={handleLogout}>
+            SIGN OUT ({user?.firstName})
+          </button>
+        </li>
+      </>
+    );
+  }
+  return (
+    <li className="mobile-menu-item mobile-menu-item--secondary">
+      <a href="/my-account" className="mobile-menu-link">LOGIN / REGISTER</a>
+    </li>
+  );
+}
 
 function BrandsMegaMenu() {
   return (
@@ -396,9 +426,7 @@ export default function Navigation() {
               <li className="mobile-menu-item mobile-menu-item--secondary">
                 <a href="/wholesale-registration" className="mobile-menu-link">WHOLESALE</a>
               </li>
-              <li className="mobile-menu-item mobile-menu-item--secondary">
-                <a href="/my-account" className="mobile-menu-link">LOGIN / REGISTER</a>
-              </li>
+              <MobileAuthLink />
             </ul>
           </div>
         </div>
