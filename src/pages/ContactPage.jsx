@@ -1,64 +1,116 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Truck, Store, Package, Zap } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Truck, Store, Package, Zap, Phone, Mail } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import { getWCShippingRates } from '../lib/woocommerce';
 import './ContactPage.css';
 
-// International countries with their shipping region for rate lookup
+// International countries — alphabetical by name
 const COUNTRIES = [
-  { code: 'NZ', name: 'New Zealand',          region: 'NZ'   },
-  { code: 'JP', name: 'Japan',                region: 'ASIA' },
-  { code: 'SG', name: 'Singapore',            region: 'ASIA' },
-  { code: 'HK', name: 'Hong Kong',            region: 'ASIA' },
-  { code: 'KR', name: 'South Korea',          region: 'ASIA' },
-  { code: 'TW', name: 'Taiwan',               region: 'ASIA' },
-  { code: 'MY', name: 'Malaysia',             region: 'ASIA' },
-  { code: 'TH', name: 'Thailand',             region: 'ASIA' },
-  { code: 'ID', name: 'Indonesia',            region: 'ASIA' },
-  { code: 'PH', name: 'Philippines',          region: 'ASIA' },
-  { code: 'VN', name: 'Vietnam',              region: 'ASIA' },
-  { code: 'IN', name: 'India',                region: 'ASIA' },
-  { code: 'CN', name: 'China',                region: 'ASIA' },
-  { code: 'US', name: 'United States',        region: 'US'   },
-  { code: 'CA', name: 'Canada',               region: 'US'   },
-  { code: 'GB', name: 'United Kingdom',       region: 'EU'   },
-  { code: 'DE', name: 'Germany',              region: 'EU'   },
-  { code: 'FR', name: 'France',               region: 'EU'   },
-  { code: 'IT', name: 'Italy',                region: 'EU'   },
-  { code: 'ES', name: 'Spain',                region: 'EU'   },
-  { code: 'NL', name: 'Netherlands',          region: 'EU'   },
-  { code: 'BE', name: 'Belgium',              region: 'EU'   },
-  { code: 'SE', name: 'Sweden',               region: 'EU'   },
-  { code: 'NO', name: 'Norway',               region: 'EU'   },
-  { code: 'DK', name: 'Denmark',              region: 'EU'   },
-  { code: 'AT', name: 'Austria',              region: 'EU'   },
-  { code: 'CH', name: 'Switzerland',          region: 'EU'   },
-  { code: 'IE', name: 'Ireland',              region: 'EU'   },
-  { code: 'PT', name: 'Portugal',             region: 'EU'   },
-  { code: 'FI', name: 'Finland',              region: 'EU'   },
-  { code: 'PL', name: 'Poland',               region: 'EU'   },
-  { code: 'ZA', name: 'South Africa',         region: 'ROW'  },
-  { code: 'AE', name: 'United Arab Emirates', region: 'ROW'  },
-  { code: 'SA', name: 'Saudi Arabia',         region: 'ROW'  },
-  { code: 'BR', name: 'Brazil',               region: 'ROW'  },
-  { code: 'MX', name: 'Mexico',               region: 'ROW'  },
   { code: 'AR', name: 'Argentina',            region: 'ROW'  },
+  { code: 'AT', name: 'Austria',              region: 'EU'   },
+  { code: 'BE', name: 'Belgium',              region: 'EU'   },
+  { code: 'BR', name: 'Brazil',               region: 'ROW'  },
+  { code: 'CA', name: 'Canada',               region: 'US'   },
+  { code: 'CN', name: 'China',                region: 'ASIA' },
+  { code: 'DK', name: 'Denmark',              region: 'EU'   },
+  { code: 'FI', name: 'Finland',              region: 'EU'   },
+  { code: 'FR', name: 'France',               region: 'EU'   },
+  { code: 'DE', name: 'Germany',              region: 'EU'   },
+  { code: 'HK', name: 'Hong Kong',            region: 'ASIA' },
+  { code: 'IN', name: 'India',                region: 'ASIA' },
+  { code: 'ID', name: 'Indonesia',            region: 'ASIA' },
+  { code: 'IE', name: 'Ireland',              region: 'EU'   },
+  { code: 'IT', name: 'Italy',                region: 'EU'   },
+  { code: 'JP', name: 'Japan',                region: 'ASIA' },
+  { code: 'MY', name: 'Malaysia',             region: 'ASIA' },
+  { code: 'MX', name: 'Mexico',               region: 'ROW'  },
+  { code: 'NL', name: 'Netherlands',          region: 'EU'   },
+  { code: 'NZ', name: 'New Zealand',          region: 'NZ'   },
+  { code: 'NO', name: 'Norway',               region: 'EU'   },
+  { code: 'PH', name: 'Philippines',          region: 'ASIA' },
+  { code: 'PL', name: 'Poland',               region: 'EU'   },
+  { code: 'PT', name: 'Portugal',             region: 'EU'   },
+  { code: 'SA', name: 'Saudi Arabia',         region: 'ROW'  },
+  { code: 'SG', name: 'Singapore',            region: 'ASIA' },
+  { code: 'ZA', name: 'South Africa',         region: 'ROW'  },
+  { code: 'KR', name: 'South Korea',          region: 'ASIA' },
+  { code: 'ES', name: 'Spain',                region: 'EU'   },
+  { code: 'SE', name: 'Sweden',               region: 'EU'   },
+  { code: 'CH', name: 'Switzerland',          region: 'EU'   },
+  { code: 'TW', name: 'Taiwan',               region: 'ASIA' },
+  { code: 'TH', name: 'Thailand',             region: 'ASIA' },
+  { code: 'AE', name: 'United Arab Emirates', region: 'ROW'  },
+  { code: 'GB', name: 'United Kingdom',       region: 'EU'   },
+  { code: 'US', name: 'United States',        region: 'US'   },
+  { code: 'VN', name: 'Vietnam',              region: 'ASIA' },
 ];
 
-// Fallback rates for international (WC won't have international zones)
-function calculateIntlRates(region) {
-  const map = {
-    NZ:   [{ id: 'std', label: 'Standard (7–14 business days)',  price: 24.95 }, { id: 'exp', label: 'Express (3–5 business days)',   price: 44.95 }],
-    ASIA: [{ id: 'std', label: 'Standard (10–14 business days)', price: 34.95 }, { id: 'exp', label: 'Express (5–7 business days)',   price: 59.95 }],
-    US:   [{ id: 'std', label: 'Standard (14–21 business days)', price: 44.95 }, { id: 'exp', label: 'Express (7–10 business days)',  price: 79.95 }],
-    EU:   [{ id: 'std', label: 'Standard (14–21 business days)', price: 49.95 }, { id: 'exp', label: 'Express (7–10 business days)',  price: 89.95 }],
-    ROW:  [{ id: 'std', label: 'Standard (21–30 business days)', price: 59.95 }, { id: 'exp', label: 'Express (10–14 business days)', price: 109.95 }],
-  };
-  return map[region] ?? [];
+// Per-country state/postcode config for validation and dynamic form fields
+const COUNTRY_CONFIG = {
+  CA: {
+    stateLabel: 'Province',
+    states: ['AB','BC','MB','NB','NL','NT','NS','NU','ON','PE','QC','SK','YT'],
+    stateRequired: true,
+    postcodeLabel: 'Postal Code',
+    postcodePattern: /^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$/,
+    postcodeHint: 'e.g. K1A 0A9',
+    postcodeRequired: true,
+  },
+  US: {
+    stateLabel: 'State',
+    states: ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'],
+    stateRequired: true,
+    postcodeLabel: 'ZIP Code',
+    postcodePattern: /^\d{5}(-\d{4})?$/,
+    postcodeHint: 'e.g. 90210',
+    postcodeRequired: true,
+  },
+  GB: {
+    stateLabel: 'County',
+    states: null,
+    stateRequired: false,
+    postcodeLabel: 'Postcode',
+    postcodePattern: /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$/,
+    postcodeHint: 'e.g. SW1A 1AA',
+    postcodeRequired: true,
+  },
+  NZ: {
+    stateLabel: 'Region',
+    states: null,
+    stateRequired: false,
+    postcodeLabel: 'Postcode',
+    postcodePattern: /^\d{4}$/,
+    postcodeHint: 'e.g. 1010',
+    postcodeRequired: true,
+  },
+  JP: {
+    stateLabel: 'Prefecture',
+    states: null,
+    stateRequired: false,
+    postcodeLabel: 'Postal Code',
+    postcodePattern: /^\d{3}-?\d{4}$/,
+    postcodeHint: 'e.g. 100-0001',
+    postcodeRequired: true,
+  },
+};
+
+const DEFAULT_COUNTRY_CONFIG = {
+  stateLabel: 'State / Province',
+  states: null,
+  stateRequired: false,
+  postcodeLabel: 'Postcode / ZIP',
+  postcodePattern: null,
+  postcodeHint: '',
+  postcodeRequired: false,
+};
+
+function getCountryConfig(code) {
+  return COUNTRY_CONFIG[code] ?? DEFAULT_COUNTRY_CONFIG;
 }
+
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 
@@ -124,6 +176,7 @@ export default function ContactPage() {
   const [freightError, setFreightError]   = useState('');
   const [taxAmount, setTaxAmount]         = useState(0);
   const [ratesAreEstimates, setRatesAreEstimates] = useState(false);
+  const [contactRequired, setContactRequired] = useState(false);
 
   if (items.length === 0) {
     return (
@@ -144,9 +197,22 @@ export default function ContactPage() {
     if (fulfillment === 'delivery') {
       if (!shipping.address1.trim()) e.address1 = 'Address is required';
       if (!shipping.city.trim())     e.city     = 'City is required';
-      if (!shipping.postcode.trim()) e.postcode = 'Postcode is required';
-      if (freightTab === 'domestic' && !shipping.state) e.state = 'State is required';
-      if (freightTab === 'international' && !shipping.country) e.country = 'Country is required';
+      if (freightTab === 'domestic') {
+        if (!shipping.state)           e.state    = 'State is required';
+        if (!shipping.postcode.trim()) e.postcode = 'Postcode is required';
+        else if (!/^\d{4}$/.test(shipping.postcode.trim())) e.postcode = 'Enter a valid 4-digit postcode';
+      } else {
+        if (!shipping.country) e.country = 'Country is required';
+        else {
+          const cfg = getCountryConfig(shipping.country);
+          if (cfg.stateRequired && !shipping.state)
+            e.state = `${cfg.stateLabel} is required`;
+          if (cfg.postcodeRequired && !shipping.postcode.trim())
+            e.postcode = `${cfg.postcodeLabel} is required`;
+          else if (cfg.postcodePattern && shipping.postcode.trim() && !cfg.postcodePattern.test(shipping.postcode.trim()))
+            e.postcode = `Enter a valid ${cfg.postcodeLabel.toLowerCase()} ${cfg.postcodeHint ? `(${cfg.postcodeHint})` : ''}`.trim();
+        }
+      }
     }
     return e;
   }
@@ -158,6 +224,7 @@ export default function ContactPage() {
     setFreight(null);
     setTaxAmount(0);
     setRatesAreEstimates(false);
+    setContactRequired(false);
     // Reset country/state to match the new tab
     if (tab === 'domestic') {
       setShipping({ country: 'AU', state: '' });
@@ -172,6 +239,7 @@ export default function ContactPage() {
     setFreight(null);
     setTaxAmount(0);
     setRatesAreEstimates(false);
+    setContactRequired(false);
 
     if (freightTab === 'domestic') {
       const missing = [];
@@ -229,16 +297,12 @@ export default function ContactPage() {
           setTaxAmount(tax);
           setRatesAreEstimates(false);
         } else {
-          // No WC zone configured for this country — fall back to estimates
-          const region = COUNTRIES.find(c => c.code === shipping.country)?.region ?? 'ROW';
-          setFreightRates(calculateIntlRates(region));
-          setRatesAreEstimates(true);
+          // No WC zone configured for this country — require manual quote
+          setContactRequired(true);
         }
       } catch {
-        // Network error — fall back to estimates
-        const region = COUNTRIES.find(c => c.code === shipping.country)?.region ?? 'ROW';
-        setFreightRates(calculateIntlRates(region));
-        setRatesAreEstimates(true);
+        // Network error — require manual quote
+        setContactRequired(true);
       } finally {
         setFreightLoading(false);
       }
@@ -354,7 +418,11 @@ export default function ContactPage() {
                     <select
                       className="cp-input cp-select"
                       value={shipping.country}
-                      onChange={(e) => { setShipping({ country: e.target.value }); setFreightRates([]); setFreight(null); setErrors(s => { const n={...s}; delete n.country; return n; }); }}
+                      onChange={(e) => {
+                        setShipping({ country: e.target.value, state: '', postcode: '' });
+                        setFreightRates([]); setFreight(null); setContactRequired(false);
+                        setErrors(s => { const n={...s}; delete n.country; delete n.state; delete n.postcode; return n; });
+                      }}
                     >
                       <option value="">Select country…</option>
                       {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
@@ -383,15 +451,53 @@ export default function ContactPage() {
                     </div>
                     {field('Postcode', 'postcode', shipping, setShipping, { autoComplete: 'postal-code', placeholder: '3000' })}
                   </div>
-                ) : (
-                  <>
-                    <div className="cp-row-2">
+                ) : (() => {
+                  const cfg = getCountryConfig(shipping.country);
+                  return (
+                    <>
                       {field('City / Suburb', 'city', shipping, setShipping, { autoComplete: 'address-level2' })}
-                      {field('State / Province', 'state', shipping, setShipping, { autoComplete: 'address-level1', placeholder: 'e.g. ON, CA', optional: true })}
-                    </div>
-                    {field('Postcode / ZIP', 'postcode', shipping, setShipping, { autoComplete: 'postal-code', placeholder: '' })}
-                  </>
-                )}
+                      <div className="cp-row-2">
+                        {/* State/Province — dropdown for US/CA, free text otherwise */}
+                        {cfg.states ? (
+                          <div className={`cp-field${errors.state ? ' cp-field--error' : ''}`}>
+                            <label className="cp-label">
+                              {cfg.stateLabel}{cfg.stateRequired && <span className="cp-required">*</span>}
+                            </label>
+                            <select
+                              className="cp-input cp-select"
+                              value={shipping.state}
+                              onChange={(e) => { setShipping({ state: e.target.value }); setErrors(s => { const n={...s}; delete n.state; return n; }); }}
+                            >
+                              <option value="">Select…</option>
+                              {cfg.states.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            {errors.state && <span className="cp-error">{errors.state}</span>}
+                          </div>
+                        ) : (
+                          field(cfg.stateLabel, 'state', shipping, setShipping, {
+                            autoComplete: 'address-level1',
+                            placeholder: cfg.stateLabel,
+                            optional: !cfg.stateRequired,
+                          })
+                        )}
+                        {/* Postcode / ZIP */}
+                        <div className={`cp-field${errors.postcode ? ' cp-field--error' : ''}`}>
+                          <label className="cp-label">
+                            {cfg.postcodeLabel}{cfg.postcodeRequired && <span className="cp-required">*</span>}
+                          </label>
+                          <input
+                            className="cp-input"
+                            placeholder={cfg.postcodeHint}
+                            value={shipping.postcode}
+                            autoComplete="postal-code"
+                            onChange={(e) => { setShipping({ postcode: e.target.value }); setErrors(s => { const n={...s}; delete n.postcode; return n; }); }}
+                          />
+                          {errors.postcode && <span className="cp-error">{errors.postcode}</span>}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Freight calculator */}
                 <div className="cp-freight">
@@ -422,6 +528,35 @@ export default function ContactPage() {
                           <span className="cp-freight-price">${rate.price.toFixed(2)}</span>
                         </label>
                       ))}
+                    </div>
+                  )}
+
+                  {contactRequired && (
+                    <div className="cp-intl-contact">
+                      <p className="cp-intl-contact-heading">International shipping quote required</p>
+                      <p className="cp-intl-contact-body">
+                        We can&apos;t automatically calculate shipping to your destination. One of our team members will contact you with a freight quote before your order is dispatched.
+                      </p>
+                      <div className="cp-intl-contact-links">
+                        <a href="tel:+61395741710" className="cp-intl-contact-link">
+                          <Phone size={14} /> 03 9574 1710
+                        </a>
+                        <a href="mailto:info@elusiveracing.com.au" className="cp-intl-contact-link">
+                          <Mail size={14} /> info@elusiveracing.com.au
+                        </a>
+                      </div>
+                      <label className={`cp-freight-option cp-freight-option--contact${freight?.id === 'contact_quote' ? ' selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="freight"
+                          value="contact_quote"
+                          checked={freight?.id === 'contact_quote'}
+                          onChange={() => setFreight({ id: 'contact_quote', label: 'International shipping — quote to follow', price: 0 })}
+                        />
+                        <span className="cp-freight-icon"><Package size={15} /></span>
+                        <span className="cp-freight-label">I understand — our team will contact me with a quote</span>
+                        <span className="cp-freight-price cp-freight-price--tbd">TBD</span>
+                      </label>
                     </div>
                   )}
                 </div>

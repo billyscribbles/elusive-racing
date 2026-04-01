@@ -282,37 +282,59 @@ async function handleChat(req, res) {
 
 // ── Shipping rates proxy ──────────────────────────────────────────────────────
 // Calls WooCommerce Store API server-side to avoid CORS/credential issues.
-// Each call manages its own ephemeral WC session via cookie.
+// Each call manages its own ephemeral WC session (cookie + nonce).
+//
+// WC Store API requires:
+//   - Session cookie (from first GET /cart response)
+//   - Nonce header on all write (POST/PUT) requests
+//     → WC returns this as X-WC-Store-API-Nonce on GET responses
 async function getShippingRatesServer(items, address) {
   const storeBase = `${WC_URL}/wp-json/wc/store/v1`;
   let sessionCookie = '';
+  let nonce = '';
+
+  function captureHeaders(res) {
+    // Update session cookie on every response (WC may refresh it)
+    const sc = res.headers.get('set-cookie');
+    if (sc) {
+      sessionCookie = sc.split(',')
+        .map(c => c.trim().split(';')[0])
+        .filter(Boolean)
+        .join('; ');
+    }
+    // Capture nonce — WC returns it on GET /cart responses so writes can use it
+    const n = res.headers.get('X-WC-Store-API-Nonce')
+           || res.headers.get('Nonce')
+           || res.headers.get('X-WooCommerce-StoreApiNonce');
+    if (n) nonce = n;
+  }
 
   async function storeReq(path, method = 'GET', body = null) {
-    const opts = {
-      method,
-      headers: { 'Content-Type': 'application/json', ...(sessionCookie && { Cookie: sessionCookie }) },
-      ...(body && { body: JSON.stringify(body) }),
-    };
-    const res = await fetch(`${storeBase}${path}`, opts);
+    const headers = { 'Content-Type': 'application/json' };
+    if (sessionCookie) headers['Cookie']  = sessionCookie;
+    if (nonce && method !== 'GET') headers['Nonce'] = nonce;
 
-    // Capture WC session cookie from the first response
-    if (!sessionCookie) {
-      const sc = res.headers.get('set-cookie');
-      if (sc) {
-        sessionCookie = sc.split(',')
-          .map(c => c.trim().split(';')[0])
-          .filter(Boolean)
-          .join('; ');
-      }
+    const res = await fetch(`${storeBase}${path}`, {
+      method,
+      headers,
+      ...(body && { body: JSON.stringify(body) }),
+    });
+
+    captureHeaders(res);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.log(`[shipping] ${method} ${path} → ${res.status}: ${errText.slice(0, 300)}`);
+      return null;
     }
-    if (!res.ok) return null;
     return res.json().catch(() => null);
   }
 
-  // 1. Fetch current cart (establishes session cookie)
+  // 1. GET /cart — establishes session cookie AND returns the nonce we need for writes
   const existingCart = await storeReq('/cart');
+  console.log('[shipping] session established, nonce:', nonce ? 'yes' : 'no', '| existing items:', existingCart?.items?.length ?? 0);
 
-  // 2. Clear any existing items
+  // 2. Clear any existing items from this session
   if (existingCart?.items?.length) {
     for (const item of existingCart.items) {
       await storeReq('/cart/remove-item', 'POST', { key: item.key });
@@ -323,11 +345,18 @@ async function getShippingRatesServer(items, address) {
   for (const item of items) {
     const productId = parseInt(item.id, 10);
     const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
-    await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
+    const addResult = await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
+    console.log(`[shipping] add item ${variantId ?? productId} x${item.quantity} →`, addResult ? 'ok' : 'failed');
   }
 
-  // 4. Set the shipping address so WC can match a shipping zone / call UPS
-  await storeReq('/cart/update-customer', 'PUT', {
+  // 4. Set the shipping address — the update-customer RESPONSE is the recalculated cart.
+  //    WC recalculates shipping rates as part of processing the address update and
+  //    returns the updated cart inline, so we use that response directly rather than
+  //    a subsequent GET /cart (which returns the pre-update cached snapshot).
+  //    Pass the full address — UPS/FX plugins need state + postcode to calculate
+  //    live rates. If WC rejects an invalid postcode/state the call returns null,
+  //    rates stay empty, and the frontend shows the "contact us" card.
+  const cartData = await storeReq('/cart/update-customer', 'POST', {
     shipping_address: {
       first_name: '', last_name: '',
       address_1: address.address1 || '',
@@ -339,19 +368,13 @@ async function getShippingRatesServer(items, address) {
     },
   });
 
-  // 5. Fetch rates and cart totals in parallel
-  const [ratesData, cartData] = await Promise.all([
-    storeReq('/cart/shipping-rates'),
-    storeReq('/cart'),
-  ]);
-
   console.log('[shipping] address:', JSON.stringify(address));
-  console.log('[shipping] ratesData:', JSON.stringify(ratesData));
-  console.log('[shipping] cart totals:', JSON.stringify(cartData?.totals));
+  console.log('[shipping] shipping_rates from cart:', JSON.stringify(cartData?.shipping_rates));
+  console.log('[shipping] cart items:', cartData?.totals?.total_items);
 
   // WC Store API prices are in minor units (cents)
   const scale = 100;
-  const rawRates = ratesData?.[0]?.shipping_rates ?? [];
+  const rawRates = cartData?.shipping_rates?.[0]?.shipping_rates ?? [];
   const rates = rawRates.map(r => ({
     id:       r.rate_id,
     label:    r.name + (r.description ? ` — ${r.description}` : ''),
@@ -359,8 +382,7 @@ async function getShippingRatesServer(items, address) {
     methodId: r.method_id,
   }));
 
-  const totals = cartData?.totals;
-  const taxAmount = totals ? parseInt(totals.total_tax || '0', 10) / scale : 0;
+  const taxAmount = cartData?.totals ? parseInt(cartData.totals.total_tax || '0', 10) / scale : 0;
 
   return { rates, taxAmount };
 }
