@@ -296,13 +296,24 @@ async function getShippingRatesServer(items, address) {
   let nonce = '';
 
   function captureHeaders(res) {
-    // Update session cookie on every response (WC may refresh it)
-    const sc = res.headers.get('set-cookie');
-    if (sc) {
-      sessionCookie = sc.split(',')
-        .map(c => c.trim().split(';')[0])
-        .filter(Boolean)
-        .join('; ');
+    // Node 18+ native fetch returns Set-Cookie headers via getSetCookie() as a proper
+    // array, avoiding comma-split bugs where session values contain commas.
+    const cookies = typeof res.headers.getSetCookie === 'function'
+      ? res.headers.getSetCookie()
+      : (res.headers.get('set-cookie') || '').split(/,(?=[^ ])/).map(c => c.trim()).filter(Boolean);
+
+    if (cookies.length) {
+      // Merge into existing cookie jar — WC only returns changed cookies per response
+      // (e.g. add-item only returns cart_hash, not the session cookie). If we replace
+      // entirely we lose the session cookie and all subsequent requests start fresh.
+      const jar = new Map(
+        sessionCookie.split('; ').filter(Boolean).map(kv => [kv.split('=')[0], kv])
+      );
+      for (const c of cookies) {
+        const kv = c.split(';')[0].trim();
+        if (kv) jar.set(kv.split('=')[0], kv);
+      }
+      sessionCookie = [...jar.values()].join('; ');
     }
     // Capture nonce — WC returns it on GET /cart responses so writes can use it
     const n = res.headers.get('X-WC-Store-API-Nonce')
@@ -367,7 +378,6 @@ async function getShippingRatesServer(items, address) {
       country:   address.country  || 'AU',
     },
   });
-
 
   // WC Store API prices are in minor units (cents)
   const scale = 100;
