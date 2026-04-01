@@ -1323,6 +1323,7 @@ __metadata:
     react-router-dom: "npm:^6.28.0"
     react-svg-credit-card-payment-icons: "npm:^5.1.2"
     serve: "npm:^14.2.4"
+    stripe: "npm:^21.0.1"
     typescript: "npm:^5.9.3"
     vite: "npm:^6.0.5"
     zustand: "npm:^5.0.12"
@@ -2640,6 +2641,18 @@ __metadata:
   version: 2.0.1
   resolution: "strip-json-comments@npm:2.0.1"
   checksum: 10c0/b509231cbdee45064ff4f9fd73609e2bcc4e84a4d508e9dd0f31f70356473fde18abfb5838c17d56fb236f5a06b102ef115438de0600b749e818a35fbbc48c43
+  languageName: node
+  linkType: hard
+
+"stripe@npm:^21.0.1":
+  version: 21.0.1
+  resolution: "stripe@npm:21.0.1"
+  peerDependencies:
+    "@types/node": ">=18"
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+  checksum: 10c0/2d25a5583e2a286598ba501a860874a45a32daf54931e541cb91b2ebe50955f41a4796c669f9064085bfed608e9d6a2bbcf93d2aea78a097a1583f49992bf075
   languageName: node
   linkType: hard
 

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { placeOrder } from '../lib/woocommerce';
-import { ArrowLeft, Lock, ShieldCheck, Truck, Store, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Building2 } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
@@ -13,15 +13,24 @@ const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   : null;
 
-const PAYMENT_METHODS = [
-  { id: 'stripe_cc', label: 'Credit / Debit Card',  available: true  },
-  { id: 'bacs',      label: 'Direct Bank Transfer', available: true  },
-  { id: 'afterpay',  label: 'Afterpay',             available: false },
-  { id: 'zipmoney',  label: 'Zip',                  available: false },
-  { id: 'ppcp',      label: 'PayPal',               available: false },
-  { id: 'gpay',      label: 'Google Pay',           available: false },
-  { id: 'applepay',  label: 'Apple Pay',            available: false },
-];
+const STRIPE_APPEARANCE = {
+  theme: 'stripe',
+  variables: {
+    colorPrimary:       '#d94040',
+    colorBackground:    '#ffffff',
+    colorText:          '#1a1a1a',
+    colorDanger:        '#d94040',
+    fontFamily:         'Open Sans, sans-serif',
+    fontSizeBase:       '15px',
+    borderRadius:       '5px',
+    spacingUnit:        '4px',
+  },
+  rules: {
+    '.Input': { border: '1px solid #e0e0e0', boxShadow: 'none', padding: '10px 12px' },
+    '.Input:focus': { border: '1px solid #1a1a1a', boxShadow: 'none' },
+    '.Label': { fontWeight: '600', fontSize: '13px', marginBottom: '6px' },
+  },
+};
 
 function ShippingSummary() {
   const { contact, shipping, fulfillment } = useCheckoutStore();
@@ -46,10 +55,13 @@ function ShippingSummary() {
   );
 }
 
-function MiniOrderSummary() {
+function MiniOrderSummary({ shippingCost }) {
   const { items } = useCartStore();
+  const { freight, fulfillment } = useCheckoutStore();
   const subtotal  = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
+  const shipping  = fulfillment === 'collect' ? 0 : (freight?.price ?? null);
+  const total     = subtotal + (shipping ?? 0);
   return (
     <div className="pp-order">
       <ul className="pp-order-items">
@@ -74,84 +86,105 @@ function MiniOrderSummary() {
       </div>
       <div className="pp-order-row pp-order-row--muted">
         <span>Shipping</span>
-        <span>Calculated at checkout</span>
+        <span>{fulfillment === 'collect' ? 'Free' : shipping !== null ? `$${shipping.toFixed(2)}` : 'TBD'}</span>
       </div>
-      <div className="pp-order-total">
-        <span>Estimated Total</span>
-        <span>${subtotal.toFixed(2)}</span>
-      </div>
+      {(fulfillment === 'collect' || shipping !== null) && (
+        <div className="pp-order-total">
+          <span>Total</span>
+          <span>${total.toFixed(2)}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      fontSize: '15px',
-      color: '#1a1a1a',
-      fontFamily: 'Open Sans, sans-serif',
-      '::placeholder': { color: '#aaa' },
-    },
-    invalid: { color: '#d94040' },
-  },
-};
-
-function PaymentForm() {
-  const stripe     = useStripe();
-  const elements   = useElements();
-  const navigate   = useNavigate();
-  const { items }  = useCartStore();
+// ── Stripe payment form (inside Elements provider) ────────────────────────────
+function StripePaymentForm({ onSuccess }) {
+  const stripe   = useStripe();
+  const elements = useElements();
+  const navigate = useNavigate();
+  const { items } = useCartStore();
   const { contact, shipping, fulfillment } = useCheckoutStore();
 
-  const [method,  setMethod]  = useState('stripe_cc');
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
-  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+        confirmParams: {
+          return_url:       `${window.location.origin}/order-confirmation`,
+          payment_method_data: {
+            billing_details: {
+              name:  `${contact.firstName} ${contact.lastName}`,
+              email: contact.email,
+              phone: contact.phone || undefined,
+            },
+          },
+        },
+      });
+
+      if (confirmError) {
+        setError(confirmError.message);
+        return;
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        await placeOrder({
+          items, contact, shipping, fulfillment,
+          paymentMethod: 'stripe_cc',
+          paymentData:   [{ key: 'stripe_payment_method', value: paymentIntent.payment_method }],
+        }).catch(() => {}); // best-effort — payment already taken
+        onSuccess();
+        navigate('/order-confirmation');
+      }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="pp-stripe-form">
+      <PaymentElement options={{ layout: 'accordion' }} />
+      {error && (
+        <div className="pp-error">
+          <AlertCircle size={15} /> {error}
+        </div>
+      )}
+      <button type="submit" className="pp-checkout-btn" disabled={loading || !stripe}>
+        <Lock size={15} /> {loading ? 'Processing…' : 'Complete Order'}
+      </button>
+    </form>
+  );
+}
+
+// ── BACS form ─────────────────────────────────────────────────────────────────
+function BacsForm({ onSuccess }) {
+  const navigate = useNavigate();
+  const { items } = useCartStore();
+  const { contact, shipping, fulfillment } = useCheckoutStore();
+
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
-      if (method === 'stripe_cc') {
-        if (!stripe || !elements) {
-          setError('Stripe is not configured yet. Please add VITE_STRIPE_PUBLISHABLE_KEY to your .env file.');
-          setLoading(false);
-          return;
-        }
-        const cardElement = elements.getElement(CardElement);
-        const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
-          type: 'card',
-          card: cardElement,
-          billing_details: {
-            name:  `${contact.firstName} ${contact.lastName}`,
-            email: contact.email,
-            phone: contact.phone || undefined,
-          },
-        });
-        if (stripeError) {
-          setError(stripeError.message);
-          setLoading(false);
-          return;
-        }
-        await placeOrder({
-          items, contact, shipping, fulfillment,
-          paymentMethod: 'stripe_cc',
-          paymentData:   [{ key: 'stripe_payment_method', value: paymentMethod.id }],
-        });
-      } else if (method === 'bacs') {
-        await placeOrder({
-          items, contact, shipping, fulfillment,
-          paymentMethod: 'bacs',
-          paymentData:   [],
-        });
-      }
-
-      setSuccess(true);
+      await placeOrder({ items, contact, shipping, fulfillment, paymentMethod: 'bacs', paymentData: [] });
+      onSuccess();
       navigate('/order-confirmation');
     } catch (err) {
-      setError(err.message || 'Something went wrong placing your order. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -159,133 +192,76 @@ function PaymentForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="pp-layout">
-
-        {/* Left col */}
-        <div className="pp-left">
-
-          <div className="pp-section">
-            <h2 className="pp-section-title">Delivery Details</h2>
-            <ShippingSummary />
-          </div>
-
-          <div className="pp-section">
-            <h2 className="pp-section-title">Payment Method</h2>
-            <div className="pp-method-list">
-              {PAYMENT_METHODS.map((m) => (
-                <label
-                  key={m.id}
-                  className={`pp-method${method === m.id ? ' active' : ''}${!m.available ? ' pp-method--disabled' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value={m.id}
-                    checked={method === m.id}
-                    onChange={() => m.available && setMethod(m.id)}
-                    disabled={!m.available}
-                  />
-                  <div className="pp-method-radio">
-                    {method === m.id && m.available && <Check size={11} strokeWidth={3} />}
-                  </div>
-                  <span className="pp-method-label">{m.label}</span>
-                  {!m.available && (
-                    <span className="pp-method-badge pp-method-badge--unavailable">Coming soon</span>
-                  )}
-                </label>
-              ))}
+      <div className="pp-bank-details">
+        <p className="pp-bank-note">
+          Transfer the order total to our bank account. Your order will be confirmed once payment is received (1–2 business days).
+        </p>
+        <div className="pp-bank-fields">
+          {[
+            ['Bank',         'Commonwealth Bank of Australia'],
+            ['Account Name', 'Elusive Racing Pty Ltd'],
+            ['BSB',          '063-000'],
+            ['Account No.',  '1234 5678'],
+            ['Reference',    'Your order number (provided after placing order)'],
+          ].map(([k, v]) => (
+            <div key={k} className="pp-bank-row">
+              <span className="pp-bank-key">{k}</span>
+              <span className="pp-bank-val">{v}</span>
             </div>
-
-            {method === 'stripe_cc' && (
-              <div className="pp-card-form">
-                {stripePromise ? (
-                  <div className="pp-field">
-                    <label className="pp-label">Card details</label>
-                    <div className="pp-card-element-wrap">
-                      <CardElement options={CARD_ELEMENT_OPTIONS} />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="pp-field">
-                      <label className="pp-label">Card number</label>
-                      <input className="pp-input" placeholder="1234 5678 9012 3456" disabled />
-                    </div>
-                    <div className="pp-row-2">
-                      <div className="pp-field">
-                        <label className="pp-label">Expiry</label>
-                        <input className="pp-input" placeholder="MM / YY" disabled />
-                      </div>
-                      <div className="pp-field">
-                        <label className="pp-label">CVV</label>
-                        <input className="pp-input" placeholder="•••" disabled />
-                      </div>
-                    </div>
-                    <div className="pp-field">
-                      <label className="pp-label">Name on card</label>
-                      <input className="pp-input" placeholder="As it appears on your card" disabled />
-                    </div>
-                  </>
-                )}
-                <p className="pp-card-note">
-                  <Lock size={12} /> Your card details are encrypted and processed securely by Stripe.
-                </p>
-              </div>
-            )}
-
-            {method === 'bacs' && (
-              <div className="pp-bank-details">
-                <p className="pp-bank-note">Transfer the order total to our bank account. Your order will be confirmed once payment is received (1–2 business days).</p>
-                <div className="pp-bank-fields">
-                  {[
-                    ['Bank',         'Commonwealth Bank of Australia'],
-                    ['Account Name', 'Elusive Racing Pty Ltd'],
-                    ['BSB',          '063-000'],
-                    ['Account No.',  '1234 5678'],
-                    ['Reference',    'Your order number (provided after placing order)'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="pp-bank-row">
-                      <span className="pp-bank-key">{k}</span>
-                      <span className="pp-bank-val">{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="pp-error">
-                <AlertCircle size={15} /> {error}
-              </div>
-            )}
-          </div>
-
+          ))}
         </div>
-
-        {/* Right: order summary + CTA */}
-        <div className="pp-summary-col">
-          <h2 className="pp-summary-heading">Order Summary</h2>
-          <MiniOrderSummary />
-          <div className="pp-cta">
-            <button type="submit" className="pp-checkout-btn" disabled={loading || success}>
-              <Lock size={15} /> {loading ? 'Processing…' : 'Complete Order'}
-            </button>
-            <div className="pp-trust">
-              <span><ShieldCheck size={13} /> Secure Checkout</span>
-              <span><Lock size={13} /> SSL Encrypted</span>
-            </div>
-          </div>
-        </div>
-
       </div>
+      {error && <div className="pp-error"><AlertCircle size={15} /> {error}</div>}
+      <button type="submit" className="pp-checkout-btn" disabled={loading}>
+        <Lock size={15} /> {loading ? 'Placing Order…' : 'Place Order'}
+      </button>
     </form>
   );
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function PaymentPage() {
-  const { items }   = useCartStore();
-  const navigate    = useNavigate();
-  const { contact } = useCheckoutStore();
+  const { items }    = useCartStore();
+  const { contact, freight, fulfillment } = useCheckoutStore();
+  const navigate     = useNavigate();
+
+  const [method,       setMethod]       = useState('stripe'); // 'stripe' | 'bacs'
+  const [clientSecret, setClientSecret] = useState(null);
+  const [piError,      setPiError]      = useState(null);
+
+  const subtotal     = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const shippingCost = fulfillment === 'collect' ? 0 : (freight?.price ?? 0);
+  const totalCents   = Math.round((subtotal + shippingCost) * 100);
+
+  // Create a PaymentIntent whenever the total is known and Stripe is configured
+  useEffect(() => {
+    if (method !== 'stripe') return;
+    if (!stripePromise) {
+      setPiError('Online payment is not configured. Please use Direct Bank Transfer or contact us.');
+      return;
+    }
+    setPiError(null);
+    setClientSecret(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15 s timeout
+    fetch('/api/create-payment-intent', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ amountCents: totalCents }),
+      signal:  controller.signal,
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.clientSecret) setClientSecret(data.clientSecret);
+        else setPiError(data.error || 'Could not initialise payment.');
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') setPiError('Could not connect to payment service. Please try again.');
+        else setPiError('Payment service timed out. Please try again.');
+      })
+      .finally(() => clearTimeout(timeout));
+    return () => { controller.abort(); clearTimeout(timeout); };
+  }, [totalCents, method]);
 
   if (items.length === 0) {
     return (
@@ -294,7 +270,7 @@ export default function PaymentPage() {
           <div className="pp-empty">
             <div className="pp-empty-icon">🛒</div>
             <h2 className="pp-empty-title">Your cart is empty</h2>
-            <p className="pp-empty-text">Looks like you haven't added anything yet.</p>
+            <p className="pp-empty-text">Looks like you haven&apos;t added anything yet.</p>
             <a href="/shop" className="pp-empty-btn">Continue Shopping</a>
           </div>
         </div>
@@ -307,6 +283,10 @@ export default function PaymentPage() {
     return null;
   }
 
+  const elementsOptions = clientSecret
+    ? { clientSecret, appearance: STRIPE_APPEARANCE }
+    : null;
+
   return (
     <div className="pp-page">
       <div className="container">
@@ -316,9 +296,71 @@ export default function PaymentPage() {
           <CheckoutSteps current={2} />
         </div>
 
-        <Elements stripe={stripePromise}>
-          <PaymentForm />
-        </Elements>
+        <div className="pp-layout">
+          {/* Left col */}
+          <div className="pp-left">
+
+            <div className="pp-section">
+              <h2 className="pp-section-title">Delivery Details</h2>
+              <ShippingSummary />
+            </div>
+
+            <div className="pp-section">
+              <h2 className="pp-section-title">Payment Method</h2>
+
+              {/* Method tabs */}
+              <div className="pp-method-tabs">
+                <button
+                  type="button"
+                  className={`pp-method-tab${method === 'stripe' ? ' active' : ''}`}
+                  onClick={() => setMethod('stripe')}
+                >
+                  <CreditCard size={15} /> Pay Online
+                </button>
+                <button
+                  type="button"
+                  className={`pp-method-tab${method === 'bacs' ? ' active' : ''}`}
+                  onClick={() => setMethod('bacs')}
+                >
+                  <Building2 size={15} /> Direct Bank Transfer
+                </button>
+              </div>
+
+              {/* Stripe — Payment Element (includes Link, Apple Pay, Google Pay) */}
+              {method === 'stripe' && (
+                piError ? (
+                  <div className="pp-pi-error">
+                    <AlertCircle size={15} /> {piError}
+                  </div>
+                ) : !elementsOptions ? (
+                  <div className="pp-stripe-loading">
+                    <div className="pp-stripe-spinner" />
+                    <span>Loading payment form…</span>
+                  </div>
+                ) : (
+                  <Elements stripe={stripePromise} options={elementsOptions}>
+                    <StripePaymentForm onSuccess={() => {}} />
+                  </Elements>
+                )
+              )}
+
+              {/* Direct bank transfer */}
+              {method === 'bacs' && <BacsForm onSuccess={() => {}} />}
+            </div>
+
+          </div>
+
+          {/* Right: order summary */}
+          <div className="pp-summary-col">
+            <h2 className="pp-summary-heading">Order Summary</h2>
+            <MiniOrderSummary />
+            <div className="pp-trust">
+              <span><ShieldCheck size={13} /> Secure Checkout</span>
+              <span><Lock size={13} /> SSL Encrypted</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

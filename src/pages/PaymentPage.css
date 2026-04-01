@@ -151,7 +151,80 @@
 }
 .pp-shipping-edit:hover { opacity: 0.7; }
 
-/* ── Payment methods ── */
+/* ── Payment method tabs ── */
+.pp-method-tabs {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pp-method-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 14px;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-mid);
+  background: #fafafa;
+  border: none;
+  border-right: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.pp-method-tab:last-child { border-right: none; }
+.pp-method-tab:hover { background: #f0f0f0; color: var(--color-dark); }
+.pp-method-tab.active { background: var(--color-dark); color: #fff; }
+
+/* Stripe loading/error states */
+.pp-stripe-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+  color: var(--color-mid);
+  font-size: 14px;
+}
+
+.pp-stripe-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-dark);
+  border-radius: 50%;
+  animation: pp-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+
+.pp-pi-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fff5f5;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #d94040;
+  font-size: 13px;
+}
+
+/* Stripe PaymentElement wrapper */
+.pp-stripe-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.pp-checkout-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Payment methods (legacy, kept for reference) ── */
 .pp-method-list { display: flex; flex-direction: column; gap: 10px; }
 
 .pp-method {

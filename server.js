@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
+import Stripe from 'stripe';
 
 // Load .env manually (Node 18+ has no built-in dotenv)
 try {
@@ -17,7 +18,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, 'dist');
 const PORT = process.env.PORT || 8080;
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const stripeClient = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 const WC_URL    = process.env.VITE_WC_URL;
 const WC_KEY    = process.env.VITE_WC_CONSUMER_KEY;
@@ -332,7 +334,6 @@ async function getShippingRatesServer(items, address) {
 
   // 1. GET /cart — establishes session cookie AND returns the nonce we need for writes
   const existingCart = await storeReq('/cart');
-  console.log('[shipping] session established, nonce:', nonce ? 'yes' : 'no', '| existing items:', existingCart?.items?.length ?? 0);
 
   // 2. Clear any existing items from this session
   if (existingCart?.items?.length) {
@@ -345,8 +346,7 @@ async function getShippingRatesServer(items, address) {
   for (const item of items) {
     const productId = parseInt(item.id, 10);
     const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
-    const addResult = await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
-    console.log(`[shipping] add item ${variantId ?? productId} x${item.quantity} →`, addResult ? 'ok' : 'failed');
+    await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
   }
 
   // 4. Set the shipping address — the update-customer RESPONSE is the recalculated cart.
@@ -368,9 +368,6 @@ async function getShippingRatesServer(items, address) {
     },
   });
 
-  console.log('[shipping] address:', JSON.stringify(address));
-  console.log('[shipping] shipping_rates from cart:', JSON.stringify(cartData?.shipping_rates));
-  console.log('[shipping] cart items:', cartData?.totals?.total_items);
 
   // WC Store API prices are in minor units (cents)
   const scale = 100;
@@ -410,6 +407,36 @@ async function handleShippingRates(req, res) {
   });
 }
 
+// ── Stripe PaymentIntent ──────────────────────────────────────────────────────
+async function handleCreatePaymentIntent(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405); res.end(); return;
+  }
+  if (!stripeClient) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Stripe secret key not configured' }));
+    return;
+  }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { amountCents } = JSON.parse(body);
+      const paymentIntent = await stripeClient.paymentIntents.create({
+        amount:   Math.max(50, Math.round(amountCents)), // Stripe minimum is 50 cents
+        currency: 'aud',
+        automatic_payment_methods: { enabled: true },   // enables Link, Apple Pay, Google Pay etc.
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ clientSecret: paymentIntent.client_secret }));
+    } catch (err) {
+      console.error('PaymentIntent error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
@@ -441,6 +468,12 @@ const server = http.createServer((req, res) => {
   // Shipping rates proxy
   if (req.url === '/api/shipping-rates') {
     handleShippingRates(req, res);
+    return;
+  }
+
+  // Stripe PaymentIntent creation
+  if (req.url === '/api/create-payment-intent') {
+    handleCreatePaymentIntent(req, res);
     return;
   }
 
