@@ -382,15 +382,31 @@ export async function getFeaturedProducts(count = 8) {
   return list.map(p => normalizeProduct(p));
 }
 
-export async function getProductByHandle(slug) {
-  if (_productCache.has(slug)) return _productCache.get(slug);
+// onBase (optional): called as soon as base product data is available, before
+// variations are fetched. Lets ProductPage render immediately for variable products
+// instead of waiting for both sequential WC calls.
+export async function getProductByHandle(slug, onBase) {
+  if (_productCache.has(slug)) {
+    const cached = _productCache.get(slug);
+    onBase?.(cached);
+    return cached;
+  }
 
   const products = await wcFetch(`/products?slug=${encodeURIComponent(slug)}&_fields=${PRODUCT_DETAIL_FIELDS}`);
   if (!products.length) throw new Error(`Product not found: ${slug}`);
   const p = products[0];
 
+  const isVariable = p.type === 'variable' && Array.isArray(p.variations) && p.variations.length > 0;
+
+  if (isVariable && onBase) {
+    // Call back with base product (no variant details yet) so the page can render
+    const baseResult = normalizeProductDetail({ ...p, variations: [] });
+    baseResult._isVariable = true;
+    onBase(baseResult);
+  }
+
   // Fetch variations if it's a variable product — slim payload with _fields
-  if (p.type === 'variable' && p.variations?.length) {
+  if (isVariable) {
     const variations = await wcFetch(
       `/products/${p.id}/variations?per_page=100&_fields=id,price,regular_price,sale_price,stock_status,stock_quantity,attributes`
     );
@@ -399,6 +415,9 @@ export async function getProductByHandle(slug) {
 
   const result = normalizeProductDetail(p);
   _productCache.set(slug, result);
+
+  // For non-variable products (single call), onBase fires here with the full result
+  if (!isVariable) onBase?.(result);
   return result;
 }
 

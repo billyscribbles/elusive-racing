@@ -33,6 +33,7 @@ function mapProduct(p) {
     hasVariants,
     backorder: p.stockStatus === 'onbackorder',
     inStock: p.stockStatus === 'instock',
+    _isVariable: p._isVariable ?? false,
   };
 }
 
@@ -60,6 +61,7 @@ export default function ProductPage() {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [variantsLoading, setVariantsLoading] = useState(false);
 
   // Reset state and scroll to top when navigating to a different product
   useEffect(() => {
@@ -71,22 +73,46 @@ export default function ProductPage() {
   useEffect(() => {
     setLoading(true);
     setRelated([]);
-    getProductByHandle(handle)
-      .then((data) => {
-        setProduct(mapProduct(data));
-        setLoading(false);
-        // Fetch related in background — doesn't block product display
-        const catId = data.categories?.[0]?.id;
-        return getProducts({ count: 5, ...(catId && { category: catId }) });
+    setVariantsLoading(false);
+
+    let cancelled = false;
+    let baseWasVariable = false;
+
+    getProductByHandle(handle, (baseData) => {
+      // Called as soon as base product data is available (before variants for variable products)
+      if (cancelled) return;
+      setProduct(mapProduct(baseData));
+      setLoading(false);
+      if (baseData._isVariable) {
+        baseWasVariable = true;
+        setVariantsLoading(true);
+      }
+      // Start fetching related immediately — runs in parallel with any variants fetch
+      const catId = baseData.categories?.[0]?.id;
+      getProducts({ count: 5, ...(catId && { category: catId }) })
+        .then((data) => {
+          if (cancelled) return;
+          const mapped = (data.edges ?? [])
+            .map(({ node }) => mapProduct(node))
+            .filter((p) => p.href !== `/products/${handle}`)
+            .slice(0, 4);
+          setRelated(mapped);
+        })
+        .catch(() => {});
+    })
+      .then((fullData) => {
+        if (cancelled) return;
+        if (baseWasVariable) {
+          // Update product with full variant data now available
+          setProduct(mapProduct(fullData));
+          setVariantsLoading(false);
+        }
       })
-      .then((data) => {
-        const mapped = (data.edges ?? [])
-          .map(({ node }) => mapProduct(node))
-          .filter((p) => p.href !== `/products/${handle}`)
-          .slice(0, 4);
-        setRelated(mapped);
-      })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [handle]);
 
   if (loading) {
@@ -140,7 +166,7 @@ export default function ProductPage() {
   const discount = effectiveOriginal
     ? Math.round(((effectiveOriginal - displayPrice) / effectiveOriginal) * 100)
     : null;
-  const canAddToCart = (!product.hasVariants || !!selectedVariant) && displayPrice > 0;
+  const canAddToCart = !variantsLoading && (!product.hasVariants || !!selectedVariant) && displayPrice > 0;
 
   function handleAddToCart() {
     if (!canAddToCart) return;
@@ -194,7 +220,7 @@ export default function ProductPage() {
             })()}
             <div className="product-image-main">
               {product.image
-                ? <img src={product.image} alt={product.name} />
+                ? <img src={product.image} alt={product.name} fetchpriority="high" />
                 : <div className="product-image-placeholder" />
               }
             </div>
@@ -237,8 +263,17 @@ export default function ProductPage() {
               {product.backorder ? 'Available on Backorder' : 'In Stock'}
             </div>
 
-            {/* Variant selector */}
-            {product.hasVariants && (
+            {/* Variant selector — or skeleton while variant data loads */}
+            {product._isVariable && variantsLoading ? (
+              <div className="product-page-variants">
+                <div className="skel skel--line" style={{ width: 120, height: 14, marginBottom: 12 }} />
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="skel skel--block" style={{ width: 80, height: 38, borderRadius: 6 }} />
+                  ))}
+                </div>
+              </div>
+            ) : product.hasVariants ? (
               <div className="product-page-variants">
                 <div className="product-page-section-title">
                   {product.variants[0]?.selectedOptions?.[0]?.name || 'Variant'}
@@ -270,7 +305,7 @@ export default function ProductPage() {
                   <p className="product-page-variant-hint">Please select an option above</p>
                 )}
               </div>
-            )}
+            ) : null}
 
             <div className="product-page-qty-row">
               <div className="product-page-qty">
