@@ -1082,6 +1082,12 @@
   .shop-product-name { font-size: 15px; }
   .shop-product-price { font-size: 17px; }
   .shop-page-title { font-size: 22px; }
+  .shop-quick-add {
+    font-size: 10px;
+    padding: 9px 6px;
+    letter-spacing: 0.5px;
+    gap: 4px;
+  }
   .shop-toolbar {
     flex-direction: column;
     align-items: flex-start;
