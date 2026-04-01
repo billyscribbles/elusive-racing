@@ -237,7 +237,7 @@ export default function PaymentPage() {
   useEffect(() => {
     if (method !== 'stripe') return;
     if (!stripePromise) {
-      setPiError('Online payment is not configured. Please use Direct Bank Transfer or contact us.');
+      setPiError('Payment unavailable. Please try again or use Direct Bank Transfer.');
       return;
     }
     setPiError(null);
@@ -253,11 +253,10 @@ export default function PaymentPage() {
       .then(r => r.json())
       .then(data => {
         if (data.clientSecret) setClientSecret(data.clientSecret);
-        else setPiError(data.error || 'Could not initialise payment.');
+        else setPiError('Payment unavailable. Please try again or use Direct Bank Transfer.');
       })
-      .catch(err => {
-        if (err.name !== 'AbortError') setPiError('Could not connect to payment service. Please try again.');
-        else setPiError('Payment service timed out. Please try again.');
+      .catch(() => {
+        setPiError('Payment unavailable. Please try again or use Direct Bank Transfer.');
       })
       .finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
