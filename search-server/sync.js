@@ -76,7 +76,7 @@ const INDEX_SETTINGS = {
     enabled: true,
     minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 },
   },
-  pagination: { maxTotalHits: 1000 },
+  pagination: { maxTotalHits: 10000 },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

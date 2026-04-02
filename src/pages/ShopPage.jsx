@@ -299,6 +299,7 @@ export default function ShopPage() {
       brands: activeBrands,
       categories: subParam ? [subParam] : [],
       onSale: saleParam === "1",
+      inStock: instockParam === "1",
       backorder: backorderParam === "1",
       minPrice: minParam ? parseFloat(minParam) : null,
       maxPrice: maxParam ? parseFloat(maxParam) : null,
@@ -319,6 +320,7 @@ export default function ShopPage() {
     subParam,
     brandsParam,
     saleParam,
+    instockParam,
     backorderParam,
     minParam,
     maxParam,
@@ -451,6 +453,7 @@ export default function ShopPage() {
       subParam,
       minParam || maxParam,
       saleParam,
+      instockParam,
       backorderParam,
       qParam,
       makeParam,
@@ -523,6 +526,15 @@ export default function ShopPage() {
       {/* Availability */}
       <CollapsibleSection title="Availability" defaultOpen>
         <label className="shop-filter-toggle-row">
+          <span>Available Now</span>
+          <div
+            className={`shop-toggle${instockParam === "1" ? " active" : ""}`}
+            onClick={() => toggleParam("instock")}
+          >
+            <div className="shop-toggle-thumb" />
+          </div>
+        </label>
+        <label className="shop-filter-toggle-row" style={{ marginTop: "12px" }}>
           <span>On Sale Only</span>
           <div
             className={`shop-toggle${saleParam === "1" ? " active" : ""}`}
@@ -910,6 +922,14 @@ export default function ShopPage() {
                         setSearchParams(p);
                       }}
                     >
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+                {instockParam && (
+                  <span className="shop-chip">
+                    Available Now
+                    <button onClick={() => removeChip("instock")}>
                       <X size={10} />
                     </button>
                   </span>

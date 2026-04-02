@@ -102,6 +102,7 @@ export async function queryProducts({
   brands    = [],
   categories = [],
   onSale    = false,
+  inStock   = false,
   backorder = false,
   minPrice  = null,
   maxPrice  = null,
@@ -124,8 +125,9 @@ export async function queryProducts({
   const filters = [];
   if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));
   if (categories.length) filters.push(categories.map(c => `categoryHandles = "${c}"`).join(' OR '));
-  if (onSale)            filters.push('onSale = true');
-  if (backorder)         filters.push('stockStatus = "onbackorder"');
+  if (onSale)    filters.push('onSale = true');
+  if (inStock)   filters.push('stockStatus != "onbackorder"');
+  if (backorder) filters.push('stockStatus = "onbackorder"');
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
 
