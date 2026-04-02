@@ -1,31 +1,28 @@
 import { useState, useLayoutEffect } from 'react';
-import { Gauge } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Gauge, X } from 'lucide-react';
 import { vehicleData } from '../../data/navigation';
+import useVehicleStore from '../../store/vehicleStore';
 import './Hero.css';
 
-function useVehicleForm() {
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
+function DesktopFinder() {
+  const { make, model, year, setVehicle, clearVehicle } = useVehicleStore();
+  const navigate = useNavigate();
   const models = make ? (vehicleData.models[make] || []) : [];
 
-  const handleMakeChange = (e) => { setMake(e.target.value); setModel(''); setYear(''); };
+  function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
+  function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
+  function handleYearChange(e)  { setVehicle(make, model, e.target.value); }
 
-  const handleSubmit = (e) => {
+  function handleSubmit(e) {
     e.preventDefault();
     if (!make) return;
     const params = new URLSearchParams();
     params.set('make', make);
     if (model) params.set('model', model);
-    if (year) params.set('year', year);
-    window.location.href = `/search?${params.toString()}`;
-  };
-
-  return { make, model, year, models, handleMakeChange, handleModelChange: (e) => { setModel(e.target.value); setYear(''); }, handleYearChange: (e) => setYear(e.target.value), handleSubmit };
-}
-
-function DesktopFinder() {
-  const { make, model, year, models, handleMakeChange, handleModelChange, handleYearChange, handleSubmit } = useVehicleForm();
+    if (year)  params.set('year', year);
+    navigate(`/search?${params.toString()}`);
+  }
 
   return (
     <form className="vf-form" onSubmit={handleSubmit}>
@@ -33,7 +30,11 @@ function DesktopFinder() {
         <Gauge size={28} strokeWidth={1.75} />
       </div>
       <h2 className="vf-title">Find Parts For<br />Your Vehicle</h2>
-      <p className="vf-sub">Select your vehicle to find compatible parts</p>
+      <p className="vf-sub">
+        {make
+          ? `Your vehicle: ${[make, model, year].filter(Boolean).join(' ')}`
+          : 'Select your vehicle to find compatible parts'}
+      </p>
       <div className="vf-selects">
         <select className="vf-select" value={make} onChange={handleMakeChange} aria-label="Vehicle make">
           <option value="">Select Make</option>
@@ -47,6 +48,12 @@ function DesktopFinder() {
           <option value="">Select Year</option>
           {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
+        {make && (
+          <button type="button" className="vf-remove-btn" onClick={clearVehicle}>
+            <X size={13} />
+            Remove Vehicle
+          </button>
+        )}
       </div>
       <button type="submit" className="vf-btn" disabled={!make}>
         Search Parts
@@ -56,7 +63,23 @@ function DesktopFinder() {
 }
 
 function MobileFinderForm() {
-  const { make, model, year, models, handleMakeChange, handleModelChange, handleYearChange, handleSubmit } = useVehicleForm();
+  const { make, model, year, setVehicle, clearVehicle } = useVehicleStore();
+  const navigate = useNavigate();
+  const models = make ? (vehicleData.models[make] || []) : [];
+
+  function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
+  function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
+  function handleYearChange(e)  { setVehicle(make, model, e.target.value); }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!make) return;
+    const params = new URLSearchParams();
+    params.set('make', make);
+    if (model) params.set('model', model);
+    if (year)  params.set('year', year);
+    navigate(`/search?${params.toString()}`);
+  }
 
   return (
     <form className="vehicle-bar-form" onSubmit={handleSubmit}>
@@ -75,6 +98,11 @@ function MobileFinderForm() {
         </select>
       </div>
       <button type="submit" className="vb-btn" disabled={!make}>GO</button>
+      {make && (
+        <button type="button" className="vb-clear-btn" onClick={clearVehicle} aria-label="Remove vehicle">
+          <X size={14} />
+        </button>
+      )}
     </form>
   );
 }

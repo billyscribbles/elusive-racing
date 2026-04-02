@@ -265,6 +265,28 @@
 .vf-btn:hover:not(:disabled) { background: var(--color-red-hover); }
 .vf-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
+.vf-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px;
+  margin-top: 4px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: #888;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.vf-remove-btn:hover {
+  color: #ff6b6b;
+  border-color: rgba(217, 64, 64, 0.4);
+}
+
 
 /* ═══════════════════════════════════════════
    MOBILE HERO (static image + vehicle bar)
@@ -443,6 +465,24 @@
 
   .vb-btn:hover:not(:disabled) { background: var(--color-red-hover); }
   .vb-btn:disabled { background: #555; cursor: not-allowed; }
+
+  .vb-clear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    color: #888;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .vb-clear-btn:hover {
+    color: #ff6b6b;
+    border-color: rgba(217, 64, 64, 0.4);
+  }
 }
 
 @media (max-width: 600px) {

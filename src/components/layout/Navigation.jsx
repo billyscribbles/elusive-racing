@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { navItems, featuredBrands, vehicleData } from '../../data/navigation';
 import CartIcon from '../ui/CartIcon';
 import useAuthStore from '../../store/authStore';
+import useVehicleStore from '../../store/vehicleStore';
 import './Navigation.css';
 
 function MobileAuthLink() {
@@ -201,10 +202,9 @@ export default function Navigation() {
   const [activeItem, setActiveItem] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(null);
+  const navigate = useNavigate();
   const [vehicleOpen, setVehicleOpen] = useState(false);
-  const [vMake, setVMake] = useState('');
-  const [vModel, setVModel] = useState('');
-  const [vYear, setVYear] = useState('');
+  const { make: vMake, model: vModel, year: vYear, setVehicle, clearVehicle } = useVehicleStore();
   const vModels = vMake ? (vehicleData.models[vMake] || []) : [];
 
   const handleVehicleSubmit = () => {
@@ -213,7 +213,7 @@ export default function Navigation() {
     params.set('make', vMake);
     if (vModel) params.set('model', vModel);
     if (vYear) params.set('year', vYear);
-    window.location.href = `/search?${params.toString()}`;
+    navigate(`/search?${params.toString()}`);
     setVehicleOpen(false);
   };
   const navRef = useRef(null);
@@ -290,10 +290,10 @@ export default function Navigation() {
               <span></span>
             </button>
             <button
-              className={`mobile-vehicle-btn ${vehicleOpen ? 'mobile-vehicle-btn--active' : ''}`}
+              className={`mobile-vehicle-btn ${vehicleOpen ? 'mobile-vehicle-btn--active' : ''} ${vMake ? 'mobile-vehicle-btn--saved' : ''}`}
               onClick={() => setVehicleOpen(!vehicleOpen)}
             >
-              Select Your Vehicle
+              {vMake ? [vMake, vModel, vYear].filter(Boolean).join(' ') : 'Select Your Vehicle'}
               <ChevronDown size={13} strokeWidth={2.5} className="mobile-vehicle-chevron" />
             </button>
             <div className="mobile-bar-cart">
@@ -309,7 +309,7 @@ export default function Navigation() {
               <select
                 className="mobile-vehicle-select"
                 value={vMake}
-                onChange={e => { setVMake(e.target.value); setVModel(''); setVYear(''); }}
+                onChange={e => setVehicle(e.target.value, '', '')}
               >
                 <option value="">Select Make</option>
                 {vehicleData.makes.map(m => <option key={m} value={m}>{m}</option>)}
@@ -317,7 +317,7 @@ export default function Navigation() {
               <select
                 className="mobile-vehicle-select"
                 value={vModel}
-                onChange={e => { setVModel(e.target.value); setVYear(''); }}
+                onChange={e => setVehicle(vMake, e.target.value, '')}
                 disabled={!vMake}
               >
                 <option value="">Select Model</option>
@@ -326,12 +326,21 @@ export default function Navigation() {
               <select
                 className="mobile-vehicle-select mobile-vehicle-select--full"
                 value={vYear}
-                onChange={e => setVYear(e.target.value)}
+                onChange={e => setVehicle(vMake, vModel, e.target.value)}
                 disabled={!vModel}
               >
                 <option value="">Year / Submodel</option>
                 {vehicleData.years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
+              {vMake && (
+                <button
+                  className="mobile-vehicle-remove"
+                  onClick={() => { clearVehicle(); setVehicleOpen(false); }}
+                >
+                  <X size={13} />
+                  Remove Vehicle
+                </button>
+              )}
               <button
                 className="mobile-vehicle-go"
                 onClick={handleVehicleSubmit}

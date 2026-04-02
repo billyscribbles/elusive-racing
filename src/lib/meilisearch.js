@@ -114,6 +114,12 @@ export async function queryProducts({
 
   const index = getClient().index(INDEX_NAME);
 
+  // Vehicle terms are appended to the text query so Meilisearch searches
+  // make/model across title, tags, and description. Year is omitted because
+  // it rarely appears in product text and makes the query too narrow.
+  const vehicleTerms = [make, model].filter(Boolean).join(' ');
+  const effectiveQuery = [vehicleTerms, query].filter(Boolean).join(' ');
+
   // Build filter array
   const filters = [];
   if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));
@@ -133,7 +139,7 @@ export async function queryProducts({
   };
   const sortParam = sortMap[sort] || [];
 
-  const results = await index.search(query, {
+  const results = await index.search(effectiveQuery, {
     offset:  (page - 1) * perPage,
     limit:   perPage,
     filter:  filters.length ? filters.join(' AND ') : undefined,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import useVehicleStore from "../store/vehicleStore";
 import {
   SlidersHorizontal,
   X,
@@ -279,6 +280,8 @@ export default function ShopPage() {
 
   const activeBrands = parseList(brandsParam);
 
+  const { clearVehicle: storeClearVehicle } = useVehicleStore();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -451,13 +454,21 @@ export default function ShopPage() {
       makeParam,
     ].filter(Boolean).length;
 
+  // Sync: if vehicle is cleared from hero/nav (store), also strip URL params
+  const storedMake = useVehicleStore((s) => s.make);
+  useEffect(() => {
+    if (!storedMake && makeParam) {
+      const p = Object.fromEntries(searchParams.entries());
+      delete p.make; delete p.model; delete p.year; delete p.page;
+      setSearchParams(p, { replace: true });
+    }
+  }, [storedMake]);
+
   function clearVehicle() {
     const p = Object.fromEntries(searchParams.entries());
-    delete p.make;
-    delete p.model;
-    delete p.year;
-    delete p.page;
+    delete p.make; delete p.model; delete p.year; delete p.page;
     setSearchParams(p);
+    storeClearVehicle(); // also wipe from localStorage/store
   }
 
   const catSearchTerm = catSearch.toLowerCase().trim();

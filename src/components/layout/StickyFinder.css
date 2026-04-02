@@ -123,3 +123,21 @@
     display: none;
   }
 }
+
+.sticky-finder-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: #666;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.sticky-finder-clear:hover {
+  color: #ff6b6b;
+  border-color: rgba(217, 64, 64, 0.4);
+}

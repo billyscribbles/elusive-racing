@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gauge } from 'lucide-react';
+import { Gauge, X } from 'lucide-react';
 import { vehicleData } from '../../data/navigation';
 import useVehicleStore from '../../store/vehicleStore';
 import './StickyFinder.css';
 
 export default function StickyFinder() {
-  const { make, model, year, setVehicle } = useVehicleStore();
+  const { make, model, year, setVehicle, clearVehicle } = useVehicleStore();
   const navigate = useNavigate();
 
   const models = make ? (vehicleData.models[make] || []) : [];
@@ -95,6 +95,16 @@ export default function StickyFinder() {
         <button type="submit" className="sticky-finder-btn" disabled={!make}>
           Search
         </button>
+        {make && (
+          <button
+            type="button"
+            className="sticky-finder-clear"
+            onClick={(e) => { e.preventDefault(); clearVehicle(); }}
+            aria-label="Remove vehicle"
+          >
+            <X size={13} />
+          </button>
+        )}
       </form>
     </div>
   );
