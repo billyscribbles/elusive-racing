@@ -78,6 +78,49 @@ function extractSearchTerms(message) {
     .trim();
 }
 
+// ── Meilisearch chat search (fast path, falls back to wcSearch) ───────────────
+
+function normalizeMsHitForChat(h) {
+  return {
+    name:           h.title,
+    slug:           h.handle,
+    price:          h.price,
+    regular_price:  h.regularPrice,
+    on_sale:        h.onSale,
+    stock_status:   h.stockStatus,
+    sku:            h.sku,
+    brands:         h.vendor ? [{ name: h.vendor }] : [],
+  };
+}
+
+async function msSearchForChat(userMessage, count = 8) {
+  if (!MS_HOST || !MS_KEY) return null; // not configured — caller falls back to wcSearch
+  try {
+    const ms         = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+    const index      = ms.index(MS_INDEX);
+    const searchTerm = extractSearchTerms(userMessage);
+    const sku        = extractSku(userMessage);
+
+    const fields = ['id', 'title', 'handle', 'vendor', 'sku', 'price', 'regularPrice', 'onSale', 'stockStatus'];
+
+    const [textRes, skuRes] = await Promise.all([
+      index.search(searchTerm, { limit: count, attributesToRetrieve: fields }),
+      sku
+        ? index.search(sku, { limit: 5, attributesToRetrieve: fields }).catch(() => ({ hits: [] }))
+        : Promise.resolve({ hits: [] }),
+    ]);
+
+    const seen = new Set();
+    return [...skuRes.hits, ...textRes.hits]
+      .filter(h => { if (seen.has(h.id)) return false; seen.add(h.id); return true; })
+      .map(normalizeMsHitForChat);
+  } catch {
+    return null; // fall back to wcSearch on any error
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const WC_FIELDS = 'id,name,slug,sku,price,regular_price,on_sale,stock_status,brands,attributes';
 
 async function wcSearch(userMessage, count = 8) {
@@ -370,12 +413,13 @@ async function handleChat(req, res) {
         return;
       }
 
-      // Search Shopify for live product data if the query is product-related
+      // Search for live product data — Meilisearch first (fast), fall back to WC API
       const latestUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
       let productContext = '';
       if (isProductQuery(latestUserMessage)) {
-        const products = await wcSearch(latestUserMessage);
-        productContext = buildProductContext(products);
+        const msResults = await msSearchForChat(latestUserMessage);
+        const products  = msResults ?? await wcSearch(latestUserMessage);
+        productContext  = buildProductContext(products);
       }
 
       const response = await anthropic.messages.create({
