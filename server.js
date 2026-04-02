@@ -242,7 +242,7 @@ When a question is too complex, requires exact fitment confirmation, or the cust
 // ── Meilisearch product sync ──────────────────────────────────────────────────
 
 const WC_SYNC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created';
+  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created,variations';
 
 function decodeHtml(str) {
   return (str ?? '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
@@ -265,6 +265,7 @@ function normaliseMsProduct(p) {
     price,
     regularPrice,
     onSale:          Boolean(p.on_sale),
+    hasVariants:     Array.isArray(p.variations) && p.variations.length > 1,
     stockStatus:     p.stock_status || 'instock',
     imageUrl:        p.images?.[0]?.src || '',
     imageAlt:        decodeHtml(p.images?.[0]?.alt || p.name),
@@ -292,7 +293,7 @@ async function runMsSync() {
     await index.updateSettings({
       searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'categories', 'description'],
       filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price'],
-      sortableAttributes:   ['price', 'regularPrice', 'dateCreated'],
+      sortableAttributes:   ['price', 'regularPrice', 'dateCreated', 'title'],
     });
 
     const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');

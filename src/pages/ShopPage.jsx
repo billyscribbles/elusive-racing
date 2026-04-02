@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
-import { getProducts, prefetchProduct } from '../lib/woocommerce';
+import { prefetchProduct } from '../lib/woocommerce';
+import { queryProducts } from '../lib/meilisearch';
 import { CATEGORIES, CATEGORIES_FLAT, getCategoryBySlug } from '../data/categories';
 import { BRAND_NAMES } from '../data/brands';
 import './ShopPage.css';
@@ -10,31 +11,26 @@ import './ShopPage.css';
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 
-function mapProduct(node) {
-  const variants = node.variants ?? [];
-  const isDefaultOnly = variants.length === 1 && variants[0].title === 'Default';
-  const hasVariants = variants.length > 1 || (variants.length === 1 && !isDefaultOnly);
-  const price = parseFloat(node.priceRange.minVariantPrice.amount) || 0;
-  const compareAt = parseFloat(node.compareAtPriceRange?.minVariantPrice?.amount ?? 0);
-  const isBackorder = node.stockStatus === 'onbackorder' ||
-    (node.tags ?? []).some((t) => t.toLowerCase().includes('backorder'));
+function mapProduct(h) {
+  const isBackorder = h.stockStatus === 'onbackorder' ||
+    (h.tags ?? []).some((t) => t.toLowerCase().includes('backorder'));
   return {
-    id: node.id,
-    name: node.title,
-    brand: node.vendor || '',
-    sku: node.sku || '',
-    price,
-    originalPrice: compareAt > price ? compareAt : null,
-    image: node.featuredImage?.url ?? null,
-    slug: node.handle,
-    href: `/products/${node.handle}`,
-    description: node.description || '',
-    categories: node.categories ?? [],
-    tags: node.tags ?? [],
+    id: h.id,
+    name: h.title,
+    brand: h.vendor || '',
+    sku: h.sku || '',
+    price: h.price || 0,
+    originalPrice: h.regularPrice > h.price ? h.regularPrice : null,
+    image: h.imageUrl || null,
+    slug: h.handle,
+    href: `/products/${h.handle}`,
+    description: h.description || '',
+    categories: h.categories ?? [],
+    tags: h.tags ?? [],
     backorder: isBackorder,
-    dateCreated: node.dateCreated || '',
-    variantId: isDefaultOnly ? variants[0]?.id : null,
-    hasVariants,
+    dateCreated: h.dateCreated || '',
+    variantId: h.hasVariants ? null : h.id,
+    hasVariants: h.hasVariants || false,
   };
 }
 
@@ -227,28 +223,26 @@ export default function ShopPage() {
   // Refetch products whenever any filter/sort/page changes
   useEffect(() => {
     setLoading(true);
-    const catObj = getCategoryBySlug(subParam);
-    getProducts({
-      query:      qParam,
-      count:      perPageParam,
-      page:       pageParam,
-      category:   catObj?.id ?? '',
-      brandNames: activeBrands,
-      sort:       sortParam,
-      onSale:     saleParam === '1',
-      inStock:    instockParam === '1',
-      minPrice:   minParam,
-      maxPrice:   maxParam,
+    queryProducts({
+      query:     qParam,
+      page:      pageParam,
+      perPage:   perPageParam,
+      brands:    activeBrands,
+      categories: subParam ? [subParam] : [],
+      onSale:    saleParam === '1',
+      backorder: backorderParam === '1',
+      minPrice:  minParam ? parseFloat(minParam) : null,
+      maxPrice:  maxParam ? parseFloat(maxParam) : null,
+      sort:      sortParam,
     })
-      .then((data) => {
-        const mapped = (data.edges ?? []).map(({ node }) => mapProduct(node));
-        setProducts(mapped);
-        setTotalProducts(data.total ?? 0);
-        setApiTotalPages(data.totalPages ?? 1);
+      .then(({ hits, totalHits, totalPages }) => {
+        setProducts(hits.map(mapProduct));
+        setTotalProducts(totalHits);
+        setApiTotalPages(totalPages);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [qParam, subParam, brandsParam, saleParam, instockParam, minParam, maxParam, sortParam, pageParam, perPageParam]);
+  }, [qParam, subParam, brandsParam, saleParam, backorderParam, minParam, maxParam, sortParam, pageParam, perPageParam]);
 
   const filtered = useMemo(() => products, [products]);
 

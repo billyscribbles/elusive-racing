@@ -66,9 +66,10 @@ export async function searchProducts(query, limit = 6) {
  * @param {string[]} opts.brands     brand name filter
  * @param {string[]} opts.categories category handle filter
  * @param {boolean}  opts.onSale
+ * @param {boolean}  opts.backorder
  * @param {number}   opts.minPrice
  * @param {number}   opts.maxPrice
- * @param {string}   opts.sort       'price-asc' | 'price-desc' | 'newest'
+ * @param {string}   opts.sort       'price-asc' | 'price-desc' | 'newest' | 'a-z' | 'z-a'
  * @returns {Promise<{hits: Array, totalHits: number, totalPages: number}>}
  */
 export async function queryProducts({
@@ -78,6 +79,7 @@ export async function queryProducts({
   brands    = [],
   categories = [],
   onSale    = false,
+  backorder = false,
   minPrice  = null,
   maxPrice  = null,
   sort      = '',
@@ -91,6 +93,7 @@ export async function queryProducts({
   if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));
   if (categories.length) filters.push(categories.map(c => `categoryHandles = "${c}"`).join(' OR '));
   if (onSale)            filters.push('onSale = true');
+  if (backorder)         filters.push('stockStatus = "onbackorder"');
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
 
@@ -99,6 +102,8 @@ export async function queryProducts({
     'price-asc':  ['price:asc'],
     'price-desc': ['price:desc'],
     'newest':     ['dateCreated:desc'],
+    'a-z':        ['title:asc'],
+    'z-a':        ['title:desc'],
   };
   const sortParam = sortMap[sort] || [];
 
