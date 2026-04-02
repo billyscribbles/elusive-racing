@@ -19,7 +19,13 @@ function getAuth() {
   return 'Basic ' + Buffer.from(`${key}:${secret}`).toString('base64');
 }
 
-function getMsHost() { return process.env.MEILISEARCH_HOST; }
+function getMsHost() {
+  let host = process.env.MEILISEARCH_HOST || '';
+  host = host.trim();
+  if (host && !host.startsWith('http')) host = `https://${host}`;
+  console.log('[sync] MEILISEARCH_HOST resolved to:', host || '(empty)');
+  return host;
+}
 function getMsKey()  { return process.env.MEILISEARCH_ADMIN_KEY; }
 
 const INDEX_NAME = 'products';
