@@ -6,12 +6,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
 import { Meilisearch } from 'meilisearch';
 
-// Load .env manually (Node 18+ has no built-in dotenv)
+// Load .env manually — only sets vars not already injected by the environment (e.g. Railway)
 try {
   const envFile = fs.readFileSync(new URL('.env', import.meta.url), 'utf8');
   for (const line of envFile.split('\n')) {
     const match = line.match(/^([^#=\s]+)\s*=\s*(.*)$/);
-    if (match) process.env[match[1]] = match[2].trim();
+    if (match && process.env[match[1]] === undefined) process.env[match[1]] = match[2].trim();
   }
 } catch { /* .env is optional */ }
 
@@ -785,6 +785,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
+  console.log(`[sync] MS_HOST=${MS_HOST || '(not set)'} MS_KEY=${MS_KEY ? '(set)' : '(not set)'}`);
   // Run initial Meilisearch sync, then repeat every hour
   runMsSync();
   setInterval(runMsSync, 60 * 60 * 1000);
