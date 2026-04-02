@@ -114,6 +114,12 @@ export async function queryProducts({
 
   const index = getClient().index(INDEX_NAME);
 
+  // Combine user search with vehicle terms.
+  // After a re-sync, fitmentTags will be filterable and can replace this.
+  // For now, appending to the query uses Meilisearch's text search on tags/title/description.
+  const vehicleTerms = [make, model, year].filter(Boolean).join(' ');
+  const effectiveQuery = [query, vehicleTerms].filter(Boolean).join(' ');
+
   // Build filter array
   const filters = [];
   if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));
@@ -122,10 +128,6 @@ export async function queryProducts({
   if (backorder)         filters.push('stockStatus = "onbackorder"');
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
-  // Vehicle fitment — filter on indexed fitmentTags field (populated by sync.js)
-  if (make)  filters.push(`fitmentTags = "${make.toLowerCase()}"`);
-  if (model) filters.push(`fitmentTags = "${model.toLowerCase()}"`);
-  if (year)  filters.push(`fitmentTags = "${year.toLowerCase()}"`);
 
   // Sort
   const sortMap = {
@@ -137,7 +139,7 @@ export async function queryProducts({
   };
   const sortParam = sortMap[sort] || [];
 
-  const results = await index.search(query, {
+  const results = await index.search(effectiveQuery, {
     offset:  (page - 1) * perPage,
     limit:   perPage,
     filter:  filters.length ? filters.join(' AND ') : undefined,
