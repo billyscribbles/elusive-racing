@@ -486,7 +486,11 @@ async function getShippingRatesServer(items, address) {
   }
 
   async function storeReq(path, method = 'GET', body = null) {
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+    };
     if (sessionCookie) headers['Cookie']  = sessionCookie;
     if (nonce && method !== 'GET') headers['Nonce'] = nonce;
 
@@ -507,7 +511,7 @@ async function getShippingRatesServer(items, address) {
   }
 
   // 1. GET /cart — establishes session cookie AND returns the nonce we need for writes
-  const existingCart = await storeReq('/cart');
+  const existingCart = await storeReq(`/cart?_=${Date.now()}`);
   console.log(`[shipping] GET /cart ok=${!!existingCart} nonce=${nonce ? 'yes' : 'no'} cookie=${sessionCookie ? 'yes' : 'no'}`);
 
   // 2. Clear any existing items from this session
