@@ -260,3 +260,18 @@ export const CATEGORIES_FLAT = CATEGORIES.reduce((acc, top) => {
 export function getCategoryBySlug(slug) {
   return CATEGORIES_FLAT.find(c => c.slug === slug) ?? null;
 }
+
+/**
+ * Returns the given slug plus all descendant slugs.
+ * Used so filtering by a parent category also returns products in sub-categories.
+ */
+export function getCategoryDescendantSlugs(slug) {
+  const slugs = [];
+  function collect(node) {
+    slugs.push(node.slug);
+    (node.children ?? []).forEach(collect);
+  }
+  const node = CATEGORIES_FLAT.find(c => c.slug === slug);
+  if (node) collect(node);
+  return slugs;
+}

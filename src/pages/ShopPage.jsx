@@ -20,6 +20,7 @@ import {
   CATEGORIES,
   CATEGORIES_FLAT,
   getCategoryBySlug,
+  getCategoryDescendantSlugs,
 } from "../data/categories";
 import { BRAND_NAMES } from "../data/brands";
 import "./ShopPage.css";
@@ -294,7 +295,7 @@ export default function ShopPage() {
       page: pageParam,
       perPage: perPageParam,
       brands: activeBrands,
-      categories: subParam ? [subParam] : [],
+      categories: subParam ? getCategoryDescendantSlugs(subParam) : [],
       onSale: saleParam === "1",
       inStock: instockParam === "1",
       backorder: backorderParam === "1",
