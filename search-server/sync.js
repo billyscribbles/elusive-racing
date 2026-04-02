@@ -19,13 +19,14 @@ function getWcAuthHeader() { return 'Basic ' + Buffer.from(`${getWcKey()}:${getW
 function getWcAuthQuery()  { return `consumer_key=${getWcKey()}&consumer_secret=${getWcSecret()}`; }
 
 function getMsHost() {
-  let host = process.env.MEILISEARCH_HOST || '';
-  host = host.trim();
+  let host = (process.env.MEILISEARCH_HOST || process.env.VITE_MEILISEARCH_HOST || '').trim();
   if (host && !host.startsWith('http')) host = `https://${host}`;
   console.log('[sync] MEILISEARCH_HOST resolved to:', host || '(empty)');
   return host;
 }
-function getMsKey()  { return process.env.MEILISEARCH_ADMIN_KEY; }
+function getMsKey() {
+  return process.env.MEILISEARCH_ADMIN_KEY || process.env.VITE_MEILISEARCH_MASTER_KEY || '';
+}
 
 const INDEX_NAME = 'products';
 const PER_PAGE   = 100;
@@ -33,7 +34,7 @@ const PAGE_DELAY = 150; // ms between pages — be gentle to WC server
 
 // Fields we need from WC (reduces response payload size)
 const WC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created';
+  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating';
 
 // ── Meilisearch index settings ────────────────────────────────────────────────
 
@@ -60,6 +61,8 @@ const INDEX_SETTINGS = {
     'price',
     'regularPrice',
     'dateCreated',
+    'totalSales',
+    'averageRating',
   ],
   rankingRules: [
     'words',
@@ -141,6 +144,8 @@ function normalizeProduct(p) {
     categoryHandles: (p.categories ?? []).map(c => c.slug),
     fitmentTags:   extractFitmentTags(p),
     dateCreated:   p.date_created || '',
+    totalSales:    parseInt(p.total_sales || '0', 10),
+    averageRating: parseFloat(p.average_rating || '0'),
   };
 }
 
