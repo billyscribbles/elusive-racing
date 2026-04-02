@@ -11,4 +11,5 @@ dist/
 .claude/
 data.ms/
 meilisearch
+bin/
 search-server/node_modules/
