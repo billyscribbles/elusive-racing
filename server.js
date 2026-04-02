@@ -785,8 +785,9 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
-  const msKeyEnv = process.env.MEILISEARCH_ADMIN_KEY;
-  console.log(`[sync] MS_HOST=${MS_HOST || '(not set)'} MS_KEY=${MS_KEY ? '(set)' : '(not set)'} RAW_KEY_LEN=${msKeyEnv === undefined ? 'undefined' : msKeyEnv.length}`);
+  const msKeys = Object.keys(process.env).filter(k => k.includes('MEILI'));
+  console.log('[sync] MEILI env keys found:', msKeys.length ? msKeys.join(', ') : '(none)');
+  console.log(`[sync] MS_HOST=${MS_HOST || '(not set)'} MS_KEY=${MS_KEY ? '(set)' : '(not set)'}`);
   // Run initial Meilisearch sync, then repeat every hour
   runMsSync();
   setInterval(runMsSync, 60 * 60 * 1000);
