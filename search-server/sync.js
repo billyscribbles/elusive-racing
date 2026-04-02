@@ -13,11 +13,10 @@ function getWcBase() {
   const url = (process.env.WC_URL || process.env.VITE_WC_URL || '').trim().replace(/\/$/, '');
   return `${url}/wp-json/wc/v3`;
 }
-function getWcAuth() {
-  const key    = (process.env.WC_CONSUMER_KEY    || process.env.VITE_WC_CONSUMER_KEY    || '').trim();
-  const secret = (process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET || '').trim();
-  return `consumer_key=${encodeURIComponent(key)}&consumer_secret=${encodeURIComponent(secret)}`;
-}
+function getWcKey()    { return (process.env.WC_CONSUMER_KEY    || process.env.VITE_WC_CONSUMER_KEY    || '').trim(); }
+function getWcSecret() { return (process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET || '').trim(); }
+function getWcAuthHeader() { return 'Basic ' + Buffer.from(`${getWcKey()}:${getWcSecret()}`).toString('base64'); }
+function getWcAuthQuery()  { return `consumer_key=${getWcKey()}&consumer_secret=${getWcSecret()}`; }
 
 function getMsHost() {
   let host = process.env.MEILISEARCH_HOST || '';
@@ -134,7 +133,9 @@ function sleep(ms) {
 
 async function wcGet(endpoint) {
   const sep = endpoint.includes('?') ? '&' : '?';
-  const res = await fetch(`${getWcBase()}${endpoint}${sep}${getWcAuth()}`);
+  const res = await fetch(`${getWcBase()}${endpoint}${sep}${getWcAuthQuery()}`, {
+    headers: { Authorization: getWcAuthHeader() },
+  });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`WC API ${res.status} ${endpoint}: ${text.slice(0, 200)}`);
