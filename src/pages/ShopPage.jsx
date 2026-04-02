@@ -205,9 +205,9 @@ function ProductCard({ product, index = 0 }) {
         ) : (
           <div className="shop-product-no-image" />
         )}
-        {product.originalPrice && (
+        {discount && (
           <span className="shop-product-badge shop-product-badge--sale">
-            Sale
+            -{discount}%
           </span>
         )}
         {product.backorder && (
@@ -223,16 +223,13 @@ function ProductCard({ product, index = 0 }) {
           {product.backorder ? "Available on backorder" : ""}
         </p>
         <div className="shop-product-pricing">
-          <span className="shop-product-price">
+          <span className={`shop-product-price${product.originalPrice ? ' shop-product-price--sale' : ''}`}>
             ${product.price.toFixed(2)}
           </span>
           {product.originalPrice && (
-            <>
-              <span className="shop-product-original">
-                ${product.originalPrice.toFixed(2)}
-              </span>
-              <span className="shop-product-discount">-{discount}%</span>
-            </>
+            <span className="shop-product-original">
+              ${product.originalPrice.toFixed(2)}
+            </span>
           )}
         </div>
       </div>
@@ -518,9 +515,6 @@ export default function ShopPage() {
             className="shop-filter-search-input"
           />
         </div>
-        <button className="shop-filter-search-btn" onClick={applySearch}>
-          Search
-        </button>
       </CollapsibleSection>
 
       {/* Availability */}

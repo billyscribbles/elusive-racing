@@ -862,17 +862,14 @@
   color: var(--color-black);
 }
 
-.shop-product-original {
-  font-size: 15px;
-  color: var(--color-light);
-  text-decoration: line-through;
+.shop-product-price--sale {
+  color: var(--color-red);
 }
 
-.shop-product-discount {
+.shop-product-original {
   font-size: 13px;
-  font-weight: 700;
-  color: var(--color-red);
-  font-family: var(--font-primary);
+  color: var(--color-light);
+  text-decoration: line-through;
 }
 
 /* Add to cart — always visible on mobile, hover reveal on desktop */
