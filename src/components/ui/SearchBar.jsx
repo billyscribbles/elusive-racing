@@ -59,7 +59,7 @@ export default function SearchBar() {
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 150);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
