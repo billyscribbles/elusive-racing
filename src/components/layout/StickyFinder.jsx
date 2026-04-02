@@ -1,49 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Gauge } from 'lucide-react';
 import { vehicleData } from '../../data/navigation';
+import useVehicleStore from '../../store/vehicleStore';
 import './StickyFinder.css';
 
 export default function StickyFinder() {
-  const [visible, setVisible] = useState(false);
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
+  const { make, model, year, setVehicle } = useVehicleStore();
+  const navigate = useNavigate();
 
   const models = make ? (vehicleData.models[make] || []) : [];
 
+  // Animate bar in/out on scroll
   useEffect(() => {
+    let ticking = false;
+    const bar = document.querySelector('.sticky-finder');
     const onScroll = () => {
-      const threshold = window.innerWidth <= 900 ? 200 : window.innerHeight * 0.55;
-      setVisible(window.scrollY > threshold);
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const threshold = window.innerWidth <= 900 ? 200 : window.innerHeight * 0.55;
+        bar?.classList.toggle('sticky-finder--visible', window.scrollY > threshold);
+        ticking = false;
+      });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
+    const bar = document.querySelector('.sticky-finder');
+    const visible = bar?.classList.contains('sticky-finder--visible');
     if (window.innerWidth > 900) {
       document.documentElement.style.setProperty('--finder-height', visible ? '52px' : '0px');
     }
     return () => {
       document.documentElement.style.setProperty('--finder-height', '0px');
     };
-  }, [visible]);
+  });
 
-  const handleMakeChange = (e) => { setMake(e.target.value); setModel(''); setYear(''); };
-  const handleModelChange = (e) => { setModel(e.target.value); setYear(''); };
+  function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
+  function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
+  function handleYearChange(e)  { setVehicle(make, model, e.target.value); }
 
-  const handleSubmit = (e) => {
+  function handleSubmit(e) {
     e.preventDefault();
     if (!make) return;
     const params = new URLSearchParams();
     params.set('make', make);
     if (model) params.set('model', model);
-    if (year) params.set('year', year);
-    window.location.href = `/search?${params.toString()}`;
-  };
+    if (year)  params.set('year', year);
+    navigate(`/search?${params.toString()}`);
+  }
 
   return (
-    <div className={`sticky-finder ${visible ? 'sticky-finder--visible' : ''}`}>
+    <div className="sticky-finder">
       <form className="sticky-finder-form" onSubmit={handleSubmit}>
         <div className="sticky-finder-label">
           <Gauge size={18} strokeWidth={1.75} />
@@ -73,7 +84,7 @@ export default function StickyFinder() {
           <select
             className="sticky-finder-select"
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={handleYearChange}
             disabled={!model}
             aria-label="Vehicle year"
           >

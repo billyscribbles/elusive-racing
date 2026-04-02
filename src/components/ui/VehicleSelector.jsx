@@ -1,30 +1,35 @@
-import { useState } from 'react';
-import { vehicleData } from '../data/navigation';
+import { useNavigate } from 'react-router-dom';
+import { vehicleData } from '../../data/navigation';
+import useVehicleStore from '../../store/vehicleStore';
 import './VehicleSelector.css';
 
 export default function VehicleSelector() {
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
+  const { make, model, year, setVehicle } = useVehicleStore();
+  const navigate = useNavigate();
 
   const models = make ? (vehicleData.models[make] || []) : [];
 
-  const handleMakeChange = (e) => {
-    setMake(e.target.value);
-    setModel('');
-    setYear('');
-  };
+  function handleMakeChange(e) {
+    setVehicle(e.target.value, '', '');
+  }
 
-  const handleSubmit = (e) => {
+  function handleModelChange(e) {
+    setVehicle(make, e.target.value, '');
+  }
+
+  function handleYearChange(e) {
+    setVehicle(make, model, e.target.value);
+  }
+
+  function handleSubmit(e) {
     e.preventDefault();
-    if (make) {
-      const params = new URLSearchParams();
-      if (make) params.set('make', make);
-      if (model) params.set('model', model);
-      if (year) params.set('year', year);
-      window.location.href = `/search?${params.toString()}`;
-    }
-  };
+    if (!make) return;
+    const params = new URLSearchParams();
+    params.set('make', make);
+    if (model) params.set('model', model);
+    if (year)  params.set('year', year);
+    navigate(`/search?${params.toString()}`);
+  }
 
   return (
     <div className="vehicle-bar">
@@ -46,7 +51,7 @@ export default function VehicleSelector() {
           <select
             className="vehicle-bar-select"
             value={model}
-            onChange={(e) => { setModel(e.target.value); setYear(''); }}
+            onChange={handleModelChange}
             disabled={!make}
           >
             <option value="">Select Model</option>
@@ -58,7 +63,7 @@ export default function VehicleSelector() {
           <select
             className="vehicle-bar-select"
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={handleYearChange}
             disabled={!model}
           >
             <option value="">Select Year / Submodel</option>

@@ -39,12 +39,13 @@ const WC_FIELDS =
 
 const INDEX_SETTINGS = {
   searchableAttributes: [
-    'title',       // product name — highest priority
-    'vendor',      // brand name
-    'sku',         // exact SKU lookup
-    'tags',        // product tags
-    'categories',  // category names
-    'description', // short description
+    'title',        // product name — highest priority
+    'vendor',       // brand name
+    'sku',          // exact SKU lookup
+    'tags',         // product tags
+    'fitmentTags',  // vehicle fitment (makes, models, years)
+    'categories',   // category names
+    'description',  // short description
   ],
   filterableAttributes: [
     'vendor',
@@ -53,6 +54,7 @@ const INDEX_SETTINGS = {
     'onSale',
     'stockStatus',
     'price',
+    'fitmentTags',
   ],
   sortableAttributes: [
     'price',
@@ -89,6 +91,22 @@ function stripHtml(str) {
   return (str ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+const FITMENT_ATTR_NAMES = ['make', 'model', 'year', 'vehicle', 'vehicles', 'fitment', 'compatible', 'application', 'fits', 'application'];
+
+/** Extract vehicle fitment terms from WC attributes + tags, normalised to lowercase */
+function extractFitmentTags(p) {
+  const tags = new Set();
+  // WooCommerce product tags
+  (p.tags ?? []).forEach(t => tags.add(t.name.toLowerCase()));
+  // WooCommerce attributes with vehicle-like names
+  (p.attributes ?? []).forEach(attr => {
+    if (FITMENT_ATTR_NAMES.some(n => attr.name.toLowerCase().includes(n))) {
+      (attr.options ?? []).forEach(opt => tags.add(opt.toLowerCase()));
+    }
+  });
+  return Array.from(tags);
+}
+
 /** Extract brand from WC product (brands plugin or pa_brand attribute) */
 function extractBrand(p) {
   return decodeHtml(
@@ -121,6 +139,7 @@ function normalizeProduct(p) {
     tags:          (p.tags  ?? []).map(t => decodeHtml(t.name)),
     categories:    (p.categories ?? []).map(c => decodeHtml(c.name)),
     categoryHandles: (p.categories ?? []).map(c => c.slug),
+    fitmentTags:   extractFitmentTags(p),
     dateCreated:   p.date_created || '',
   };
 }

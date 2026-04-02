@@ -211,6 +211,9 @@ export default function ShopPage() {
   const sortParam      = searchParams.get('sort')      ?? 'best-selling';
   const minParam       = searchParams.get('min_price') ?? '';
   const maxParam       = searchParams.get('max_price') ?? '';
+  const makeParam      = searchParams.get('make')      ?? '';
+  const modelParam     = searchParams.get('model')     ?? '';
+  const yearParam      = searchParams.get('year')      ?? '';
   const pageParam      = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const perPageParam   = parseInt(searchParams.get('per_page') ?? '12', 10);
 
@@ -235,6 +238,9 @@ export default function ShopPage() {
       minPrice:  minParam ? parseFloat(minParam) : null,
       maxPrice:  maxParam ? parseFloat(maxParam) : null,
       sort:      sortParam,
+      make:      makeParam,
+      model:     modelParam,
+      year:      yearParam,
     })
       .then(({ hits, totalHits, totalPages }) => {
         setProducts(hits.map(mapProduct));
@@ -243,7 +249,7 @@ export default function ShopPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [qParam, subParam, brandsParam, saleParam, backorderParam, minParam, maxParam, sortParam, pageParam, perPageParam]);
+  }, [qParam, subParam, brandsParam, saleParam, backorderParam, minParam, maxParam, sortParam, pageParam, perPageParam, makeParam, modelParam, yearParam]);
 
   const filtered = useMemo(() => products, [products]);
 
@@ -351,7 +357,13 @@ export default function ShopPage() {
 
   const totalActiveFilters =
     activeBrands.length +
-    [subParam, minParam || maxParam, saleParam, backorderParam, qParam].filter(Boolean).length;
+    [subParam, minParam || maxParam, saleParam, backorderParam, qParam, makeParam].filter(Boolean).length;
+
+  function clearVehicle() {
+    const p = Object.fromEntries(searchParams.entries());
+    delete p.make; delete p.model; delete p.year; delete p.page;
+    setSearchParams(p);
+  }
 
   const catSearchTerm = catSearch.toLowerCase().trim();
   const visibleCategories = catSearchTerm
@@ -566,6 +578,10 @@ export default function ShopPage() {
     </div>
   );
 
+  const vehicleLabel = makeParam
+    ? [makeParam, modelParam, yearParam].filter(Boolean).join(' ')
+    : '';
+
   const pageTitle = qParam
     ? `Search: "${qParam}"`
     : subParam
@@ -589,6 +605,21 @@ export default function ShopPage() {
         </div>
       </div>
 
+      {vehicleLabel && (
+        <div className="shop-vehicle-banner">
+          <div className="container">
+            <div className="shop-vehicle-banner-inner">
+              <span className="shop-vehicle-banner-label">Showing parts for</span>
+              <span className="shop-vehicle-banner-vehicle">{vehicleLabel}</span>
+              <button className="shop-vehicle-banner-clear" onClick={clearVehicle} aria-label="Clear vehicle filter">
+                <X size={14} />
+                Change vehicle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container shop-layout">
 
         <aside className="shop-sidebar">
@@ -606,6 +637,12 @@ export default function ShopPage() {
                 {totalActiveFilters > 0 && <span className="shop-filter-badge">{totalActiveFilters}</span>}
               </button>
               <div className="shop-active-filters">
+                {makeParam && (
+                  <span className="shop-chip shop-chip--vehicle">
+                    {vehicleLabel}
+                    <button onClick={clearVehicle}><X size={10} /></button>
+                  </span>
+                )}
                 {qParam && (
                   <span className="shop-chip">
                     <Search size={10} />"{qParam}"

@@ -106,6 +106,9 @@ export async function queryProducts({
   minPrice  = null,
   maxPrice  = null,
   sort      = '',
+  make      = '',
+  model     = '',
+  year      = '',
 } = {}) {
   if (!HOST || !SEARCH_KEY) return { hits: [], totalHits: 0, totalPages: 0 };
 
@@ -119,6 +122,10 @@ export async function queryProducts({
   if (backorder)         filters.push('stockStatus = "onbackorder"');
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
+  // Vehicle fitment — filter on indexed fitmentTags field (populated by sync.js)
+  if (make)  filters.push(`fitmentTags = "${make.toLowerCase()}"`);
+  if (model) filters.push(`fitmentTags = "${model.toLowerCase()}"`);
+  if (year)  filters.push(`fitmentTags = "${year.toLowerCase()}"`);
 
   // Sort
   const sortMap = {
