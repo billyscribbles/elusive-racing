@@ -13,10 +13,10 @@ function getWcBase() {
   const url = (process.env.WC_URL || process.env.VITE_WC_URL || '').trim().replace(/\/$/, '');
   return `${url}/wp-json/wc/v3`;
 }
-function getAuth() {
+function getWcAuth() {
   const key    = (process.env.WC_CONSUMER_KEY    || process.env.VITE_WC_CONSUMER_KEY    || '').trim();
   const secret = (process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET || '').trim();
-  return 'Basic ' + Buffer.from(`${key}:${secret}`).toString('base64');
+  return `consumer_key=${encodeURIComponent(key)}&consumer_secret=${encodeURIComponent(secret)}`;
 }
 
 function getMsHost() {
@@ -133,9 +133,8 @@ function sleep(ms) {
 // ── WooCommerce fetch helpers ─────────────────────────────────────────────────
 
 async function wcGet(endpoint) {
-  const res = await fetch(`${getWcBase()}${endpoint}`, {
-    headers: { Authorization: getAuth() },
-  });
+  const sep = endpoint.includes('?') ? '&' : '?';
+  const res = await fetch(`${getWcBase()}${endpoint}${sep}${getWcAuth()}`);
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`WC API ${res.status} ${endpoint}: ${text.slice(0, 200)}`);
