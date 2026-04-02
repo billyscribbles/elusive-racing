@@ -107,6 +107,61 @@ src/
 
 ---
 
+## Meilisearch — Product Search
+
+Product search (search bar, shop page, AI chatbot) is powered by [Meilisearch](https://www.meilisearch.com/) — all 4600+ products are indexed for instant, typo-tolerant search.
+
+### How sync works
+
+- **On deploy** — the main app server runs a full sync automatically on startup
+- **Every hour** — a `setInterval` re-sync keeps the index fresh
+- **Manual sync** — trigger immediately via the API:
+
+```bash
+curl -X POST https://elusive-racing-production-d535.up.railway.app/api/sync
+```
+
+If you set `SEARCH_SYNC_TOKEN` in Railway, include it as a Bearer token:
+
+```bash
+curl -X POST https://elusive-racing-production-d535.up.railway.app/api/sync \
+  -H "Authorization: Bearer your-sync-token"
+```
+
+### Local development
+
+1. Start Meilisearch:
+```bash
+./meilisearch --master-key="masterKey"
+```
+
+2. Start the sync (indexes all WC products into local Meilisearch):
+```bash
+yarn search-server
+```
+
+3. Get your public search key and add it to `.env`:
+```bash
+curl http://localhost:7700/keys -H "Authorization: Bearer masterKey"
+# Copy "Default Search API Key" → VITE_MEILISEARCH_SEARCH_KEY
+```
+
+4. Start the app:
+```bash
+yarn dev
+```
+
+### Environment variables
+
+| Variable | Used by | Purpose |
+|---|---|---|
+| `MEILISEARCH_HOST` | Server | Meilisearch instance URL |
+| `MEILISEARCH_ADMIN_KEY` | Server | Write/index access (keep secret) |
+| `VITE_MEILISEARCH_HOST` | Frontend build | Meilisearch instance URL |
+| `VITE_MEILISEARCH_SEARCH_KEY` | Frontend build | Read-only public search key |
+
+---
+
 ## Adding a New Page
 
 1. Create the page component in `src/pages/`
