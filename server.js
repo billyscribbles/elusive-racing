@@ -508,6 +508,7 @@ async function getShippingRatesServer(items, address) {
 
   // 1. GET /cart — establishes session cookie AND returns the nonce we need for writes
   const existingCart = await storeReq('/cart');
+  console.log(`[shipping] GET /cart ok=${!!existingCart} nonce=${nonce ? 'yes' : 'no'} cookie=${sessionCookie ? 'yes' : 'no'}`);
 
   // 2. Clear any existing items from this session
   if (existingCart?.items?.length) {
@@ -520,7 +521,8 @@ async function getShippingRatesServer(items, address) {
   for (const item of items) {
     const productId = parseInt(item.id, 10);
     const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
-    await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
+    const added = await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
+    console.log(`[shipping] add-item ${variantId ?? productId} → ok=${!!added}`);
   }
 
   // 4. Set the shipping address — the update-customer RESPONSE is the recalculated cart.
@@ -553,6 +555,7 @@ async function getShippingRatesServer(items, address) {
   }));
 
   const taxAmount = cartData?.totals ? parseInt(cartData.totals.total_tax || '0', 10) / scale : 0;
+  console.log(`[shipping] result → ${rates.length} rates, tax=${taxAmount}`);
 
   return { rates, taxAmount };
 }
