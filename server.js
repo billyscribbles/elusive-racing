@@ -337,6 +337,7 @@ async function runMsSync() {
       searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'categories', 'description'],
       filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price'],
       sortableAttributes:   ['price', 'regularPrice', 'dateCreated', 'title'],
+      pagination:           { maxTotalHits: 10000 },
     });
 
     const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
