@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
+import { Meilisearch } from 'meilisearch';
 
 // Load .env manually (Node 18+ has no built-in dotenv)
 try {
@@ -24,6 +25,11 @@ const stripeClient = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRI
 const WC_URL    = process.env.VITE_WC_URL;
 const WC_KEY    = process.env.VITE_WC_CONSUMER_KEY;
 const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET;
+
+const MS_HOST = process.env.MEILISEARCH_HOST;
+const MS_KEY  = process.env.MEILISEARCH_ADMIN_KEY;
+const MS_INDEX = 'products';
+const SYNC_TOKEN = process.env.SEARCH_SYNC_TOKEN || '';
 
 const BRAND_TERMS = [
   'skunk2', 'k-tuned', 'ktuned', 'hondata', 'exedy', 'bc racing', 'hks', 'arp', 'acl',
@@ -232,6 +238,117 @@ When a question is too complex, requires exact fitment confirmation, or the cust
 - "For exact fitment on that, worth a quick chat with our team — call 03 9574 1710 or email sales@elusiveracing.com.au"
 - "If you're ready to go ahead, give our team a call on 03 9574 1710 and they'll sort you out"
 - For workshop/service/booking enquiries: "You can book online at [elusiveracing.com.au/book](/book) or call us on 03 9574 1710"`;
+
+// ── Meilisearch product sync ──────────────────────────────────────────────────
+
+const WC_SYNC_FIELDS =
+  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created';
+
+function decodeHtml(str) {
+  return (str ?? '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+}
+
+function normaliseMsProduct(p) {
+  const brand = decodeHtml(
+    p.brands?.[0]?.name ??
+    p.attributes?.find(a => ['brand', 'pa_brand', 'Brand', 'PA_Brand'].includes(a.name))?.options?.[0] ?? ''
+  );
+  const price        = parseFloat(p.price || p.regular_price || '0');
+  const regularPrice = parseFloat(p.regular_price || p.price || '0');
+  return {
+    id:              String(p.id),
+    title:           decodeHtml(p.name),
+    handle:          p.slug,
+    vendor:          brand,
+    sku:             p.sku || '',
+    description:     (p.short_description ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+    price,
+    regularPrice,
+    onSale:          Boolean(p.on_sale),
+    stockStatus:     p.stock_status || 'instock',
+    imageUrl:        p.images?.[0]?.src || '',
+    imageAlt:        decodeHtml(p.images?.[0]?.alt || p.name),
+    tags:            (p.tags  ?? []).map(t => decodeHtml(t.name)),
+    categories:      (p.categories ?? []).map(c => decodeHtml(c.name)),
+    categoryHandles: (p.categories ?? []).map(c => c.slug),
+    dateCreated:     p.date_created || '',
+  };
+}
+
+const syncState = { running: false, lastSync: null, lastCount: 0, lastError: null };
+
+async function runMsSync() {
+  if (syncState.running) return;
+  if (!MS_HOST || !MS_KEY) { console.log('[sync] Meilisearch not configured, skipping.'); return; }
+
+  syncState.running = true;
+  syncState.lastError = null;
+  console.log('[sync] Starting product sync…');
+
+  try {
+    const ms    = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+    const index = ms.index(MS_INDEX);
+
+    await index.updateSettings({
+      searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'categories', 'description'],
+      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price'],
+      sortableAttributes:   ['price', 'regularPrice', 'dateCreated'],
+    });
+
+    const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+    const perPage = 100;
+    const firstRes = await fetch(
+      `${WC_URL}/wp-json/wc/v3/products?status=publish&per_page=${perPage}&page=1&_fields=${WC_SYNC_FIELDS}`,
+      { headers: { Authorization: auth } }
+    );
+    if (!firstRes.ok) throw new Error(`WC API ${firstRes.status}: ${await firstRes.text().then(t => t.slice(0, 200))}`);
+
+    const totalPages = parseInt(firstRes.headers.get('X-WP-TotalPages') || '1', 10);
+    const firstPage  = await firstRes.json();
+    const all = firstPage.map(normaliseMsProduct);
+
+    for (let page = 2; page <= totalPages; page++) {
+      const r = await fetch(
+        `${WC_URL}/wp-json/wc/v3/products?status=publish&per_page=${perPage}&page=${page}&_fields=${WC_SYNC_FIELDS}`,
+        { headers: { Authorization: auth } }
+      );
+      if (!r.ok) break;
+      const data = await r.json();
+      all.push(...data.map(normaliseMsProduct));
+      await new Promise(res => setTimeout(res, 150));
+    }
+
+    await index.addDocuments(all, { primaryKey: 'id' });
+    syncState.lastSync  = new Date().toISOString();
+    syncState.lastCount = all.length;
+    console.log(`[sync] Done — ${all.length} products synced`);
+  } catch (err) {
+    syncState.lastError = err.message;
+    console.error('[sync] Failed:', err.message);
+  } finally {
+    syncState.running = false;
+  }
+}
+
+async function handleSync(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  if (SYNC_TOKEN) {
+    const header = req.headers['authorization'] || '';
+    if (header !== `Bearer ${SYNC_TOKEN}`) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorised' }));
+      return;
+    }
+  }
+  if (syncState.running) {
+    res.writeHead(409, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Sync already in progress' }));
+    return;
+  }
+  res.writeHead(202, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  res.end(JSON.stringify({ message: 'Sync started' }));
+  runMsSync();
+}
 
 async function handleChat(req, res) {
   if (req.method !== 'POST') {
@@ -606,6 +723,9 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  // Meilisearch sync trigger
+  if (req.url === '/api/sync') { handleSync(req, res); return; }
+
   // Chat API route
   if (req.url === '/api/chat' || req.url.startsWith('/api/chat?')) {
     handleChat(req, res);
@@ -665,4 +785,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
+  // Run initial Meilisearch sync, then repeat every hour
+  runMsSync();
+  setInterval(runMsSync, 60 * 60 * 1000);
 });
