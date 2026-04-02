@@ -893,9 +893,31 @@ const server = http.createServer((req, res) => {
   });
 });
 
+async function waitForMeilisearch(retries = 20, delayMs = 2000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(`${MS_HOST}/health`, {
+        headers: { Authorization: `Bearer ${MS_KEY}` },
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) return true;
+    } catch {
+      // not ready yet
+    }
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return false;
+}
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
-  // Run initial Meilisearch sync, then repeat every hour
-  runMsSync();
+  // Wait for Meilisearch to be ready before first sync
+  waitForMeilisearch().then(ready => {
+    if (ready) {
+      runMsSync();
+    } else {
+      console.log('[sync] Meilisearch did not become ready in time, skipping initial sync.');
+    }
+  });
   setInterval(runMsSync, 60 * 60 * 1000);
 });
