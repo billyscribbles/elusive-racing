@@ -406,7 +406,7 @@ async function handleChat(req, res) {
   req.on('data', chunk => { body += chunk.toString(); });
   req.on('end', async () => {
     try {
-      const { messages } = JSON.parse(body);
+      const { messages, vehicle } = JSON.parse(body);
 
       if (!Array.isArray(messages) || messages.length === 0) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -423,10 +423,14 @@ async function handleChat(req, res) {
         productContext  = buildProductContext(products);
       }
 
+      const vehicleContext = vehicle?.make
+        ? `\n\nCUSTOMER'S VEHICLE: ${[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ')}. Keep this in mind when recommending parts or answering fitment questions.`
+        : '';
+
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 600,
-        system: SYSTEM_PROMPT + productContext,
+        system: SYSTEM_PROMPT + vehicleContext + productContext,
         messages: messages.slice(-10),
       });
 

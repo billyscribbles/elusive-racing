@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, MessageCircle } from 'lucide-react';
 import { marked } from 'marked';
+import useVehicleStore from '../../store/vehicleStore';
 import './ChatWidget.css';
 
 marked.setOptions({ breaks: true });
@@ -35,6 +36,7 @@ function hasHistory() {
 }
 
 export default function ChatWidget() {
+  const { make, model, year } = useVehicleStore();
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(hasHistory);
   const [messages, setMessages] = useState(loadMessages);
@@ -104,7 +106,10 @@ export default function ChatWidget() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({
+          messages: history,
+          vehicle: make ? { make, model, year } : null,
+        }),
       });
 
       const data = await res.json();
