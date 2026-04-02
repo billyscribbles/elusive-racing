@@ -335,7 +335,7 @@ async function runMsSync() {
 
     await index.updateSettings({
       searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'categories', 'description'],
-      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price'],
+      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price', 'handle'],
       sortableAttributes:   ['price', 'regularPrice', 'dateCreated', 'title'],
       pagination:           { maxTotalHits: 10000 },
     });

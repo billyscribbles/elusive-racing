@@ -56,6 +56,29 @@ export async function searchProducts(query, limit = 6) {
 }
 
 /**
+ * Fetch a single product by its slug/handle for the product page prefill.
+ * Returns the raw Meilisearch hit, or null if not found.
+ */
+export async function getProductByHandle(handle) {
+  if (!HOST || !SEARCH_KEY) return null;
+  try {
+    const index   = getClient().index(INDEX_NAME);
+    const results = await index.search('', {
+      filter: `handle = "${handle}"`,
+      limit:  1,
+      attributesToRetrieve: [
+        'id', 'title', 'handle', 'vendor', 'sku', 'price', 'regularPrice',
+        'onSale', 'stockStatus', 'hasVariants', 'imageUrl', 'imageAlt',
+        'description', 'tags', 'categories', 'categoryHandles',
+      ],
+    });
+    return results.hits[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Full search page query — supports filters, sort, and pagination.
  * Used by ShopPage when Meilisearch is available.
  *

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown, ChevronRight, Search, Tag, ChevronLeft, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import { prefetchProduct } from '../lib/woocommerce';
@@ -26,6 +26,7 @@ function mapProduct(h) {
     href: `/products/${h.handle}`,
     description: h.description || '',
     categories: h.categories ?? [],
+    categoryHandles: h.categoryHandles ?? [],
     tags: h.tags ?? [],
     backorder: isBackorder,
     dateCreated: h.dateCreated || '',
@@ -149,7 +150,7 @@ function ProductCard({ product, index = 0 }) {
   }
 
   return (
-    <a href={product.href} className="shop-product-card shop-product-card--loaded" style={{ animationDelay: `${Math.min(index, 11) * 40}ms` }} onMouseEnter={() => prefetchProduct(product.slug)}>
+    <Link to={product.href} state={{ prefill: product }} className="shop-product-card shop-product-card--loaded" style={{ animationDelay: `${Math.min(index, 11) * 40}ms` }} onMouseEnter={() => prefetchProduct(product.slug)}>
       <div className="shop-product-image-wrap">
         {product.image
           ? <img src={product.image} alt={product.name} loading="lazy" className="shop-product-image" />
@@ -192,7 +193,7 @@ function ProductCard({ product, index = 0 }) {
           </button>
         )}
       </div>
-    </a>
+    </Link>
   );
 }
 

@@ -1,7 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, Package, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getProductByHandle, getProducts, prefetchProduct } from '../lib/woocommerce';
+import { getProductByHandle as getMeiliProduct } from '../lib/meilisearch';
 import useCartStore from '../store/cartStore';
 import { brands as BRAND_LIST } from '../data/navigation';
 import './ProductPage.css';
@@ -37,6 +38,70 @@ function mapProduct(p) {
   };
 }
 
+// Map a Meilisearch hit into the same shape mapProduct returns.
+// Only fields available in Meilisearch — variants/weight/fitment will be null.
+function mapMeiliProduct(h) {
+  const price = h.price || 0;
+  const compareAt = h.regularPrice || 0;
+  return {
+    id: String(h.id),
+    name: h.title,
+    brand: h.vendor || '',
+    sku: h.sku || '',
+    price,
+    originalPrice: compareAt > price ? compareAt : null,
+    image: h.imageUrl || null,
+    href: `/products/${h.handle}`,
+    description: h.description || '',
+    weight: null,
+    dimensions: null,
+    vehicleAttributes: [],
+    tags: h.tags ?? [],
+    categories: (h.categories ?? []).map((name, i) => ({
+      id: String(i),
+      title: name,
+      handle: (h.categoryHandles ?? [])[i] || name.toLowerCase().replace(/\s+/g, '-'),
+    })),
+    variantId: null,
+    variants: [],
+    hasVariants: h.hasVariants ?? false,
+    _isVariable: h.hasVariants ?? false,
+    backorder: h.stockStatus === 'onbackorder',
+    inStock: h.stockStatus === 'instock',
+  };
+}
+
+// Normalize the product shape passed from ShopPage via router state.
+// Categories there are strings; map them to {id, title, handle} objects.
+function mapNavProduct(p) {
+  return {
+    id: String(p.id),
+    name: p.name,
+    brand: p.brand || '',
+    sku: p.sku || '',
+    price: p.price || 0,
+    originalPrice: p.originalPrice || null,
+    image: p.image || null,
+    href: p.href,
+    description: p.description || '',
+    weight: null,
+    dimensions: null,
+    vehicleAttributes: [],
+    tags: p.tags ?? [],
+    categories: (p.categories ?? []).map((name, i) => ({
+      id: String(i),
+      title: name,
+      handle: (p.categoryHandles ?? [])[i] || name.toLowerCase().replace(/\s+/g, '-'),
+    })),
+    variantId: p.variantId ?? null,
+    variants: [],
+    hasVariants: p.hasVariants ?? false,
+    _isVariable: p.hasVariants ?? false,
+    backorder: p.backorder ?? false,
+    inStock: !p.backorder,
+  };
+}
+
 function CopySkuButton({ sku }) {
   const [copied, setCopied] = useState(false);
   function handleCopy() {
@@ -54,13 +119,20 @@ function CopySkuButton({ sku }) {
 
 export default function ProductPage() {
   const { handle } = useParams();
+  const location = useLocation();
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
   const [qty, setQty] = useState(1);
+  // prefill: fast data from nav state or Meilisearch (name, price, image, etc.)
+  // product: full data from WooCommerce API (variants, weight, fitment, etc.)
+  const [prefill, setPrefill] = useState(() =>
+    location.state?.prefill ? mapNavProduct(location.state.prefill) : null
+  );
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [related, setRelated] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // If nav state provided prefill, start with loading=false immediately
+  const [loading, setLoading] = useState(!location.state?.prefill);
   const [variantsLoading, setVariantsLoading] = useState(false);
 
   // Reset state and scroll to top when navigating to a different product
@@ -71,18 +143,33 @@ export default function ProductPage() {
   }, [handle]);
 
   useEffect(() => {
-    setLoading(true);
+    // If we navigated here from the shop, nav state has instant prefill data
+    const navPrefill = location.state?.prefill ? mapNavProduct(location.state.prefill) : null;
+    setPrefill(navPrefill);
+    setProduct(null);
     setRelated([]);
     setVariantsLoading(false);
+    setLoading(!navPrefill); // skip skeleton entirely if we already have data
 
     let cancelled = false;
     let baseWasVariable = false;
 
+    // Only fetch Meilisearch if we don't already have nav state data
+    if (!navPrefill) {
+      getMeiliProduct(handle).then((hit) => {
+        if (cancelled) return;
+        if (hit) {
+          setPrefill(mapMeiliProduct(hit));
+          setLoading(false);
+        }
+      }).catch(() => {});
+    }
+
+    // Fire WooCommerce API fetch in parallel
     getProductByHandle(handle, (baseData) => {
-      // Called as soon as base product data is available (before variants for variable products)
       if (cancelled) return;
       setProduct(mapProduct(baseData));
-      setLoading(false);
+      setLoading(false); // also clears skeleton if meilisearch was slow/unavailable
       if (baseData._isVariable) {
         baseWasVariable = true;
         setVariantsLoading(true);
@@ -103,7 +190,6 @@ export default function ProductPage() {
       .then((fullData) => {
         if (cancelled) return;
         if (baseWasVariable) {
-          // Update product with full variant data now available
           setProduct(mapProduct(fullData));
           setVariantsLoading(false);
         }
@@ -113,7 +199,7 @@ export default function ProductPage() {
       });
 
     return () => { cancelled = true; };
-  }, [handle]);
+  }, [handle, location.state]);
 
   if (loading) {
     return (
@@ -143,7 +229,10 @@ export default function ProductPage() {
     );
   }
 
-  if (!product) {
+  // Use full WC data if available, otherwise fall back to meilisearch prefill
+  const display = product ?? prefill;
+
+  if (!display) {
     return (
       <div className="product-not-found">
         <div className="container">
@@ -155,28 +244,32 @@ export default function ProductPage() {
     );
   }
 
-  const activeVariant = selectedVariant ?? (product.hasVariants ? null : product.variants?.[0]);
+  // True while we have prefill but WC variants haven't loaded yet
+  const apiLoading = !product;
+  const effectiveVariantsLoading = variantsLoading || (apiLoading && display.hasVariants);
+
+  const activeVariant = selectedVariant ?? (display.hasVariants ? null : display.variants?.[0]);
   const displayPrice = activeVariant?.price?.amount
     ? parseFloat(activeVariant.price.amount)
-    : product.price ?? 0;
+    : display.price ?? 0;
   const displayOriginalPrice = activeVariant?.compareAtPrice?.amount
     ? parseFloat(activeVariant.compareAtPrice.amount)
-    : product.originalPrice ?? null;
+    : display.originalPrice ?? null;
   const effectiveOriginal = displayOriginalPrice > displayPrice ? displayOriginalPrice : null;
   const discount = effectiveOriginal
     ? Math.round(((effectiveOriginal - displayPrice) / effectiveOriginal) * 100)
     : null;
-  const canAddToCart = !variantsLoading && (!product.hasVariants || !!selectedVariant) && displayPrice > 0;
+  const canAddToCart = !effectiveVariantsLoading && (!display.hasVariants || !!selectedVariant) && displayPrice > 0;
 
   function handleAddToCart() {
     if (!canAddToCart) return;
-    const variantId = selectedVariant?.id ?? product.variantId;
+    const variantId = selectedVariant?.id ?? display.variantId;
     addItem({
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
+      id: display.id,
+      name: display.name,
+      brand: display.brand,
       price: displayPrice,
-      image: product.image,
+      image: display.image,
       variantId: variantId ?? null,
       variantTitle: selectedVariant?.title ?? null,
       quantity: qty,
@@ -195,7 +288,7 @@ export default function ProductPage() {
           <ChevronRight size={13} />
           <Link to="/shop">Shop</Link>
           <ChevronRight size={13} />
-          <span>{product.name}</span>
+          <span>{display.name}</span>
         </nav>
 
         {/* Main layout */}
@@ -204,13 +297,13 @@ export default function ProductPage() {
           {/* Image */}
           <div className="product-image-col">
             {(() => {
-              const brandEntry = BRAND_LIST.find(b => b.name.toLowerCase() === product.brand.toLowerCase());
+              const brandEntry = BRAND_LIST.find(b => b.name.toLowerCase() === display.brand.toLowerCase());
               return brandEntry?.logo ? (
                 <div className="product-page-brand-above-image">
                   <Link to={brandEntry.href} className="product-page-brand-logo-link">
                     <img
                       src={brandEntry.logo}
-                      alt={product.brand}
+                      alt={display.brand}
                       className="product-page-brand-logo"
                       onError={e => { e.target.parentElement.style.display = 'none'; }}
                     />
@@ -219,8 +312,8 @@ export default function ProductPage() {
               ) : null;
             })()}
             <div className="product-image-main">
-              {product.image
-                ? <img src={product.image} alt={product.name} fetchpriority="high" />
+              {display.image
+                ? <img src={display.image} alt={display.name} fetchpriority="high" />
                 : <div className="product-image-placeholder" />
               }
             </div>
@@ -229,22 +322,22 @@ export default function ProductPage() {
           {/* Info */}
           <div className="product-info-col">
             {(() => {
-              const brandEntry = BRAND_LIST.find(b => b.name.toLowerCase() === product.brand.toLowerCase());
+              const brandEntry = BRAND_LIST.find(b => b.name.toLowerCase() === display.brand.toLowerCase());
               return (
                 <Link
-                  to={brandEntry?.href ?? `/shop?brands=${encodeURIComponent(product.brand)}`}
+                  to={brandEntry?.href ?? `/shop?brands=${encodeURIComponent(display.brand)}`}
                   className="product-page-brand"
                 >
-                  {product.brand}
+                  {display.brand}
                 </Link>
               );
             })()}
-            <h1 className="product-page-name">{product.name}</h1>
+            <h1 className="product-page-name">{display.name}</h1>
 
-            {product.sku && (
+            {display.sku && (
               <p className="product-page-sku">
-                SKU: {product.sku}
-                <CopySkuButton sku={product.sku} />
+                SKU: {display.sku}
+                <CopySkuButton sku={display.sku} />
               </p>
             )}
 
@@ -258,13 +351,13 @@ export default function ProductPage() {
               )}
             </div>
 
-            <div className={`product-page-stock ${product.backorder ? 'product-page-stock--backorder' : 'product-page-stock--instock'}`}>
+            <div className={`product-page-stock ${display.backorder ? 'product-page-stock--backorder' : 'product-page-stock--instock'}`}>
               <Package size={14} />
-              {product.backorder ? 'Available on Backorder' : 'In Stock'}
+              {display.backorder ? 'Available on Backorder' : 'In Stock'}
             </div>
 
-            {/* Variant selector — or skeleton while variant data loads */}
-            {product._isVariable && variantsLoading ? (
+            {/* Variant selector — skeleton while API data loads for variable products */}
+            {display._isVariable && effectiveVariantsLoading ? (
               <div className="product-page-variants">
                 <div className="skel skel--line" style={{ width: 120, height: 14, marginBottom: 12 }} />
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -273,10 +366,10 @@ export default function ProductPage() {
                   ))}
                 </div>
               </div>
-            ) : product.hasVariants ? (
+            ) : display.hasVariants && display.variants?.length > 0 ? (
               <div className="product-page-variants">
                 <div className="product-page-section-title">
-                  {product.variants[0]?.selectedOptions?.[0]?.name || 'Variant'}
+                  {display.variants[0]?.selectedOptions?.[0]?.name || 'Variant'}
                   {selectedVariant && (
                     <span className="product-page-variant-selected-label">
                       — {selectedVariant.title}
@@ -284,7 +377,7 @@ export default function ProductPage() {
                   )}
                 </div>
                 <div className="product-page-variant-options">
-                  {product.variants.map((v) => (
+                  {display.variants.map((v) => (
                     <button
                       key={v.id}
                       className={`product-page-variant-btn${selectedVariant?.id === v.id ? ' product-page-variant-btn--active' : ''}${!v.availableForSale ? ' product-page-variant-btn--unavailable' : ''}`}
@@ -293,7 +386,7 @@ export default function ProductPage() {
                       title={!v.availableForSale ? 'Out of stock' : ''}
                     >
                       {v.title}
-                      {v.price?.amount && parseFloat(v.price.amount) !== product.price && (
+                      {v.price?.amount && parseFloat(v.price.amount) !== display.price && (
                         <span className="product-page-variant-price">
                           ${parseFloat(v.price.amount).toFixed(2)}
                         </span>
@@ -324,11 +417,11 @@ export default function ProductPage() {
             </div>
 
             {/* Categories */}
-            {product.categories?.length > 0 && (
+            {display.categories?.length > 0 && (
               <div className="product-page-section">
                 <h3 className="product-page-section-title">Category</h3>
                 <div className="product-page-chips">
-                  {product.categories.map((c) => (
+                  {display.categories.map((c) => (
                     <Link key={c.id} to={`/shop?category=${c.handle}`} className="product-page-chip">{c.title}</Link>
                   ))}
                 </div>
@@ -336,11 +429,11 @@ export default function ProductPage() {
             )}
 
             {/* Tags */}
-            {product.tags?.length > 0 && (
+            {display.tags?.length > 0 && (
               <div className="product-page-section">
                 <h3 className="product-page-section-title"><Tag size={13} /> Tags</h3>
                 <div className="product-page-chips">
-                  {product.tags.map((t) => (
+                  {display.tags.map((t) => (
                     <Link key={t} to={`/shop?q=${encodeURIComponent(t)}`} className="product-page-chip product-page-chip--tag">
                       {t}
                     </Link>
@@ -351,44 +444,44 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Description — full width */}
-        {product.description && (
+        {/* Description — full width, available from Meilisearch prefill */}
+        {display.description && (
           <div className="product-details-description">
             <h3 className="product-details-heading">Description</h3>
-            <div className="product-details-body" dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div className="product-details-body" dangerouslySetInnerHTML={{ __html: display.description }} />
           </div>
         )}
 
-        {/* Weight, dimensions, vehicle fitment */}
-        {(product.weight || product.dimensions || product.vehicleAttributes?.length > 0) && (
+        {/* Weight, dimensions, vehicle fitment — only available after WC API responds */}
+        {(display.weight || display.dimensions || display.vehicleAttributes?.length > 0) && (
           <div className="product-details-strip">
 
-            {(product.weight || product.dimensions) && (
+            {(display.weight || display.dimensions) && (
               <div className="product-details-block">
                 <h3 className="product-details-heading">Shipping & Dimensions</h3>
                 <table className="product-details-table">
                   <tbody>
-                    {product.weight && (
-                      <tr><td>Weight</td><td>{product.weight} kg</td></tr>
+                    {display.weight && (
+                      <tr><td>Weight</td><td>{display.weight} kg</td></tr>
                     )}
-                    {product.dimensions?.length && (
-                      <tr><td>Length</td><td>{product.dimensions.length} cm</td></tr>
+                    {display.dimensions?.length && (
+                      <tr><td>Length</td><td>{display.dimensions.length} cm</td></tr>
                     )}
-                    {product.dimensions?.width && (
-                      <tr><td>Width</td><td>{product.dimensions.width} cm</td></tr>
+                    {display.dimensions?.width && (
+                      <tr><td>Width</td><td>{display.dimensions.width} cm</td></tr>
                     )}
-                    {product.dimensions?.height && (
-                      <tr><td>Height</td><td>{product.dimensions.height} cm</td></tr>
+                    {display.dimensions?.height && (
+                      <tr><td>Height</td><td>{display.dimensions.height} cm</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             )}
 
-            {product.vehicleAttributes?.length > 0 && (
+            {display.vehicleAttributes?.length > 0 && (
               <div className="product-details-block">
                 <h3 className="product-details-heading">Vehicle Fitment</h3>
-                {product.vehicleAttributes.map(attr => (
+                {display.vehicleAttributes.map(attr => (
                   <div key={attr.name} className="product-details-fitment">
                     <span className="product-details-fitment-label">{attr.name}</span>
                     <div className="product-details-fitment-values">
