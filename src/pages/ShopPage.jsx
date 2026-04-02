@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import { pageTitle as seoTitle, SITE_URL, schemaBreadcrumb } from "../lib/seo";
 import useVehicleStore from "../store/vehicleStore";
 import {
   SlidersHorizontal,
@@ -773,8 +775,43 @@ export default function ShopPage() {
         ? activeBrands[0]
         : "Shop All Products";
 
+  // Canonical strips sort/page/per_page — content-defining params only
+  const canonicalParams = new URLSearchParams();
+  if (qParam)      canonicalParams.set('q', qParam);
+  if (subParam)    canonicalParams.set('sub', subParam);
+  if (brandsParam) canonicalParams.set('brands', brandsParam);
+  if (makeParam)   canonicalParams.set('make', makeParam);
+  if (modelParam)  canonicalParams.set('model', modelParam);
+  if (saleParam)   canonicalParams.set('sale', '1');
+  const canonicalPath = window.location.pathname;
+  const canonicalUrl  = `${SITE_URL}${canonicalPath}${canonicalParams.toString() ? '?' + canonicalParams.toString() : ''}`;
+
+  const metaDesc = qParam
+    ? `Shop results for "${qParam}" at Elusive Racing — Honda & Japanese performance parts, Melbourne.`
+    : subParam
+    ? `Browse ${getCategoryBySlug(subParam)?.name ?? subParam} parts at Elusive Racing. Honda performance specialists, Clayton South VIC.`
+    : activeBrands.length === 1
+    ? `Shop ${activeBrands[0]} parts at Elusive Racing. Melbourne's Honda performance specialists.`
+    : "Browse 10,000+ Honda & Japanese performance parts at Elusive Racing. Brands include K-Tuned, Skunk2, HKS, BC Racing & more.";
+
+  const breadcrumbs = [
+    { name: 'Home', url: SITE_URL },
+    { name: pageTitle, url: canonicalUrl },
+  ];
+
   return (
     <div className="shop-page">
+      <Helmet>
+        <title>{seoTitle(pageTitle)}</title>
+        <meta name="description" content={metaDesc} />
+        <link rel="canonical" href={canonicalUrl} />
+        {currentPage > 1 && <meta name="robots" content="noindex, follow" />}
+        <meta property="og:type"        content="website" />
+        <meta property="og:url"         content={canonicalUrl} />
+        <meta property="og:title"       content={seoTitle(pageTitle)} />
+        <meta property="og:description" content={metaDesc} />
+        <script type="application/ld+json">{JSON.stringify(schemaBreadcrumb(breadcrumbs))}</script>
+      </Helmet>
       <div className="shop-page-header">
         <div className="container">
           <h1 className="shop-page-title">{pageTitle}</h1>

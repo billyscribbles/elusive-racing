@@ -1,10 +1,12 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, Package, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { getProductByHandle, getProducts, prefetchProduct } from '../lib/woocommerce';
 import { getProductByHandle as getMeiliProduct } from '../lib/meilisearch';
 import useCartStore from '../store/cartStore';
 import { brands as BRAND_LIST } from '../data/navigation';
+import { pageTitle, SITE_URL, schemaProduct, schemaBreadcrumb } from '../lib/seo';
 import './ProductPage.css';
 
 function mapProduct(p) {
@@ -278,8 +280,39 @@ export default function ProductPage() {
     setTimeout(() => setAdded(false), 2000);
   }
 
+  const canonicalUrl = `${SITE_URL}/products/${display.slug ?? display.handle ?? handle}`;
+  const metaDesc = display.description
+    ? display.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
+    : `Buy ${display.name} from ${display.brand} at Elusive Racing. Honda performance parts specialist in Melbourne.`;
+
   return (
     <div className="product-page">
+      <Helmet>
+        <title>{pageTitle(`${display.name}${display.brand ? ` – ${display.brand}` : ''}`)}</title>
+        <meta name="description" content={metaDesc} />
+        <link rel="canonical" href={canonicalUrl} />
+
+        <meta property="og:type"              content="product" />
+        <meta property="og:url"               content={canonicalUrl} />
+        <meta property="og:title"             content={pageTitle(display.name)} />
+        <meta property="og:description"       content={metaDesc} />
+        {display.image && <meta property="og:image" content={display.image} />}
+        <meta property="product:price:amount"   content={display.price?.toFixed(2)} />
+        <meta property="product:price:currency" content="AUD" />
+
+        <meta name="twitter:card"        content="summary_large_image" />
+        <meta name="twitter:title"       content={pageTitle(display.name)} />
+        <meta name="twitter:description" content={metaDesc} />
+        {display.image && <meta name="twitter:image" content={display.image} />}
+
+        <script type="application/ld+json">{JSON.stringify(schemaProduct({ ...display, slug: display.slug ?? handle }))}</script>
+        <script type="application/ld+json">{JSON.stringify(schemaBreadcrumb([
+          { name: 'Home', url: SITE_URL },
+          { name: 'Shop', url: `${SITE_URL}/shop` },
+          { name: display.name, url: canonicalUrl },
+        ]))}</script>
+      </Helmet>
+
       <div className="container">
 
         {/* Breadcrumb */}

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { brands } from '../data/navigation';
+import { pageTitle, SITE_URL } from '../lib/seo';
 import './BrandsPage.css';
 
 export default function BrandsPage() {
@@ -13,6 +15,14 @@ export default function BrandsPage() {
 
   return (
     <div className="brands-page">
+      <Helmet>
+        <title>{pageTitle('All Brands — 150+ Performance Parts Brands')}</title>
+        <meta name="description" content="Browse all 150+ performance parts brands stocked by Elusive Racing. K-Tuned, Skunk2, HKS, BC Racing, Hondata, AEM, Exedy and more. Melbourne Honda specialists." />
+        <link rel="canonical" href={`${SITE_URL}/brands`} />
+        <meta property="og:type"  content="website" />
+        <meta property="og:url"   content={`${SITE_URL}/brands`} />
+        <meta property="og:title" content={pageTitle('All Brands — 150+ Performance Parts Brands')} />
+      </Helmet>
       <div className="container">
         <div className="brands-page-header">
           <div className="brands-page-breadcrumb">

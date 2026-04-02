@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Wrench, Gauge, Package, MapPin, Phone, Instagram } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { pageTitle, SITE_URL, DEFAULT_IMAGE } from '../lib/seo';
 import './AboutPage.css';
 
 const stats = [
@@ -47,8 +49,20 @@ const milestones = [
 ];
 
 export default function AboutPage() {
+  const TITLE = 'About Us — Honda Performance Specialists Since 2010';
+  const DESC  = 'Elusive Racing is Melbourne\'s premier Honda & Japanese performance parts specialist. Over a decade of expertise in Clayton South VIC. Meet the team.';
   return (
     <div className="about-page">
+      <Helmet>
+        <title>{pageTitle(TITLE)}</title>
+        <meta name="description" content={DESC} />
+        <link rel="canonical" href={`${SITE_URL}/about`} />
+        <meta property="og:type"        content="website" />
+        <meta property="og:url"         content={`${SITE_URL}/about`} />
+        <meta property="og:title"       content={pageTitle(TITLE)} />
+        <meta property="og:description" content={DESC} />
+        <meta property="og:image"       content={DEFAULT_IMAGE} />
+      </Helmet>
 
       {/* Hero */}
       <section className="ap-hero">

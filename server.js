@@ -779,9 +779,62 @@ const MIME_TYPES = {
   '.mp4':  'video/mp4',
 };
 
+// ── Sitemap ───────────────────────────────────────────────────────────────────
+
+const STATIC_URLS = [
+  { loc: '/',         changefreq: 'weekly',  priority: '1.0' },
+  { loc: '/shop',     changefreq: 'daily',   priority: '0.9' },
+  { loc: '/brands',   changefreq: 'weekly',  priority: '0.7' },
+  { loc: '/services', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/about',    changefreq: 'monthly', priority: '0.6' },
+  { loc: '/contact',  changefreq: 'monthly', priority: '0.6' },
+];
+
+async function handleSitemap(req, res) {
+  const SITE = 'https://elusiveracing.com.au';
+  try {
+    // Fetch all product slugs from Meilisearch (lightweight — handles only)
+    let productUrls = [];
+    if (MS_HOST && MS_KEY) {
+      const ms    = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      const index = ms.index('products');
+      let offset = 0, batch;
+      do {
+        batch = await index.search('', { limit: 1000, offset, attributesToRetrieve: ['handle', 'dateCreated'] });
+        batch.hits.forEach(h => {
+          if (h.handle) productUrls.push({ loc: `/products/${h.handle}`, lastmod: h.dateCreated?.split('T')[0], changefreq: 'weekly', priority: '0.8' });
+        });
+        offset += 1000;
+      } while (batch.hits.length === 1000);
+    }
+
+    const allUrls = [...STATIC_URLS, ...productUrls];
+    const urlTags = allUrls.map(u => `
+  <url>
+    <loc>${SITE}${u.loc}</loc>
+    ${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}
+    <changefreq>${u.changefreq}</changefreq>
+    <priority>${u.priority}</priority>
+  </url>`).join('');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urlTags}
+</urlset>`;
+
+    res.writeHead(200, { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' });
+    res.end(xml);
+  } catch (err) {
+    console.error('[sitemap] error:', err.message);
+    res.writeHead(500); res.end();
+  }
+}
+
 const server = http.createServer((req, res) => {
   // Meilisearch sync trigger
   if (req.url === '/api/sync') { handleSync(req, res); return; }
+
+  // Dynamic sitemap
+  if (req.url === '/sitemap.xml') { handleSitemap(req, res); return; }
 
   // Chat API route
   if (req.url === '/api/chat' || req.url.startsWith('/api/chat?')) {

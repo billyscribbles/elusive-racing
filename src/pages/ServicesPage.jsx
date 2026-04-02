@@ -1,4 +1,9 @@
+import { Helmet } from 'react-helmet-async';
+import { pageTitle, SITE_URL, DEFAULT_IMAGE } from '../lib/seo';
 import './ServicesPage.css';
+
+const TITLE = 'Workshop Services — Engine Builds, Tuning & Fabrication';
+const DESC  = 'Expert Honda & Japanese car servicing in Clayton South, Melbourne. Engine builds, dyno tuning, suspension, brakes, fabrication. Book online today.';
 
 const services = [
   {
@@ -77,6 +82,16 @@ const faqs = [
 export default function ServicesPage() {
   return (
     <div className="services-page">
+      <Helmet>
+        <title>{pageTitle(TITLE)}</title>
+        <meta name="description" content={DESC} />
+        <link rel="canonical" href={`${SITE_URL}/services`} />
+        <meta property="og:type"        content="website" />
+        <meta property="og:url"         content={`${SITE_URL}/services`} />
+        <meta property="og:title"       content={pageTitle(TITLE)} />
+        <meta property="og:description" content={DESC} />
+        <meta property="og:image"       content={DEFAULT_IMAGE} />
+      </Helmet>
 
       {/* Hero */}
       <section className="sp-hero">

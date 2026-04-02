@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { pageTitle, SITE_URL, DEFAULT_IMAGE, schemaLocalBusiness } from '../lib/seo';
 import './ContactUsPage.css';
 
 // ── Email delivery via FormSubmit.co (no account or API key required) ──
@@ -85,8 +87,21 @@ export default function ContactUsPage() {
     }
   }
 
+  const TITLE = 'Contact Us — Elusive Racing Clayton South Melbourne';
+  const DESC  = 'Contact Elusive Racing at 1/32 Graham Road, Clayton South VIC. Call 03 9574 1710, email sales@elusiveracing.com.au or visit Mon–Fri 9am–5pm, Sat 9am–2pm.';
   return (
     <div className="contact-us-page">
+      <Helmet>
+        <title>{pageTitle(TITLE)}</title>
+        <meta name="description" content={DESC} />
+        <link rel="canonical" href={`${SITE_URL}/contact`} />
+        <meta property="og:type"        content="website" />
+        <meta property="og:url"         content={`${SITE_URL}/contact`} />
+        <meta property="og:title"       content={pageTitle(TITLE)} />
+        <meta property="og:description" content={DESC} />
+        <meta property="og:image"       content={DEFAULT_IMAGE} />
+        <script type="application/ld+json">{JSON.stringify(schemaLocalBusiness())}</script>
+      </Helmet>
       <div className="container">
 
         {/* Header */}

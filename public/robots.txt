@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
 
+# Prevent indexing of pure sort/pagination variants (duplicate content)
+Disallow: /search?sort=
+Disallow: /shop?sort=
+Disallow: /search?page=
+Disallow: /shop?page=
+
 Sitemap: https://elusiveracing.com.au/sitemap.xml
