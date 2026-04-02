@@ -1,6 +1,7 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, ChevronRight, Package, Tag } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ShoppingBag, ChevronRight, Package, Tag, X, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Helmet } from 'react-helmet-async';
 import { getProductByHandle, getProducts, prefetchProduct } from '../lib/woocommerce';
 import { getProductByHandle as getMeiliProduct } from '../lib/meilisearch';
@@ -23,6 +24,7 @@ function mapProduct(p) {
     price,
     originalPrice: compareAt > price ? compareAt : null,
     image: p.featuredImage?.url ?? null,
+    images: p.images ?? [],
     href: `/products/${p.handle}`,
     description: p.descriptionHtml || p.description || '',
     weight: p.weight || null,
@@ -54,6 +56,7 @@ function mapMeiliProduct(h) {
     price,
     originalPrice: compareAt > price ? compareAt : null,
     image: h.imageUrl || null,
+    images: h.imageUrl ? [{ url: h.imageUrl, altText: h.imageAlt || h.title }] : [],
     href: `/products/${h.handle}`,
     description: h.description || '',
     weight: null,
@@ -86,6 +89,7 @@ function mapNavProduct(p) {
     price: p.price || 0,
     originalPrice: p.originalPrice || null,
     image: p.image || null,
+    images: p.image ? [{ url: p.image, altText: p.name }] : [],
     href: p.href,
     description: p.description || '',
     weight: null,
@@ -122,6 +126,59 @@ function CopySkuButton({ sku }) {
   );
 }
 
+function Lightbox({ images, current, onSelect, onClose }) {
+  const idx = images.findIndex(img => img.url === current);
+  const activeIdx = idx === -1 ? 0 : idx;
+
+  const prev = useCallback(() => {
+    const i = (activeIdx - 1 + images.length) % images.length;
+    onSelect(images[i].url);
+  }, [activeIdx, images, onSelect]);
+
+  const next = useCallback(() => {
+    const i = (activeIdx + 1) % images.length;
+    onSelect(images[i].url);
+  }, [activeIdx, images, onSelect]);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose, prev, next]);
+
+  return (
+    <div className="lightbox-overlay" onClick={onClose}>
+      <button className="lightbox-close" onClick={onClose} aria-label="Close"><X size={22} /></button>
+      {images.length > 1 && (
+        <button className="lightbox-nav lightbox-nav--prev" onClick={e => { e.stopPropagation(); prev(); }} aria-label="Previous"><ChevronLeft size={28} /></button>
+      )}
+      <div className="lightbox-img-wrap" onClick={e => e.stopPropagation()}>
+        <img src={images[activeIdx].url} alt={images[activeIdx].altText} />
+      </div>
+      {images.length > 1 && (
+        <button className="lightbox-nav lightbox-nav--next" onClick={e => { e.stopPropagation(); next(); }} aria-label="Next"><ChevronRightIcon size={28} /></button>
+      )}
+      {images.length > 1 && (
+        <div className="lightbox-thumbs" onClick={e => e.stopPropagation()}>
+          {images.map((img, i) => (
+            <button
+              key={i}
+              className={`lightbox-thumb${i === activeIdx ? ' lightbox-thumb--active' : ''}`}
+              onClick={() => onSelect(img.url)}
+            >
+              <img src={img.url} alt={img.altText} loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductPage() {
   const { handle } = useParams();
   const location = useLocation();
@@ -135,6 +192,8 @@ export default function ProductPage() {
   );
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [related, setRelated] = useState([]);
   // If nav state provided prefill, start with loading=false immediately
   const [loading, setLoading] = useState(!location.state?.prefill);
@@ -143,6 +202,8 @@ export default function ProductPage() {
   // Reset state and scroll to top when navigating to a different product
   useEffect(() => {
     setSelectedVariant(null);
+    setSelectedImage(null);
+    setLightboxOpen(false);
     setQty(1);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [handle]);
@@ -254,6 +315,10 @@ export default function ProductPage() {
   const effectiveVariantsLoading = variantsLoading || (apiLoading && display.hasVariants);
 
   const activeVariant = selectedVariant ?? (display.hasVariants ? null : display.variants?.[0]);
+  const displayImages = Array.from(
+    new Map((display.images ?? []).map(img => [img.url, img])).values()
+  );
+
   const displayPrice = activeVariant?.price?.amount
     ? parseFloat(activeVariant.price.amount)
     : display.price ?? 0;
@@ -298,6 +363,7 @@ export default function ProductPage() {
     : `Buy ${display.name} from ${display.brand} at Elusive Racing. Honda performance parts specialist in Melbourne.`;
 
   return (
+    <>
     <div className="product-page">
       <Helmet>
         <title>{pageTitle(`${display.name}${display.brand ? ` – ${display.brand}` : ''}`)}</title>
@@ -356,12 +422,29 @@ export default function ProductPage() {
                 </div>
               ) : null;
             })()}
-            <div className="product-image-main">
+            <div
+              className="product-image-main product-image-main--clickable"
+              onClick={() => display.image && setLightboxOpen(true)}
+            >
               {display.image
-                ? <img src={display.image} alt={display.name} fetchpriority="high" />
+                ? <img src={selectedImage ?? display.image} alt={display.name} fetchpriority="high" />
                 : <div className="product-image-placeholder" />
               }
             </div>
+            {displayImages.length > 1 && (
+              <div className="product-image-thumbs">
+                {displayImages.map((img, i) => (
+                  <button
+                    key={i}
+                    className={`product-image-thumb${(selectedImage ?? display.image) === img.url ? ' product-image-thumb--active' : ''}`}
+                    onClick={() => setSelectedImage(img.url)}
+                    aria-label={`View image ${i + 1}`}
+                  >
+                    <img src={img.url} alt={img.altText || display.name} loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Info */}
@@ -581,5 +664,17 @@ export default function ProductPage() {
 
       </div>
     </div>
+
+    {/* Lightbox */}
+    {lightboxOpen && displayImages.length > 0 && createPortal(
+      <Lightbox
+        images={displayImages}
+        current={selectedImage ?? display.image}
+        onSelect={setSelectedImage}
+        onClose={() => setLightboxOpen(false)}
+      />,
+      document.body
+    )}
+    </>
   );
 }
