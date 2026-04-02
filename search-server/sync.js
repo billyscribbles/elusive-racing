@@ -10,12 +10,12 @@ import { Meilisearch } from 'meilisearch';
 // ── Config ────────────────────────────────────────────────────────────────────
 
 function getWcBase() {
-  const url = process.env.WC_URL || process.env.VITE_WC_URL;
+  const url = (process.env.WC_URL || process.env.VITE_WC_URL || '').trim().replace(/\/$/, '');
   return `${url}/wp-json/wc/v3`;
 }
 function getAuth() {
-  const key    = process.env.WC_CONSUMER_KEY    || process.env.VITE_WC_CONSUMER_KEY;
-  const secret = process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET;
+  const key    = (process.env.WC_CONSUMER_KEY    || process.env.VITE_WC_CONSUMER_KEY    || '').trim();
+  const secret = (process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET || '').trim();
   return 'Basic ' + Buffer.from(`${key}:${secret}`).toString('base64');
 }
 
