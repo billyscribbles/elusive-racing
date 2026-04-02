@@ -19,7 +19,7 @@ function decodeHtml(str) {
 
 // ── Field masks — only fetch what normalizeProduct/normalizeProductDetail need ──
 const PRODUCT_LIST_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,variations,date_created,short_description';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,variations,date_created,short_description';
 const PRODUCT_DETAIL_FIELDS =
   `${PRODUCT_LIST_FIELDS},description,type,weight,dimensions`;
 const CATEGORY_LIST_FIELDS = 'id,name,slug,description,image,count';
@@ -129,6 +129,7 @@ function normalizeProduct(p) {
       ? { url: p.images[0].src, altText: p.images[0].alt || p.name }
       : null,
     images: p.images?.map(img => ({ url: img.src, altText: img.alt || p.name })) ?? [],
+    stockQuantity: typeof p.stock_quantity === 'number' ? p.stock_quantity : null,
     tags: p.tags?.map(t => decodeHtml(t.name)) ?? [],
     categories: p.categories?.map(c => ({ id: String(c.id), title: decodeHtml(c.name), handle: c.slug })) ?? [],
     variants: p.variations?.length
@@ -163,6 +164,7 @@ function normalizeProductDetail(p) {
             ? { amount: v.regular_price, currencyCode: 'AUD' }
             : null,
           availableForSale: v.stock_status !== 'outofstock',
+          quantityAvailable: typeof v.stock_quantity === 'number' ? v.stock_quantity : null,
           selectedOptions: v.attributes?.map(a => ({ name: a.name, value: a.option })) ?? [],
         }))
       : [

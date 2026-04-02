@@ -34,6 +34,7 @@ function mapProduct(p) {
     variantId: isDefaultOnly ? variants[0].id : null,
     variants,
     hasVariants,
+    stockQuantity: p.stockQuantity ?? null,
     backorder: p.stockStatus === 'onbackorder',
     inStock: p.stockStatus === 'instock',
     _isVariable: p._isVariable ?? false,
@@ -68,6 +69,7 @@ function mapMeiliProduct(h) {
     variants: [],
     hasVariants: h.hasVariants ?? false,
     _isVariable: h.hasVariants ?? false,
+    stockQuantity: null,
     backorder: h.stockStatus === 'onbackorder',
     inStock: h.stockStatus === 'instock',
   };
@@ -99,6 +101,7 @@ function mapNavProduct(p) {
     variants: [],
     hasVariants: p.hasVariants ?? false,
     _isVariable: p.hasVariants ?? false,
+    stockQuantity: p.stockQuantity ?? null,
     backorder: p.backorder ?? false,
     inStock: !p.backorder,
   };
@@ -261,7 +264,15 @@ export default function ProductPage() {
   const discount = effectiveOriginal
     ? Math.round(((effectiveOriginal - displayPrice) / effectiveOriginal) * 100)
     : null;
-  const canAddToCart = !effectiveVariantsLoading && (!display.hasVariants || !!selectedVariant) && displayPrice > 0;
+  // Stock cap: use variant-level quantity if a variant is selected, otherwise product-level
+  const maxQty = display.hasVariants
+    ? (selectedVariant?.quantityAvailable ?? null)
+    : (display.stockQuantity ?? null);
+  // null means unlimited / unknown (e.g. backorder or prefill-only data)
+  const effectiveMax = maxQty !== null && maxQty > 0 ? maxQty : null;
+  const lowStock = effectiveMax !== null && effectiveMax <= 5;
+
+  const canAddToCart = !effectiveVariantsLoading && (!display.hasVariants || !!selectedVariant) && displayPrice > 0 && (effectiveMax === null || effectiveMax > 0);
 
   function handleAddToCart() {
     if (!canAddToCart) return;
@@ -274,6 +285,7 @@ export default function ProductPage() {
       image: display.image,
       variantId: variantId ?? null,
       variantTitle: selectedVariant?.title ?? null,
+      stockQuantity: effectiveMax,
       quantity: qty,
     });
     setAdded(true);
@@ -414,7 +426,7 @@ export default function ProductPage() {
                     <button
                       key={v.id}
                       className={`product-page-variant-btn${selectedVariant?.id === v.id ? ' product-page-variant-btn--active' : ''}${!v.availableForSale ? ' product-page-variant-btn--unavailable' : ''}`}
-                      onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? null : v)}
+                      onClick={() => { setSelectedVariant(v.id === selectedVariant?.id ? null : v); setQty(1); }}
                       disabled={!v.availableForSale}
                       title={!v.availableForSale ? 'Out of stock' : ''}
                     >
@@ -433,11 +445,19 @@ export default function ProductPage() {
               </div>
             ) : null}
 
-            <div className="product-page-qty-row">
+            {lowStock && (
+              <p className="product-page-low-stock">Only {effectiveMax} left in stock</p>
+            )}
+            <div className={`product-page-qty-row${display.hasVariants && !selectedVariant ? ' product-page-qty-row--locked' : ''}`}>
               <div className="product-page-qty">
-                <button className="product-page-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
+                <button className="product-page-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Decrease quantity" disabled={display.hasVariants && !selectedVariant}>−</button>
                 <span className="product-page-qty-val">{qty}</span>
-                <button className="product-page-qty-btn" onClick={() => setQty(q => q + 1)} aria-label="Increase quantity">+</button>
+                <button
+                  className="product-page-qty-btn"
+                  onClick={() => setQty(q => effectiveMax !== null ? Math.min(effectiveMax, q + 1) : q + 1)}
+                  aria-label="Increase quantity"
+                  disabled={(display.hasVariants && !selectedVariant) || (effectiveMax !== null && qty >= effectiveMax)}
+                >+</button>
               </div>
               <button
                 className={`product-page-atc${added ? ' product-page-atc--added' : ''}${!canAddToCart ? ' product-page-atc--disabled' : ''}`}

@@ -15,9 +15,13 @@ const useCartStore = create(
         set((s) => {
           const existing = s.items.find((i) => i.id === product.id && i.variantId === product.variantId);
           if (existing) {
-            return { items: s.items.map((i) => i.id === product.id && i.variantId === product.variantId ? { ...i, quantity: i.quantity + qty } : i) };
+            const max = existing.stockQuantity ?? product.stockQuantity ?? null;
+            const newQty = max !== null ? Math.min(max, existing.quantity + qty) : existing.quantity + qty;
+            return { items: s.items.map((i) => i.id === product.id && i.variantId === product.variantId ? { ...i, quantity: newQty } : i) };
           }
-          return { items: [...s.items, { ...product, quantity: qty }] };
+          const max = product.stockQuantity ?? null;
+          const clampedQty = max !== null ? Math.min(max, qty) : qty;
+          return { items: [...s.items, { ...product, quantity: clampedQty }] };
         });
       },
 
@@ -28,7 +32,13 @@ const useCartStore = create(
         if (quantity < 1) {
           set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
         } else {
-          set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, quantity } : i) }));
+          set((s) => ({
+            items: s.items.map((i) => {
+              if (i.id !== id) return i;
+              const max = i.stockQuantity ?? null;
+              return { ...i, quantity: max !== null ? Math.min(max, quantity) : quantity };
+            }),
+          }));
         }
       },
 

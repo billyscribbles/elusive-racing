@@ -292,7 +292,20 @@
   font-weight: 600;
 }
 
+.product-page-low-stock {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e07b30;
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+
 /* Quantity + ATC row */
+.product-page-qty-row--locked {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .product-page-qty-row {
   display: flex;
   align-items: stretch;

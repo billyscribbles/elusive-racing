@@ -59,7 +59,11 @@ export default function CartIcon() {
                               <Minus size={12} />
                             </button>
                             <span>{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              aria-label="Increase"
+                              disabled={item.stockQuantity !== null && item.stockQuantity !== undefined && item.quantity >= item.stockQuantity}
+                            >
                               <Plus size={12} />
                             </button>
                           </div>
