@@ -253,17 +253,16 @@ export default function ShopPage() {
   const currentPage = pageParam;
   const paginated   = filtered;
 
-  // Uncontrolled ref for search — avoids re-rendering on every keystroke
-  const searchInputRef = useRef(null);
+  const [localQuery,   setLocalQuery]   = useState(qParam);
+  const searchDebounceRef = useRef(null);
   const [localMin,    setLocalMin]    = useState(minParam);
   const [localMax,    setLocalMax]    = useState(maxParam);
   const [drawerOpen,  setDrawerOpen]  = useState(false);
   const [catSearch,    setCatSearch]    = useState('');
   const [brandSearch,  setBrandSearch]  = useState('');
 
-  useEffect(() => {
-    if (searchInputRef.current) searchInputRef.current.value = qParam;
-  }, [qParam]);
+  // Sync localQuery when qParam changes externally (chip removal, clear filters, navigation)
+  useEffect(() => { setLocalQuery(qParam); }, [qParam]);
   useEffect(() => { setLocalMin(minParam); setLocalMax(maxParam); }, [minParam, maxParam]);
 
   function setParam(key, value) {
@@ -302,9 +301,18 @@ export default function ShopPage() {
   }
 
 
+  function handleSearchChange(e) {
+    const val = e.target.value;
+    setLocalQuery(val);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setParam('q', val.trim());
+    }, 350);
+  }
+
   function applySearch() {
-    const val = searchInputRef.current?.value.trim() ?? '';
-    setParam('q', val);
+    clearTimeout(searchDebounceRef.current);
+    setParam('q', localQuery.trim());
     setDrawerOpen(false);
   }
 
@@ -316,7 +324,8 @@ export default function ShopPage() {
   }
 
   function clearFilters() {
-    if (searchInputRef.current) searchInputRef.current.value = '';
+    clearTimeout(searchDebounceRef.current);
+    setLocalQuery('');
     setLocalMin('');
     setLocalMax('');
     setSearchParams({});
@@ -371,10 +380,10 @@ export default function ShopPage() {
         <div className="shop-filter-search">
           <Search size={14} />
           <input
-            ref={searchInputRef}
             type="text"
             placeholder="Products, brands, SKUs..."
-            defaultValue={qParam}
+            value={localQuery}
+            onChange={handleSearchChange}
             onKeyDown={(e) => e.key === 'Enter' && applySearch()}
             className="shop-filter-search-input"
           />
