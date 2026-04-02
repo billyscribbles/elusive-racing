@@ -9,3 +9,6 @@ dist/
 .DS_Store
 *.log
 .claude/
+data.ms/
+meilisearch
+search-server/node_modules/

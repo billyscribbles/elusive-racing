@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, X, Tag, Layers } from 'lucide-react';
-import { searchProducts as wcSearch } from '../../lib/woocommerce';
+import { searchProducts as msSearch } from '../../lib/meilisearch';
 import { BRANDS } from '../../data/brands';
 import { CATEGORIES_FLAT } from '../../data/categories';
 import './SearchBar.css';
@@ -21,23 +21,8 @@ function getLocalSuggestions(query) {
   return { brands, categories };
 }
 
-function mapResult(p) {
-  const price = parseFloat(p.priceRange?.minVariantPrice?.amount) || 0;
-  const compareAt = parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount) || 0;
-  return {
-    id: p.id,
-    name: p.title,
-    brand: p.vendor || '',
-    price,
-    originalPrice: compareAt > price ? compareAt : null,
-    image: p.featuredImage?.url ?? null,
-    href: `/products/${p.handle}`,
-  };
-}
-
 async function searchProducts(query) {
-  const results = await wcSearch(query, 6);
-  return results.map(mapResult);
+  return msSearch(query, 6);
 }
 
 export default function SearchBar() {

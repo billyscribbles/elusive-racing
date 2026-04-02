@@ -1,0 +1,16 @@
+{
+  "name": "elusive-search-server",
+  "version": "1.0.0",
+  "description": "WooCommerce → Meilisearch sync server for Elusive Racing",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "sync": "node -e \"import('./sync.js').then(m => m.runFullSync().then(() => process.exit(0)))\""
+  },
+  "dependencies": {
+    "meilisearch": "^0.48.0",
+    "node-cron": "^3.0.3"
+  }
+}
