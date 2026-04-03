@@ -274,38 +274,53 @@
 }
 
 @media (max-width: 768px) {
+  /* Stack layout: image on top, content below */
   .promo-banner {
-    height: 80vh;
-    min-height: 500px;
+    height: auto;
+    min-height: unset;
     max-height: none;
-    padding: 0;
+    display: flex;
+    flex-direction: column;
   }
 
-  .promo-banner-image {
-    background-position: 65% center;
-  }
-
-  .promo-banner-overlay {
-    background: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.92) 0%,
-      rgba(0, 0, 0, 0.75) 50%,
-      rgba(0, 0, 0, 0.20) 100%
-    );
-  }
-
-  .promo-banner-slash {
+  .promo-banner-image-echo {
     display: none;
   }
 
+  /* Image becomes a normal block to take up space in the flex column */
+  .promo-banner-image {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 58vw;
+    min-height: 220px;
+    max-height: 360px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    transform: none;
+  }
+
+  .promo-banner:hover .promo-banner-image {
+    transform: none;
+  }
+
+  /* Hide overlays — not needed in stacked layout */
+  .promo-banner-overlay,
+  .promo-banner-slash,
+  .promo-banner::before { display: none; }
+
+  /* Content sits below image in a dark panel */
   .promo-banner-inner {
-    flex-direction: column;
+    position: relative;
+    z-index: 5;
+    height: auto;
+    background: #111;
+    padding: 32px 24px;
     align-items: flex-start;
-    justify-content: center;
-    gap: 32px;
-    height: 100%;
-    padding-top: 40px;
-    padding-bottom: 40px;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 0;
   }
 
   .promo-content {
@@ -313,7 +328,7 @@
   }
 
   .promo-headline {
-    font-size: 36px;
+    font-size: 32px;
   }
 
   .promo-badge {
@@ -322,14 +337,12 @@
 }
 
 @media (max-width: 480px) {
-  .promo-banner {
-    height: 85vh;
-    min-height: 480px;
-    padding: 0;
+  .promo-banner-image {
+    height: 65vw;
   }
 
   .promo-headline {
-    font-size: 30px;
+    font-size: 26px;
     letter-spacing: -0.5px;
   }
 
