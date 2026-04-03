@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import { LogOut, Sun, Moon } from 'lucide-react';
 import { getAdminUser, clearAdminAuth } from '../../lib/adminAuth';
 import './AdminHeader.css';
@@ -16,6 +16,10 @@ export default function AdminHeader({ theme, onToggleTheme }) {
       <div className="adm-header-left">
         <img src="/logo-main.svg" alt="Elusive Racing" className="adm-logo" />
         <span className="adm-header-title">Admin</span>
+        <nav className="adm-nav">
+          <NavLink to="/admin/products" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Products</NavLink>
+          <NavLink to="/admin/promo-banner" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Promo Banner</NavLink>
+        </nav>
       </div>
       <div className="adm-header-right">
         <span className="adm-user">{getAdminUser()}</span>

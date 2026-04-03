@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminProductForm from './pages/admin/AdminProductForm';
+import AdminPromoBanner from './pages/admin/AdminPromoBanner';
 import AdminRoute from './components/admin/AdminRoute';
 
 function ScrollToTop() {
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
         <Route path="/admin/products/new" element={<AdminRoute><AdminProductForm /></AdminRoute>} />
         <Route path="/admin/products/:id" element={<AdminRoute><AdminProductForm /></AdminRoute>} />
+        <Route path="/admin/promo-banner" element={<AdminRoute><AdminPromoBanner /></AdminRoute>} />
 
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />

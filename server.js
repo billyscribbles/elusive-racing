@@ -642,6 +642,70 @@ async function handleAdminDeleteProduct(req, res, id) {
   }
 }
 
+// ── Promo Banner ─────────────────────────────────────────────────────────────
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PROMO_FILE = path.join(__dirname, 'data', 'promo-banner.json');
+
+const PROMO_DEFAULTS = {
+  visible: true,
+  title: 'Performance Parts',
+  subtitle: '10% off all in stock products',
+  subtext: "Sale ends 06/04/2024. Don't miss out on our best deals of the season!",
+  image: '/promo-banner.jpg',
+  ctaLabel: 'Shop Sale Now',
+  ctaUrl: '/shop?sale=1',
+};
+
+function readPromoBanner() {
+  try {
+    return JSON.parse(fs.readFileSync(PROMO_FILE, 'utf8'));
+  } catch {
+    return { ...PROMO_DEFAULTS };
+  }
+}
+
+function writePromoBanner(data) {
+  fs.mkdirSync(path.dirname(PROMO_FILE), { recursive: true });
+  fs.writeFileSync(PROMO_FILE, JSON.stringify(data, null, 2));
+}
+
+async function handleAdminGetPromoBanner(req, res) {
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  adminJson(res, 200, readPromoBanner());
+}
+
+async function handleAdminSavePromoBanner(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'PUT') { res.writeHead(405); res.end(); return; }
+  try {
+    const body = await readBody(req);
+    const current = readPromoBanner();
+    const updated = { ...current, ...body };
+    writePromoBanner(updated);
+    adminJson(res, 200, updated);
+  } catch (err) {
+    console.error('[admin] save promo banner:', err.message);
+    adminJson(res, 500, { error: 'Failed to save.' });
+  }
+}
+
+async function handleAdminPromoBannerImage(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  try {
+    const { imageBase64, mimeType } = await readBody(req);
+    const ext = (mimeType || 'image/jpeg').split('/')[1].replace('jpeg', 'jpg');
+    const filename = `promo-banner.${ext}`;
+    const dest = path.join(__dirname, 'public', filename);
+    fs.writeFileSync(dest, Buffer.from(imageBase64, 'base64'));
+    adminJson(res, 200, { url: `/${filename}` });
+  } catch (err) {
+    console.error('[admin] promo banner image upload:', err.message);
+    adminJson(res, 500, { error: 'Failed to upload image.' });
+  }
+}
+
 async function handleAdminCategories(req, res) {
   if (!requireAdminAuth(req, res)) return;
   try {
@@ -1097,6 +1161,9 @@ const server = http.createServer((req, res) => {
 
   // Admin API
   if (req.url === '/api/admin/login') { handleAdminLogin(req, res); return; }
+  if (req.url === '/api/admin/promo-banner' && req.method === 'GET') { handleAdminGetPromoBanner(req, res); return; }
+  if (req.url === '/api/admin/promo-banner' && req.method === 'PUT') { handleAdminSavePromoBanner(req, res); return; }
+  if (req.url === '/api/admin/promo-banner/image' && req.method === 'POST') { handleAdminPromoBannerImage(req, res); return; }
   if (req.url.startsWith('/api/admin/categories')) { handleAdminCategories(req, res); return; }
   if (req.url.startsWith('/api/admin/products')) {
     const m = req.url.match(/^\/api\/admin\/products\/(\d+)/);
