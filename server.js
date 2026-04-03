@@ -1,6 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
@@ -30,6 +31,10 @@ const MS_HOST = process.env.MEILISEARCH_HOST;
 const MS_KEY  = process.env.MEILISEARCH_ADMIN_KEY;
 const MS_INDEX = 'products';
 const SYNC_TOKEN = process.env.SEARCH_SYNC_TOKEN || '';
+
+const ADMIN_USERNAME   = process.env.ADMIN_USERNAME   || '';
+const ADMIN_PASSWORD   = process.env.ADMIN_PASSWORD   || '';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'change-me-in-production';
 
 const BRAND_TERMS = [
   'skunk2', 'k-tuned', 'ktuned', 'hondata', 'exedy', 'bc racing', 'hks', 'arp', 'acl',
@@ -463,6 +468,193 @@ async function handleChat(req, res) {
       res.end(JSON.stringify({ error: 'Something went wrong. Please try again.' }));
     }
   });
+}
+
+// ── Admin auth helpers ────────────────────────────────────────────────────────
+
+function signAdminToken(username) {
+  const payload = { sub: username, exp: Date.now() + 8 * 60 * 60 * 1000 };
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig  = crypto.createHmac('sha256', ADMIN_JWT_SECRET).update(data).digest('base64url');
+  return `${data}.${sig}`;
+}
+
+function verifyAdminToken(token) {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [data, sig] = parts;
+  const expected = crypto.createHmac('sha256', ADMIN_JWT_SECRET).update(data).digest('base64url');
+  if (sig !== expected) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
+    if (payload.exp < Date.now()) return null;
+    return payload;
+  } catch { return null; }
+}
+
+function requireAdminAuth(req, res) {
+  const auth = req.headers['authorization'] || '';
+  if (!verifyAdminToken(auth.startsWith('Bearer ') ? auth.slice(7) : null)) {
+    res.writeHead(401, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ error: 'Unauthorised' }));
+    return false;
+  }
+  return true;
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+    req.on('error', reject);
+  });
+}
+
+function wcAuth() {
+  return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+}
+
+function adminJson(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  res.end(JSON.stringify(data));
+}
+
+// ── Admin route handlers ──────────────────────────────────────────────────────
+
+async function handleAdminLogin(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  try {
+    const { username, password } = await readBody(req);
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+      return adminJson(res, 503, { error: 'Admin credentials not configured on server.' });
+    }
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+      return adminJson(res, 401, { error: 'Invalid username or password.' });
+    }
+    adminJson(res, 200, { token: signAdminToken(username), username });
+  } catch {
+    res.writeHead(400); res.end();
+  }
+}
+
+async function handleAdminListProducts(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  const url     = new URL(req.url, 'http://localhost');
+  const page    = url.searchParams.get('page')     || '1';
+  const perPage = url.searchParams.get('per_page') || '20';
+  const search  = url.searchParams.get('search')   || '';
+  const status  = url.searchParams.get('status')   || 'any';
+  try {
+    const params = new URLSearchParams({
+      page, per_page: perPage, status,
+      _fields: 'id,name,slug,sku,price,regular_price,sale_price,stock_status,status,images,categories,attributes,brands,short_description,date_created,total_sales',
+    });
+    if (search) params.set('search', search);
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/products?${params}`, { headers: { Authorization: wcAuth() } });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    const products   = await r.json();
+    const total      = parseInt(r.headers.get('X-WP-Total')      || '0', 10);
+    const totalPages = parseInt(r.headers.get('X-WP-TotalPages') || '1', 10);
+    adminJson(res, 200, { products, total, totalPages });
+  } catch (err) {
+    console.error('[admin] list products:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch products.' });
+  }
+}
+
+async function handleAdminGetProduct(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  try {
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/products/${id}`, { headers: { Authorization: wcAuth() } });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    adminJson(res, 200, await r.json());
+  } catch (err) {
+    console.error('[admin] get product:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch product.' });
+  }
+}
+
+async function handleAdminCreateProduct(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  try {
+    const data = await readBody(req);
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify(data),
+    });
+    const product = await r.json();
+    if (!r.ok) return adminJson(res, 400, { error: product.message || 'Failed to create product.' });
+    // Sync new product to Meilisearch immediately
+    if (MS_HOST && MS_KEY) {
+      const ms = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      await ms.index(MS_INDEX).addDocuments([normaliseMsProduct(product)], { primaryKey: 'id' });
+    }
+    adminJson(res, 201, product);
+  } catch (err) {
+    console.error('[admin] create product:', err.message);
+    adminJson(res, 500, { error: 'Failed to create product.' });
+  }
+}
+
+async function handleAdminUpdateProduct(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  try {
+    const data = await readBody(req);
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify(data),
+    });
+    const product = await r.json();
+    if (!r.ok) return adminJson(res, 400, { error: product.message || 'Failed to update product.' });
+    // Upsert in Meilisearch
+    if (MS_HOST && MS_KEY) {
+      const ms = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      await ms.index(MS_INDEX).addDocuments([normaliseMsProduct(product)], { primaryKey: 'id' });
+    }
+    adminJson(res, 200, product);
+  } catch (err) {
+    console.error('[admin] update product:', err.message);
+    adminJson(res, 500, { error: 'Failed to update product.' });
+  }
+}
+
+async function handleAdminDeleteProduct(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  try {
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/products/${id}?force=true`, {
+      method: 'DELETE',
+      headers: { Authorization: wcAuth() },
+    });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    // Remove from Meilisearch
+    if (MS_HOST && MS_KEY) {
+      const ms = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      await ms.index(MS_INDEX).deleteDocument(String(id));
+    }
+    adminJson(res, 200, { success: true });
+  } catch (err) {
+    console.error('[admin] delete product:', err.message);
+    adminJson(res, 500, { error: 'Failed to delete product.' });
+  }
+}
+
+async function handleAdminCategories(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  try {
+    const r = await fetch(
+      `${WC_URL}/wp-json/wc/v3/products/categories?per_page=100&orderby=name&order=asc&_fields=id,name,slug,parent`,
+      { headers: { Authorization: wcAuth() } }
+    );
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    adminJson(res, 200, await r.json());
+  } catch (err) {
+    console.error('[admin] categories:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch categories.' });
+  }
 }
 
 // ── WooCommerce product webhooks ──────────────────────────────────────────────
@@ -901,6 +1093,21 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/chat' || req.url.startsWith('/api/chat?')) {
     handleChat(req, res);
     return;
+  }
+
+  // Admin API
+  if (req.url === '/api/admin/login') { handleAdminLogin(req, res); return; }
+  if (req.url.startsWith('/api/admin/categories')) { handleAdminCategories(req, res); return; }
+  if (req.url.startsWith('/api/admin/products')) {
+    const m = req.url.match(/^\/api\/admin\/products\/(\d+)/);
+    if (m) {
+      if (req.method === 'GET')    { handleAdminGetProduct(req, res, m[1]);    return; }
+      if (req.method === 'PUT')    { handleAdminUpdateProduct(req, res, m[1]); return; }
+      if (req.method === 'DELETE') { handleAdminDeleteProduct(req, res, m[1]); return; }
+    } else {
+      if (req.method === 'GET')  { handleAdminListProducts(req, res);  return; }
+      if (req.method === 'POST') { handleAdminCreateProduct(req, res); return; }
+    }
   }
 
   // WooCommerce product webhooks

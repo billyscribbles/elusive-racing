@@ -1,0 +1,72 @@
+.adm-header {
+  background: #1c1c1e;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  transition: background 0.2s, border-color 0.2s;
+}
+.adm-header[data-admin-theme="light"] {
+  background: #fff;
+  border-bottom-color: #e8e8e8;
+}
+
+.adm-header-left { display: flex; align-items: center; gap: 16px; }
+.adm-logo { height: 36px; width: auto; object-fit: contain; }
+.adm-header-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #555;
+  padding-left: 16px;
+  border-left: 1px solid #333;
+  transition: color 0.2s, border-color 0.2s;
+}
+.adm-header[data-admin-theme="light"] .adm-header-title { color: #aaa; border-left-color: #e0e0e0; }
+
+.adm-header-right { display: flex; align-items: center; gap: 12px; }
+
+.adm-user {
+  font-size: 0.9rem;
+  color: #777;
+  transition: color 0.2s;
+}
+.adm-header[data-admin-theme="light"] .adm-user { color: #999; }
+
+.adm-icon-btn {
+  background: none;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  transition: all 0.15s;
+}
+.adm-icon-btn:hover { border-color: #d94040; color: #d94040; }
+.adm-header[data-admin-theme="light"] .adm-icon-btn { border-color: #e0e0e0; color: #888; }
+.adm-header[data-admin-theme="light"] .adm-icon-btn:hover { border-color: #d94040; color: #d94040; }
+
+.adm-logout {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  transition: all 0.15s;
+}
+.adm-logout:hover { border-color: #555; color: #ccc; }
+.adm-header[data-admin-theme="light"] .adm-logout { border-color: #e0e0e0; color: #777; }
+.adm-header[data-admin-theme="light"] .adm-logout:hover { border-color: #aaa; color: #333; }

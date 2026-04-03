@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminProductForm from './pages/admin/AdminProductForm';
+import AdminRoute from './components/admin/AdminRoute';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -31,6 +35,12 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
+        {/* Admin routes — no site layout */}
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+        <Route path="/admin/products/new" element={<AdminRoute><AdminProductForm /></AdminRoute>} />
+        <Route path="/admin/products/:id" element={<AdminRoute><AdminProductForm /></AdminRoute>} />
+
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="/services" element={<ServicesPage />} />
