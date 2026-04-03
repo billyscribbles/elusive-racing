@@ -269,8 +269,32 @@
 .apb-calendar-popover .rdp-root { padding: 12px; }
 .apb-calendar-popover .rdp-month_caption { padding: 4px 8px 12px; }
 .apb-calendar-popover .rdp-caption_label { font-weight: 700; font-size: 0.95rem; }
-.apb-calendar-popover .rdp-nav button { color: #888; }
-.apb-calendar-popover .rdp-nav button:hover { color: #d94040; background: rgba(217,64,64,0.1); }
+.apb-calendar-popover .rdp-nav button,
+.apb-calendar-popover .rdp-button_previous,
+.apb-calendar-popover .rdp-button_next {
+  color: #d94040 !important;
+  background: transparent !important;
+  border: none !important;
+}
+.apb-calendar-popover .rdp-nav button svg,
+.apb-calendar-popover .rdp-button_previous svg,
+.apb-calendar-popover .rdp-button_next svg,
+.apb-calendar-popover .rdp-nav button svg *,
+.apb-calendar-popover .rdp-button_previous svg *,
+.apb-calendar-popover .rdp-button_next svg * {
+  color: #d94040 !important;
+  fill: #d94040 !important;
+  stroke: #d94040 !important;
+}
+.apb-calendar-popover .rdp-nav button:hover,
+.apb-calendar-popover .rdp-button_previous:hover,
+.apb-calendar-popover .rdp-button_next:hover { background: rgba(217,64,64,0.15) !important; }
+.apb-calendar-popover .rdp-nav button:hover svg *,
+.apb-calendar-popover .rdp-button_previous:hover svg *,
+.apb-calendar-popover .rdp-button_next:hover svg * {
+  fill: #c03333 !important;
+  stroke: #c03333 !important;
+}
 .apb-calendar-popover .rdp-weekday { color: #555; font-size: 0.75rem; font-weight: 600; }
 .apb-calendar-popover--light .rdp-weekday { color: #aaa; }
 .apb-calendar-popover .rdp-day_button { border-radius: 8px; font-size: 0.88rem; color: #ccc; }
