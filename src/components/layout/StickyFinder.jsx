@@ -11,8 +11,14 @@ export default function StickyFinder() {
 
   const models = make ? (vehicleData.models[make] || []) : [];
 
-  // Animate bar in/out on scroll
+  // Animate bar in/out on scroll + keep --finder-height in sync
   useEffect(() => {
+    const setFinderHeight = (visible) => {
+      if (window.innerWidth > 900) {
+        document.documentElement.style.setProperty('--finder-height', visible ? '52px' : '0px');
+      }
+    };
+
     let ticking = false;
     const bar = document.querySelector('.sticky-finder');
     const onScroll = () => {
@@ -20,24 +26,22 @@ export default function StickyFinder() {
       ticking = true;
       requestAnimationFrame(() => {
         const threshold = window.innerWidth <= 900 ? 200 : window.innerHeight * 0.55;
-        bar?.classList.toggle('sticky-finder--visible', window.scrollY > threshold);
+        const visible = window.scrollY > threshold;
+        bar?.classList.toggle('sticky-finder--visible', visible);
+        setFinderHeight(visible);
         ticking = false;
       });
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
-  useEffect(() => {
-    const bar = document.querySelector('.sticky-finder');
-    const visible = bar?.classList.contains('sticky-finder--visible');
-    if (window.innerWidth > 900) {
-      document.documentElement.style.setProperty('--finder-height', visible ? '52px' : '0px');
-    }
+    // Initialise on mount
+    setFinderHeight(false);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      document.documentElement.style.setProperty('--finder-height', '0px');
+      window.removeEventListener('scroll', onScroll);
+      setFinderHeight(false);
     };
-  });
+  }, []);
 
   function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
   function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
