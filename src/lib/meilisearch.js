@@ -131,24 +131,39 @@ export async function queryProducts({
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
 
-  // Sort
+  // Sort — some fields (totalSales, averageRating) require a prior sync to become
+  // sortable. If Meilisearch rejects the sort, we fall back to relevance so
+  // products always appear rather than silently returning zero results.
   const sortMap = {
-    'price-asc':  ['price:asc'],
-    'price-desc': ['price:desc'],
-    'newest':     ['dateCreated:desc'],
-    'a-z':        ['title:asc'],
-    'z-a':        ['title:desc'],
-    // 'best-selling' and 'rating' fall through to default (relevance) —
-    // totalSales/averageRating are not indexed fields
+    'price-asc':    ['price:asc'],
+    'price-desc':   ['price:desc'],
+    'newest':       ['dateCreated:desc'],
+    'best-selling': ['totalSales:desc'],
+    'rating':       ['averageRating:desc'],
+    'a-z':          ['title:asc'],
+    'z-a':          ['title:desc'],
   };
   const sortParam = sortMap[sort] || [];
 
-  const results = await index.search(effectiveQuery, {
-    offset:  (page - 1) * perPage,
-    limit:   perPage,
-    filter:  filters.length ? filters.join(' AND ') : undefined,
-    sort:    sortParam.length ? sortParam : undefined,
-  });
+  const searchOpts = {
+    offset: (page - 1) * perPage,
+    limit:  perPage,
+    filter: filters.length ? filters.join(' AND ') : undefined,
+    sort:   sortParam.length ? sortParam : undefined,
+  };
+
+  let results;
+  try {
+    results = await index.search(effectiveQuery, searchOpts);
+  } catch (err) {
+    // If the sort field isn't sortable yet (e.g. fresh index before first sync),
+    // retry without sort so products still appear.
+    if (sortParam.length && err?.message?.includes('not sortable')) {
+      results = await index.search(effectiveQuery, { ...searchOpts, sort: undefined });
+    } else {
+      throw err;
+    }
+  }
 
   return {
     hits:       results.hits,

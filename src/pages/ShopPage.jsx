@@ -284,12 +284,14 @@ export default function ShopPage() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [totalProducts, setTotalProducts] = useState(0);
   const [apiTotalPages, setApiTotalPages] = useState(1);
 
   // Refetch products whenever any filter/sort/page changes
   useEffect(() => {
     setLoading(true);
+    setLoadError(null);
     queryProducts({
       query: qParam,
       page: pageParam,
@@ -311,7 +313,10 @@ export default function ShopPage() {
         setTotalProducts(totalHits);
         setApiTotalPages(totalPages);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('[ShopPage] queryProducts failed:', err);
+        setLoadError('Failed to load products. Please try again.');
+      })
       .finally(() => setLoading(false));
   }, [
     qParam,
@@ -977,6 +982,8 @@ export default function ShopPage() {
               Array.from({ length: perPageParam }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))
+            ) : loadError ? (
+              <p className="shop-no-results">{loadError}</p>
             ) : paginated.length === 0 ? (
               <p className="shop-no-results">
                 No products found. Try adjusting your filters.
