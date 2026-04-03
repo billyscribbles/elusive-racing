@@ -285,7 +285,20 @@ When a question is too complex, requires exact fitment confirmation, or the cust
 // ── Meilisearch product sync ──────────────────────────────────────────────────
 
 const WC_SYNC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created,variations';
+  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created,variations,total_sales,average_rating';
+
+const FITMENT_ATTR_NAMES = ['make', 'model', 'year', 'vehicle', 'vehicles', 'fitment', 'compatible', 'application', 'fits'];
+
+function extractFitmentTags(p) {
+  const tags = new Set();
+  (p.tags ?? []).forEach(t => tags.add(t.name.toLowerCase()));
+  (p.attributes ?? []).forEach(attr => {
+    if (FITMENT_ATTR_NAMES.some(n => attr.name.toLowerCase().includes(n))) {
+      (attr.options ?? []).forEach(opt => tags.add(opt.toLowerCase()));
+    }
+  });
+  return Array.from(tags);
+}
 
 function decodeHtml(str) {
   return (str ?? '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
@@ -315,7 +328,10 @@ function normaliseMsProduct(p) {
     tags:            (p.tags  ?? []).map(t => decodeHtml(t.name)),
     categories:      (p.categories ?? []).map(c => decodeHtml(c.name)),
     categoryHandles: (p.categories ?? []).map(c => c.slug),
+    fitmentTags:     extractFitmentTags(p),
     dateCreated:     p.date_created || '',
+    totalSales:      parseInt(p.total_sales || '0', 10),
+    averageRating:   parseFloat(p.average_rating || '0'),
   };
 }
 
@@ -334,9 +350,9 @@ async function runMsSync() {
     const index = ms.index(MS_INDEX);
 
     await index.updateSettings({
-      searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'categories', 'description'],
-      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price', 'handle'],
-      sortableAttributes:   ['price', 'regularPrice', 'dateCreated', 'title'],
+      searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'fitmentTags', 'categories', 'description'],
+      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price', 'fitmentTags', 'handle'],
+      sortableAttributes:   ['price', 'regularPrice', 'dateCreated', 'totalSales', 'averageRating', 'title'],
       pagination:           { maxTotalHits: 10000 },
     });
 
@@ -445,6 +461,51 @@ async function handleChat(req, res) {
       console.error('Chat API error:', err);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Something went wrong. Please try again.' }));
+    }
+  });
+}
+
+// ── WooCommerce product webhooks ──────────────────────────────────────────────
+// Register these in WC: WooCommerce → Settings → Advanced → Webhooks
+// Delivery URL: https://your-domain/api/webhook/product-updated  (etc.)
+
+async function handleProductWebhook(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const p = JSON.parse(body);
+      if (!MS_HOST || !MS_KEY) { res.writeHead(200); res.end(); return; }
+      const ms    = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      const index = ms.index(MS_INDEX);
+      const doc   = normaliseMsProduct(p);
+      await index.addDocuments([doc], { primaryKey: 'id' });
+      console.log(`[webhook] Upserted product ${doc.id} (${doc.title})`);
+      res.writeHead(200); res.end();
+    } catch (err) {
+      console.error('[webhook] upsert error:', err.message);
+      res.writeHead(500); res.end();
+    }
+  });
+}
+
+async function handleProductDeleteWebhook(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const p = JSON.parse(body);
+      if (!MS_HOST || !MS_KEY) { res.writeHead(200); res.end(); return; }
+      const ms    = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      const index = ms.index(MS_INDEX);
+      await index.deleteDocument(String(p.id));
+      console.log(`[webhook] Deleted product ${p.id}`);
+      res.writeHead(200); res.end();
+    } catch (err) {
+      console.error('[webhook] delete error:', err.message);
+      res.writeHead(500); res.end();
     }
   });
 }
@@ -840,6 +901,14 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/chat' || req.url.startsWith('/api/chat?')) {
     handleChat(req, res);
     return;
+  }
+
+  // WooCommerce product webhooks
+  if (req.url === '/api/webhook/product-created' || req.url === '/api/webhook/product-updated') {
+    handleProductWebhook(req, res); return;
+  }
+  if (req.url === '/api/webhook/product-deleted') {
+    handleProductDeleteWebhook(req, res); return;
   }
 
   // Shipping rates proxy
