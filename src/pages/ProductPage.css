@@ -68,6 +68,7 @@
 .product-image-col {
   position: sticky;
   top: 110px;
+  min-width: 0;
 }
 
 .product-image-main {
@@ -239,6 +240,10 @@
 }
 
 /* Info column */
+.product-info-col {
+  min-width: 0;
+}
+
 .product-page-brand-above-image {
   display: flex;
   justify-content: center;
@@ -252,9 +257,10 @@
 }
 
 .product-page-brand-logo {
-  height: 90px;
   width: auto;
-  max-width: 240px;
+  max-width: 200px;
+  height: auto;
+  max-height: 90px;
   object-fit: contain;
   opacity: 0.85;
 }

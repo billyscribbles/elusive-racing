@@ -133,13 +133,13 @@ export async function queryProducts({
 
   // Sort
   const sortMap = {
-    'price-asc':    ['price:asc'],
-    'price-desc':   ['price:desc'],
-    'newest':       ['dateCreated:desc'],
-    'best-selling': ['totalSales:desc'],
-    'rating':       ['averageRating:desc'],
-    'a-z':          ['title:asc'],
-    'z-a':          ['title:desc'],
+    'price-asc':  ['price:asc'],
+    'price-desc': ['price:desc'],
+    'newest':     ['dateCreated:desc'],
+    'a-z':        ['title:asc'],
+    'z-a':        ['title:desc'],
+    // 'best-selling' and 'rating' fall through to default (relevance) —
+    // totalSales/averageRating are not indexed fields
   };
   const sortParam = sortMap[sort] || [];
 
