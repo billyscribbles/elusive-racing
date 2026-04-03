@@ -199,6 +199,97 @@
 
 .apb-file-input { display: none; }
 
+/* Date picker */
+.apb-datepicker-wrap { position: relative; }
+
+.apb-datepicker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: #111;
+  border: 1px solid #2e2e30;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s;
+}
+.apb-datepicker-trigger span:first-of-type { flex: 1; }
+.apb-datepicker-trigger:hover,
+.apb-datepicker-trigger--open { border-color: #d94040; color: #d8d8d8; }
+.apb-page[data-admin-theme="light"] .apb-datepicker-trigger { background: #f7f7f8; border-color: #ddd; color: #777; }
+.apb-page[data-admin-theme="light"] .apb-datepicker-trigger:hover,
+.apb-page[data-admin-theme="light"] .apb-datepicker-trigger--open { border-color: #d94040; color: #333; }
+
+.apb-datepicker-clear {
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  color: #555;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.apb-datepicker-clear:hover { color: #d94040; background: rgba(217,64,64,0.1); }
+
+.apb-calendar-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  background: #1c1c1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  overflow: hidden;
+
+  /* Override react-day-picker CSS vars for dark theme */
+  --rdp-accent-color: #d94040;
+  --rdp-accent-background-color: rgba(217, 64, 64, 0.15);
+  --rdp-background-color: #2a2a2c;
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-font-size: 0.9rem;
+  color: #d8d8d8;
+}
+
+/* Light variant */
+.apb-calendar-popover--light {
+  background: #fff;
+  border-color: #e8e8e8;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  --rdp-background-color: #f0f0f2;
+  color: #111;
+}
+
+/* Day picker internal tweaks */
+.apb-calendar-popover .rdp-root { padding: 12px; }
+.apb-calendar-popover .rdp-month_caption { padding: 4px 8px 12px; }
+.apb-calendar-popover .rdp-caption_label { font-weight: 700; font-size: 0.95rem; }
+.apb-calendar-popover .rdp-nav button { color: #888; }
+.apb-calendar-popover .rdp-nav button:hover { color: #d94040; background: rgba(217,64,64,0.1); }
+.apb-calendar-popover .rdp-weekday { color: #555; font-size: 0.75rem; font-weight: 600; }
+.apb-calendar-popover--light .rdp-weekday { color: #aaa; }
+.apb-calendar-popover .rdp-day_button { border-radius: 8px; font-size: 0.88rem; color: #ccc; }
+.apb-calendar-popover--light .rdp-day_button { color: #333; }
+.apb-calendar-popover .rdp-day_button:hover { background: rgba(217,64,64,0.15); color: #fff; }
+.apb-calendar-popover .rdp-selected .rdp-day_button { background: #d94040 !important; color: #fff !important; }
+.apb-calendar-popover .rdp-disabled .rdp-day_button { opacity: 0.25; cursor: not-allowed; }
+.apb-calendar-popover .rdp-outside .rdp-day_button { opacity: 0.3; }
+.apb-calendar-popover .rdp-today:not(.rdp-selected) .rdp-day_button { color: #d94040; font-weight: 700; }
+
+.apb-expiry-note {
+  font-size: 0.82rem;
+  color: #666;
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+.apb-expiry-note strong { color: #d94040; }
+.apb-page[data-admin-theme="light"] .apb-expiry-note { color: #999; }
+
 .apb-image-hint {
   font-size: 0.8rem;
   color: #555;

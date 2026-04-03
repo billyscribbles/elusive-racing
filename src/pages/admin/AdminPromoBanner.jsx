@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImagePlus, Save, Eye, EyeOff } from 'lucide-react';
+import { ImagePlus, Save, Eye, EyeOff, CalendarDays, X } from 'lucide-react';
+import { DayPicker } from 'react-day-picker';
+import { format, parseISO } from 'date-fns';
+import 'react-day-picker/style.css';
 import { adminFetch, clearAdminAuth, useAdminTheme } from '../../lib/adminAuth';
 import AdminHeader from '../../components/admin/AdminHeader';
 import './AdminPromoBanner.css';
@@ -18,14 +21,16 @@ const DEFAULTS = {
 export default function AdminPromoBanner() {
   const navigate = useNavigate();
   const { theme, toggle: toggleTheme } = useAdminTheme();
-  const fileRef = useRef(null);
+  const fileRef    = useRef(null);
+  const calendarRef = useRef(null);
 
-  const [form, setForm]         = useState(DEFAULTS);
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
+  const [form, setForm]           = useState(DEFAULTS);
+  const [loading, setLoading]     = useState(true);
+  const [saving, setSaving]       = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview]   = useState(null);
-  const [toast, setToast]       = useState(null);
+  const [preview, setPreview]     = useState(null);
+  const [toast, setToast]         = useState(null);
+  const [calOpen, setCalOpen]     = useState(false);
 
   useEffect(() => {
     adminFetch('/api/admin/promo-banner')
@@ -35,9 +40,26 @@ export default function AdminPromoBanner() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
+  // Close calendar on outside click
+  useEffect(() => {
+    if (!calOpen) return;
+    function handler(e) {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) setCalOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [calOpen]);
+
   function set(field, value) {
     setForm(f => ({ ...f, [field]: value }));
   }
+
+  function handleDaySelect(day) {
+    set('expiresAt', day ? format(day, 'yyyy-MM-dd') : '');
+    setCalOpen(false);
+  }
+
+  const selectedDate = form.expiresAt ? parseISO(form.expiresAt) : undefined;
 
   async function handleImageChange(e) {
     const file = e.target.files?.[0];
@@ -126,9 +148,10 @@ export default function AdminPromoBanner() {
             {/* ── Left: form ── */}
             <div className="apb-form-col">
 
-              {/* Visibility toggle */}
+              {/* Visibility */}
               <div className="apb-card">
                 <div className="apb-card-header">Visibility</div>
+
                 <div className="apb-field">
                   <label className="apb-toggle-row" onClick={() => set('visible', !form.visible)}>
                     <div className={`apb-toggle${form.visible ? ' apb-toggle--on' : ''}`}>
@@ -141,6 +164,58 @@ export default function AdminPromoBanner() {
                       }
                     </span>
                   </label>
+                </div>
+
+                <div className="apb-field">
+                  <label className="apb-label">
+                    Auto-hide after date <span className="apb-hint">(optional)</span>
+                  </label>
+
+                  <div className="apb-datepicker-wrap" ref={calendarRef}>
+                    <button
+                      type="button"
+                      className={`apb-datepicker-trigger${calOpen ? ' apb-datepicker-trigger--open' : ''}`}
+                      onClick={() => setCalOpen(o => !o)}
+                    >
+                      <CalendarDays size={15} />
+                      <span>
+                        {selectedDate
+                          ? format(selectedDate, 'dd MMM yyyy')
+                          : 'Pick an expiry date…'
+                        }
+                      </span>
+                      {selectedDate && (
+                        <span
+                          className="apb-datepicker-clear"
+                          role="button"
+                          tabIndex={0}
+                          onClick={e => { e.stopPropagation(); handleDaySelect(null); }}
+                          onKeyDown={e => e.key === 'Enter' && handleDaySelect(null)}
+                          aria-label="Clear date"
+                        >
+                          <X size={13} />
+                        </span>
+                      )}
+                    </button>
+
+                    {calOpen && (
+                      <div className={`apb-calendar-popover${theme === 'light' ? ' apb-calendar-popover--light' : ''}`}>
+                        <DayPicker
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={handleDaySelect}
+                          disabled={{ before: new Date() }}
+                          showOutsideDays
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedDate && (
+                    <p className="apb-expiry-note">
+                      Banner will auto-hide after <strong>{format(selectedDate, 'EEEE d MMMM yyyy')}</strong>
+                    </p>
+                  )}
                 </div>
               </div>
 

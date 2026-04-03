@@ -644,7 +644,6 @@ async function handleAdminDeleteProduct(req, res, id) {
 
 // ── Promo Banner ─────────────────────────────────────────────────────────────
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROMO_FILE = path.join(__dirname, 'data', 'promo-banner.json');
 
 const PROMO_DEFAULTS = {
