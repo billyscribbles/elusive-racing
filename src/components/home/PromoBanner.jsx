@@ -21,7 +21,8 @@ export default function PromoBanner() {
       .catch(() => setConfig(DEFAULTS));
   }, []);
 
-  if (!config || !config.visible) return null;
+  const expired = config?.expiresAt && new Date(config.expiresAt + 'T23:59:59') < new Date();
+  if (!config || !config.visible || expired) return null;
 
   return (
     <section className="promo-banner">
