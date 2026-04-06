@@ -576,6 +576,23 @@ async function handleAdminGetProduct(req, res, id) {
   }
 }
 
+async function handleAdminProductImageUpload(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  try {
+    const { imageBase64, mimeType } = await readBody(req);
+    const ext = (mimeType || 'image/jpeg').split('/')[1].replace('jpeg', 'jpg');
+    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const uploadDir = path.join(__dirname, 'dist', 'uploads', 'products');
+    fs.mkdirSync(uploadDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadDir, safeName), Buffer.from(imageBase64, 'base64'));
+    adminJson(res, 200, { url: `/uploads/products/${safeName}` });
+  } catch (err) {
+    console.error('[admin] product image upload:', err.message);
+    adminJson(res, 500, { error: 'Failed to upload image.' });
+  }
+}
+
 async function handleAdminCreateProduct(req, res) {
   if (!requireAdminAuth(req, res)) return;
   try {
@@ -702,6 +719,21 @@ async function handleAdminPromoBannerImage(req, res) {
   } catch (err) {
     console.error('[admin] promo banner image upload:', err.message);
     adminJson(res, 500, { error: 'Failed to upload image.' });
+  }
+}
+
+async function handleAdminTags(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  try {
+    const r = await fetch(
+      `${WC_URL}/wp-json/wc/v3/tags?per_page=100&orderby=count&order=desc`,
+      { headers: { Authorization: wcAuth() } }
+    );
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    adminJson(res, 200, await r.json());
+  } catch (err) {
+    console.error('[admin] tags:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch tags.' });
   }
 }
 
@@ -1163,7 +1195,9 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/admin/promo-banner' && req.method === 'GET') { handleAdminGetPromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner' && req.method === 'PUT') { handleAdminSavePromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner/image' && req.method === 'POST') { handleAdminPromoBannerImage(req, res); return; }
+  if (req.url.startsWith('/api/admin/tags'))       { handleAdminTags(req, res);       return; }
   if (req.url.startsWith('/api/admin/categories')) { handleAdminCategories(req, res); return; }
+  if (req.url === '/api/admin/products/upload-image' && req.method === 'POST') { handleAdminProductImageUpload(req, res); return; }
   if (req.url.startsWith('/api/admin/products')) {
     const m = req.url.match(/^\/api\/admin\/products\/(\d+)/);
     if (m) {

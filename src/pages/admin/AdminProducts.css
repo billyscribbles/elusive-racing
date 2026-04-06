@@ -4,6 +4,45 @@
 /* Main */
 .ap-main { max-width: 1280px; margin: 0 auto; padding: 32px; }
 
+/* Status Tabs */
+.ap-status-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #2a2a2a;
+  padding-bottom: 0;
+}
+.ap-status-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 8px 14px 10px;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ap-status-tab:hover { color: #d0d0d0; }
+.ap-status-tab--active { color: #f0f0f0; border-bottom-color: #d94040; }
+.ap-status-count {
+  background: #2a2a2a;
+  border-radius: 10px;
+  color: #888;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 1px 7px;
+}
+.ap-page[data-admin-theme="light"] .ap-status-tabs { border-bottom-color: #e5e5e5; }
+.ap-page[data-admin-theme="light"] .ap-status-tab { color: #aaa; }
+.ap-page[data-admin-theme="light"] .ap-status-tab:hover { color: #555; }
+.ap-page[data-admin-theme="light"] .ap-status-tab--active { color: #111; }
+.ap-page[data-admin-theme="light"] .ap-status-count { background: #eee; color: #888; }
+
 /* Toolbar */
 .ap-toolbar {
   display: flex;

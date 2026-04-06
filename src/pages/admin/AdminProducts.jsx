@@ -18,19 +18,21 @@ export default function AdminProducts() {
   const [page, setPage]           = useState(1);
   const [search, setSearch]       = useState('');
   const [localSearch, setLocalSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('any');
   const [deleting, setDeleting]   = useState(null);
   const debounceRef = useRef(null);
   const PER_PAGE = 20;
 
   useEffect(() => {
     fetchProducts();
-  }, [page, search]);
+  }, [page, search, statusFilter]);
 
   async function fetchProducts() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page, per_page: PER_PAGE });
       if (search) params.set('search', search);
+      if (statusFilter !== 'any') params.set('status', statusFilter);
       const res  = await adminFetch(`/api/admin/products?${params}`);
       if (res.status === 401) { clearAdminAuth(); navigate('/admin'); return; }
       const data = await res.json();
@@ -59,6 +61,11 @@ export default function AdminProducts() {
     setPage(1);
   }
 
+  function handleStatusFilter(s) {
+    setStatusFilter(s);
+    setPage(1);
+  }
+
   async function handleDelete(product) {
     if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
     setDeleting(product.id);
@@ -84,6 +91,19 @@ export default function AdminProducts() {
       <AdminHeader theme={theme} onToggleTheme={toggleTheme} />
 
       <main className="ap-main">
+        <div className="ap-status-tabs">
+          {[['any', 'All'], ['publish', 'Published'], ['draft', 'Drafts']].map(([val, label]) => (
+            <button
+              key={val}
+              className={`ap-status-tab${statusFilter === val ? ' ap-status-tab--active' : ''}`}
+              onClick={() => handleStatusFilter(val)}
+            >
+              {label}
+              {statusFilter === val && !loading && <span className="ap-status-count">{total}</span>}
+            </button>
+          ))}
+        </div>
+
         <div className="ap-toolbar">
           <div className="ap-toolbar-left">
             <h1 className="ap-page-title">Products</h1>
