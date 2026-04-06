@@ -1,5 +1,5 @@
 .ap-page { min-height: 100vh; background: #141414; color: #d8d8d8; transition: background 0.2s, color 0.2s; }
-.ap-page[data-admin-theme="light"] { background: #f0f0f2; color: #111; }
+.ap-page[data-admin-theme="light"] { background: #f4f5f7; color: #111827; }
 
 /* Main */
 .ap-main { max-width: 1280px; margin: 0 auto; padding: 32px; }
@@ -37,11 +37,11 @@
   font-weight: 600;
   padding: 1px 7px;
 }
-.ap-page[data-admin-theme="light"] .ap-status-tabs { border-bottom-color: #e5e5e5; }
-.ap-page[data-admin-theme="light"] .ap-status-tab { color: #aaa; }
-.ap-page[data-admin-theme="light"] .ap-status-tab:hover { color: #555; }
-.ap-page[data-admin-theme="light"] .ap-status-tab--active { color: #111; }
-.ap-page[data-admin-theme="light"] .ap-status-count { background: #eee; color: #888; }
+.ap-page[data-admin-theme="light"] .ap-status-tabs { border-bottom-color: #e2e4e8; }
+.ap-page[data-admin-theme="light"] .ap-status-tab { color: #6b7280; }
+.ap-page[data-admin-theme="light"] .ap-status-tab:hover { color: #111827; }
+.ap-page[data-admin-theme="light"] .ap-status-tab--active { color: #111827; font-weight: 600; }
+.ap-page[data-admin-theme="light"] .ap-status-count { background: #e5e7eb; color: #374151; }
 
 /* Toolbar */
 .ap-toolbar {
@@ -54,9 +54,9 @@
 }
 .ap-toolbar-left { display: flex; align-items: baseline; gap: 14px; }
 .ap-page-title { font-size: 1.6rem; font-weight: 700; color: #f0f0f0; margin: 0; letter-spacing: -0.01em; }
-.ap-page[data-admin-theme="light"] .ap-page-title { color: #111; }
+.ap-page[data-admin-theme="light"] .ap-page-title { color: #111827; }
 .ap-count { font-size: 0.9rem; color: #666; }
-.ap-page[data-admin-theme="light"] .ap-count { color: #999; }
+.ap-page[data-admin-theme="light"] .ap-count { color: #6b7280; }
 
 .ap-toolbar-right { display: flex; align-items: center; gap: 12px; }
 
@@ -82,11 +82,11 @@
 }
 .ap-search-clear:hover { color: #ccc; }
 
-.ap-page[data-admin-theme="light"] .ap-search { background: #fff; border-color: #ddd; color: #111; }
-.ap-page[data-admin-theme="light"] .ap-search::placeholder { color: #bbb; }
+.ap-page[data-admin-theme="light"] .ap-search { background: #fff; border-color: #d1d5db; color: #111827; }
+.ap-page[data-admin-theme="light"] .ap-search::placeholder { color: #9ca3af; }
 .ap-page[data-admin-theme="light"] .ap-search:focus { border-color: #d94040; }
-.ap-page[data-admin-theme="light"] .ap-search-icon { color: #bbb; }
-.ap-page[data-admin-theme="light"] .ap-search-clear:hover { color: #555; }
+.ap-page[data-admin-theme="light"] .ap-search-icon { color: #9ca3af; }
+.ap-page[data-admin-theme="light"] .ap-search-clear:hover { color: #374151; }
 
 .ap-new-btn {
   display: flex; align-items: center; gap: 8px;
@@ -142,14 +142,18 @@
 .ap-sale-price { color: #d94040; font-weight: 600; }
 
 /* Light mode table */
-.ap-page[data-admin-theme="light"] .ap-table-wrap { background: #fff; border-color: #e5e5e5; }
-.ap-page[data-admin-theme="light"] .ap-th { background: #fafafa; border-bottom-color: #ebebeb; color: #aaa; }
-.ap-page[data-admin-theme="light"] .ap-tr { border-bottom-color: #f2f2f2; }
-.ap-page[data-admin-theme="light"] .ap-tr:hover { background: #fafafa; }
-.ap-page[data-admin-theme="light"] .ap-product-name { color: #111; }
-.ap-page[data-admin-theme="light"] .ap-sku { color: #bbb; }
-.ap-page[data-admin-theme="light"] .ap-text-muted { color: #999; }
-.ap-page[data-admin-theme="light"] .ap-thumb--empty { background: #f0f0f0; }
+.ap-page[data-admin-theme="light"] .ap-table-wrap {
+  background: #fff;
+  border-color: #e2e4e8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+.ap-page[data-admin-theme="light"] .ap-th { background: #f9fafb; border-bottom-color: #e5e7eb; color: #6b7280; }
+.ap-page[data-admin-theme="light"] .ap-tr { border-bottom-color: #f3f4f6; }
+.ap-page[data-admin-theme="light"] .ap-tr:hover { background: #f9fafb; }
+.ap-page[data-admin-theme="light"] .ap-product-name { color: #111827; }
+.ap-page[data-admin-theme="light"] .ap-sku { color: #6b7280; }
+.ap-page[data-admin-theme="light"] .ap-text-muted { color: #6b7280; }
+.ap-page[data-admin-theme="light"] .ap-thumb--empty { background: #f3f4f6; }
 
 /* Badges */
 .ap-badge {
@@ -172,8 +176,8 @@
 .ap-action-btn--delete:hover { border-color: #d94040; color: #d94040; }
 .ap-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.ap-page[data-admin-theme="light"] .ap-action-btn { border-color: #e0e0e0; color: #aaa; }
-.ap-page[data-admin-theme="light"] .ap-action-btn:hover { border-color: #aaa; color: #333; }
+.ap-page[data-admin-theme="light"] .ap-action-btn { border-color: #d1d5db; color: #6b7280; }
+.ap-page[data-admin-theme="light"] .ap-action-btn:hover { border-color: #9ca3af; color: #111827; }
 .ap-page[data-admin-theme="light"] .ap-action-btn--delete:hover { border-color: #d94040; color: #d94040; }
 
 /* Skeleton */
@@ -188,11 +192,11 @@
 .ap-skeleton--sm   { height: 15px; width: 90px; }
 @keyframes ap-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-.ap-page[data-admin-theme="light"] .ap-skeleton { background: #ebebeb; }
+.ap-page[data-admin-theme="light"] .ap-skeleton { background: #e5e7eb; }
 
 /* Empty */
 .ap-empty { color: #666; font-size: 0.95rem; padding: 60px; text-align: center; }
-.ap-page[data-admin-theme="light"] .ap-empty { color: #bbb; }
+.ap-page[data-admin-theme="light"] .ap-empty { color: #9ca3af; }
 
 /* Pagination */
 .ap-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 28px; }
@@ -205,9 +209,9 @@
 .ap-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .ap-page-info { color: #777; font-size: 0.9rem; }
 
-.ap-page[data-admin-theme="light"] .ap-page-btn { background: #fff; border-color: #ddd; color: #888; }
-.ap-page[data-admin-theme="light"] .ap-page-btn:hover:not(:disabled) { border-color: #aaa; color: #333; }
-.ap-page[data-admin-theme="light"] .ap-page-info { color: #aaa; }
+.ap-page[data-admin-theme="light"] .ap-page-btn { background: #fff; border-color: #d1d5db; color: #6b7280; }
+.ap-page[data-admin-theme="light"] .ap-page-btn:hover:not(:disabled) { border-color: #9ca3af; color: #111827; }
+.ap-page[data-admin-theme="light"] .ap-page-info { color: #6b7280; }
 
 /* Responsive */
 @media (max-width: 900px) {

@@ -12,8 +12,9 @@
   transition: background 0.2s, border-color 0.2s;
 }
 .adm-header[data-admin-theme="light"] {
-  background: #fff;
-  border-bottom-color: #e8e8e8;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e4e8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .adm-header-left { display: flex; align-items: center; gap: 16px; }
@@ -28,7 +29,10 @@
   border-left: 1px solid #333;
   transition: color 0.2s, border-color 0.2s;
 }
-.adm-header[data-admin-theme="light"] .adm-header-title { color: #aaa; border-left-color: #e0e0e0; }
+.adm-header[data-admin-theme="light"] .adm-header-title {
+  color: #6b7280;
+  border-left-color: #e2e4e8;
+}
 
 .adm-nav { display: flex; align-items: center; gap: 4px; margin-left: 8px; }
 .adm-nav-link {
@@ -42,9 +46,9 @@
 }
 .adm-nav-link:hover { color: #ccc; background: rgba(255,255,255,0.05); }
 .adm-nav-link--active { color: #f0f0f0; background: rgba(255,255,255,0.08); }
-.adm-header[data-admin-theme="light"] .adm-nav-link { color: #aaa; }
-.adm-header[data-admin-theme="light"] .adm-nav-link:hover { color: #333; background: rgba(0,0,0,0.05); }
-.adm-header[data-admin-theme="light"] .adm-nav-link--active { color: #111; background: rgba(0,0,0,0.07); }
+.adm-header[data-admin-theme="light"] .adm-nav-link { color: #6b7280; }
+.adm-header[data-admin-theme="light"] .adm-nav-link:hover { color: #111827; background: #f3f4f6; }
+.adm-header[data-admin-theme="light"] .adm-nav-link--active { color: #111827; background: #f3f4f6; font-weight: 600; }
 
 .adm-header-right { display: flex; align-items: center; gap: 12px; }
 
@@ -53,7 +57,7 @@
   color: #777;
   transition: color 0.2s;
 }
-.adm-header[data-admin-theme="light"] .adm-user { color: #999; }
+.adm-header[data-admin-theme="light"] .adm-user { color: #374151; font-weight: 500; }
 
 .adm-icon-btn {
   background: none;
@@ -67,8 +71,8 @@
   transition: all 0.15s;
 }
 .adm-icon-btn:hover { border-color: #d94040; color: #d94040; }
-.adm-header[data-admin-theme="light"] .adm-icon-btn { border-color: #e0e0e0; color: #888; }
-.adm-header[data-admin-theme="light"] .adm-icon-btn:hover { border-color: #d94040; color: #d94040; }
+.adm-header[data-admin-theme="light"] .adm-icon-btn { border-color: #d1d5db; color: #6b7280; background: #f9fafb; }
+.adm-header[data-admin-theme="light"] .adm-icon-btn:hover { border-color: #d94040; color: #d94040; background: #fff; }
 
 .adm-logout {
   display: flex;
@@ -84,5 +88,5 @@
   transition: all 0.15s;
 }
 .adm-logout:hover { border-color: #555; color: #ccc; }
-.adm-header[data-admin-theme="light"] .adm-logout { border-color: #e0e0e0; color: #777; }
-.adm-header[data-admin-theme="light"] .adm-logout:hover { border-color: #aaa; color: #333; }
+.adm-header[data-admin-theme="light"] .adm-logout { border-color: #d1d5db; color: #374151; background: #f9fafb; }
+.adm-header[data-admin-theme="light"] .adm-logout:hover { border-color: #9ca3af; color: #111827; background: #fff; }
