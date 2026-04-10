@@ -950,21 +950,21 @@ async function handleAuthLogin(req, res) {
       const { email, password } = JSON.parse(body);
       const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 
-      // 1. Authenticate via JWT plugin
-      const jwtRes = await fetch(`${WC_URL}/wp-json/jwt-auth/v1/token`, {
+      // 1. Authenticate via custom Elusive Auth plugin
+      const authRes = await fetch(`${WC_URL}/wp-json/elusive/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: email, password }),
       });
 
-      if (!jwtRes.ok) {
-        const err = await jwtRes.json().catch(() => ({}));
+      if (!authRes.ok) {
+        const err = await authRes.json().catch(() => ({}));
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message || 'Invalid email or password.' }));
         return;
       }
 
-      const jwt = await jwtRes.json();
+      const authData = await authRes.json();
 
       // 2. Fetch WC customer record by email for name + saved addresses
       const custRes = await fetch(
@@ -977,13 +977,13 @@ async function handleAuthLogin(req, res) {
         customer = list[0] ?? null;
       }
 
-      const displayName = jwt.user_display_name || '';
+      const displayName = authData.user_display_name || '';
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({
-        token: jwt.token,
+        token: authData.token,
         user: {
           id:        customer?.id   ?? null,
-          email:     jwt.user_email,
+          email:     authData.user_email,
           firstName: customer?.first_name || displayName.split(' ')[0] || '',
           lastName:  customer?.last_name  || displayName.split(' ').slice(1).join(' ') || '',
           billing:   customer?.billing  ?? null,
@@ -1023,17 +1023,17 @@ async function handleAuthRegister(req, res) {
 
       const customer = await createRes.json();
 
-      // 2. Auto-login via JWT
-      const jwtRes = await fetch(`${WC_URL}/wp-json/jwt-auth/v1/token`, {
+      // 2. Auto-login via Elusive Auth plugin
+      const authRes = await fetch(`${WC_URL}/wp-json/elusive/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: email, password }),
       });
-      const jwt = jwtRes.ok ? await jwtRes.json() : null;
+      const authData = authRes.ok ? await authRes.json() : null;
 
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({
-        token: jwt?.token ?? null,
+        token: authData?.token ?? null,
         user: {
           id:        customer.id,
           email:     customer.email,
