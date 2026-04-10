@@ -982,12 +982,16 @@ async function handleAuthLogin(req, res) {
       res.end(JSON.stringify({
         token: authData.token,
         user: {
-          id:        customer?.id   ?? null,
-          email:     authData.user_email,
-          firstName: customer?.first_name || displayName.split(' ')[0] || '',
-          lastName:  customer?.last_name  || displayName.split(' ').slice(1).join(' ') || '',
-          billing:   customer?.billing  ?? null,
-          shipping:  customer?.shipping ?? null,
+          id:           customer?.id   ?? null,
+          email:        authData.user_email,
+          firstName:    customer?.first_name || displayName.split(' ')[0] || '',
+          lastName:     customer?.last_name  || displayName.split(' ').slice(1).join(' ') || '',
+          phone:        customer?.billing?.phone || '',
+          avatarUrl:    customer?.avatar_url ?? null,
+          memberSince:  customer?.date_created ?? null,
+          storeCredit:  customer?.store_credit?.balances?.[0]?.available_balance ?? 0,
+          billing:      customer?.billing  ?? null,
+          shipping:     customer?.shipping ?? null,
         },
       }));
     } catch (err) {
@@ -1066,7 +1070,35 @@ async function handleGetOrders(req, res) {
       { headers: { Authorization: auth } }
     );
     if (!ordersRes.ok) throw new Error('WC orders fetch failed');
-    const orders = await ordersRes.json();
+    const raw = await ordersRes.json();
+    // Return trimmed order data with line items and payment info
+    const orders = raw.map(o => ({
+      id:              o.id,
+      number:          o.number,
+      status:          o.status,
+      currency_symbol: o.currency_symbol || '$',
+      date_created:    o.date_created,
+      date_paid:       o.date_paid,
+      total:           o.total,
+      subtotal:        o.line_items?.reduce((s, li) => s + parseFloat(li.subtotal || 0), 0).toFixed(2),
+      discount_total:  o.discount_total,
+      shipping_total:  o.shipping_total,
+      total_tax:       o.total_tax,
+      payment_method_title: o.payment_method_title || '',
+      shipping_method: o.shipping_lines?.[0]?.method_title || '',
+      customer_note:   o.customer_note || '',
+      line_items: (o.line_items || []).map(li => ({
+        id:           li.id,
+        name:         li.name,
+        product_id:   li.product_id,
+        sku:          li.sku,
+        quantity:     li.quantity,
+        price:        li.price,
+        total:        li.total,
+        image:        li.image?.src || null,
+      })),
+      refunds: o.refunds || [],
+    }));
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify(orders));
   } catch (err) {
