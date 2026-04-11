@@ -204,6 +204,8 @@ export default function Navigation() {
   const [mobileExpanded, setMobileExpanded] = useState(null);
   const navigate = useNavigate();
   const [vehicleOpen, setVehicleOpen] = useState(false);
+  const { isLoggedIn, isWholesale } = useAuthStore();
+  const wholesale = isLoggedIn() && isWholesale();
   const { make: vMake, model: vModel, year: vYear, setVehicle, clearVehicle } = useVehicleStore();
   const vModels = vMake ? (vehicleData.models[vMake] || []) : [];
 
@@ -433,7 +435,9 @@ export default function Navigation() {
                 </li>
               ))}
               <li className="mobile-menu-item mobile-menu-item--secondary">
-                <a href="/wholesale-registration" className="mobile-menu-link">WHOLESALE</a>
+                <a href={wholesale ? '/wholesale' : '/wholesale-registration'} className="mobile-menu-link">
+                  {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
+                </a>
               </li>
               <MobileAuthLink />
             </ul>

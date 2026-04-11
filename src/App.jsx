@@ -28,7 +28,10 @@ import TermsPage from './pages/TermsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AccountDashboard from './pages/AccountDashboard';
+import TrackOrderPage from './pages/TrackOrderPage';
 import WholesalePage from './pages/WholesalePage';
+import WholesaleOrderPage from './pages/WholesaleOrderPage';
+import WholesaleRoute from './components/auth/WholesaleRoute';
 
 export default function App() {
   return (
@@ -57,7 +60,9 @@ export default function App() {
           <Route path="/my-account" element={<LoginPage />} />
           <Route path="/my-account/register" element={<RegisterPage />} />
           <Route path="/my-account/dashboard" element={<AccountDashboard />} />
+          <Route path="/my-account/orders" element={<TrackOrderPage />} />
           <Route path="/wholesale-registration" element={<WholesalePage />} />
+          <Route path="/wholesale" element={<WholesaleRoute><WholesaleOrderPage /></WholesaleRoute>} />
           <Route path="/checkout"         element={<CheckoutPage />} />
           <Route path="/checkout/contact" element={<ContactPage />} />
           <Route path="/checkout/payment" element={<PaymentPage />} />

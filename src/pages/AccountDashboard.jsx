@@ -36,7 +36,8 @@ function formatAddress(addr) {
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
-  const { user, logout, isLoggedIn } = useAuthStore();
+  const { user, logout, isLoggedIn, isWholesale } = useAuthStore();
+  const wholesale = isLoggedIn() && isWholesale();
 
   const [orders,   setOrders]   = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -111,6 +112,18 @@ export default function AccountDashboard() {
             <span>Store Credit</span>
             <strong>${parseFloat(user.storeCredit).toFixed(2)}</strong>
           </div>
+        )}
+
+        {/* Wholesale Quick Link */}
+        {wholesale && (
+          <Link to="/wholesale" className="dash-wholesale-link">
+            <ShoppingBag size={18} />
+            <div>
+              <strong>Wholesale Orders</strong>
+              <span>Quick bulk ordering with wholesale pricing</span>
+            </div>
+            <ChevronRight size={18} />
+          </Link>
         )}
 
         <div className="dash-layout">

@@ -290,7 +290,7 @@ When a question is too complex, requires exact fitment confirmation, or the cust
 // ── Meilisearch product sync ──────────────────────────────────────────────────
 
 const WC_SYNC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created,variations,total_sales,average_rating';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,variations,total_sales,average_rating,meta_data';
 
 const FITMENT_ATTR_NAMES = ['make', 'model', 'year', 'vehicle', 'vehicles', 'fitment', 'compatible', 'application', 'fits'];
 
@@ -328,6 +328,8 @@ function normaliseMsProduct(p) {
     onSale:          Boolean(p.on_sale),
     hasVariants:     Array.isArray(p.variations) && p.variations.length > 1,
     stockStatus:     p.stock_status || 'instock',
+    stockQuantity:   typeof p.stock_quantity === 'number' ? p.stock_quantity : null,
+    wholesalePrice:  parseFloat((p.meta_data ?? []).find(m => m.key === 'wholesale_customer_wholesale_price')?.value || '0') || null,
     imageUrl:        p.images?.[0]?.src || '',
     imageAlt:        decodeHtml(p.images?.[0]?.alt || p.name),
     tags:            (p.tags  ?? []).map(t => decodeHtml(t.name)),
@@ -990,6 +992,7 @@ async function handleAuthLogin(req, res) {
           avatarUrl:    customer?.avatar_url ?? null,
           memberSince:  customer?.date_created ?? null,
           storeCredit:  customer?.store_credit?.balances?.[0]?.available_balance ?? 0,
+          role:         customer?.role ?? 'customer',
           billing:      customer?.billing  ?? null,
           shipping:     customer?.shipping ?? null,
         },
@@ -1055,6 +1058,86 @@ async function handleAuthRegister(req, res) {
   });
 }
 
+async function handleWholesaleRegister(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const d = JSON.parse(body);
+      const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+
+      // Create customer with wholesale_customer role + billing/business details
+      const createRes = await fetch(`${WC_URL}/wp-json/wc/v3/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: auth },
+        body: JSON.stringify({
+          email:      d.email,
+          first_name: d.firstName,
+          last_name:  d.lastName,
+          username:   d.email,
+          password:   d.password,
+          role:       'wholesale_customer',
+          billing: {
+            first_name: d.firstName,
+            last_name:  d.lastName,
+            company:    d.businessName || '',
+            address_1:  d.address || '',
+            city:       d.suburb || '',
+            state:      d.state || '',
+            postcode:   d.postcode || '',
+            country:    'AU',
+            email:      d.email,
+            phone:      d.phone || '',
+          },
+          meta_data: [
+            { key: 'wholesale_abn',           value: d.abn || '' },
+            { key: 'wholesale_business_type', value: d.businessType || '' },
+            { key: 'wholesale_website',       value: d.website || '' },
+            { key: 'wholesale_hear_about',    value: d.hearAbout || '' },
+            { key: 'wholesale_notes',         value: d.notes || '' },
+          ],
+        }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message || 'Could not create wholesale account. Email may already be in use.' }));
+        return;
+      }
+
+      const customer = await createRes.json();
+
+      // Auto-login
+      const authRes = await fetch(`${WC_URL}/wp-json/elusive/v1/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: d.email, password: d.password }),
+      });
+      const authData = authRes.ok ? await authRes.json() : null;
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({
+        token: authData?.token ?? null,
+        user: {
+          id:        customer.id,
+          email:     customer.email,
+          firstName: customer.first_name,
+          lastName:  customer.last_name,
+          role:      customer.role || 'wholesale_customer',
+          billing:   customer.billing  ?? null,
+          shipping:  customer.shipping ?? null,
+        },
+      }));
+    } catch (err) {
+      console.error('Wholesale register error:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Registration failed. Please try again.' }));
+    }
+  });
+}
+
 async function handleGetOrders(req, res) {
   if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
   const customerId = new URL(req.url, 'http://localhost').searchParams.get('customer');
@@ -1098,6 +1181,18 @@ async function handleGetOrders(req, res) {
         image:        li.image?.src || null,
       })),
       refunds: o.refunds || [],
+      tracking: (() => {
+        const meta = o.meta_data?.find(m => m.key === '_wc_shipment_tracking_items');
+        if (meta?.value && Array.isArray(meta.value)) {
+          return meta.value.map(t => ({
+            provider:        t.tracking_provider || t.custom_tracking_provider || '',
+            tracking_number: t.tracking_number || '',
+            tracking_link:   t.custom_tracking_link || '',
+            date_shipped:    t.date_shipped || '',
+          }));
+        }
+        return [];
+      })(),
     }));
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify(orders));
@@ -1259,6 +1354,7 @@ const server = http.createServer((req, res) => {
   // Auth routes
   if (req.url === '/api/auth/login')    { handleAuthLogin(req, res);    return; }
   if (req.url === '/api/auth/register') { handleAuthRegister(req, res); return; }
+  if (req.url === '/api/auth/wholesale-register') { handleWholesaleRegister(req, res); return; }
   if (req.url.startsWith('/api/account/orders')) { handleGetOrders(req, res); return; }
 
   // Stripe PaymentIntent creation

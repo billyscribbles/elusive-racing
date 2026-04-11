@@ -384,6 +384,27 @@ export async function getFeaturedProducts(count = 8) {
   return list.map(p => normalizeProduct(p));
 }
 
+/**
+ * Fetch variants for a product — used by wholesale order page for inline variant selection.
+ * Returns normalized variant array with wholesale pricing from meta_data.
+ */
+export async function getProductVariants(productId) {
+  const variations = await wcFetch(
+    `/products/${productId}/variations?per_page=100&_fields=id,price,regular_price,sale_price,stock_status,stock_quantity,attributes,meta_data`
+  );
+  return variations.map(v => ({
+    id: String(v.id),
+    title: v.attributes?.map(a => a.option).join(' / ') || 'Default',
+    price: parseFloat(v.price || '0'),
+    regularPrice: parseFloat(v.regular_price || v.price || '0'),
+    wholesalePrice: parseFloat((v.meta_data ?? []).find(m => m.key === 'wholesale_customer_wholesale_price')?.value || '0') || null,
+    availableForSale: v.stock_status !== 'outofstock',
+    stockQuantity: typeof v.stock_quantity === 'number' ? v.stock_quantity : null,
+    stockStatus: v.stock_status || 'instock',
+    selectedOptions: v.attributes?.map(a => ({ name: a.name, value: a.option })) ?? [],
+  }));
+}
+
 // onBase (optional): called as soon as base product data is available, before
 // variations are fetched. Lets ProductPage render immediately for variable products
 // instead of waiting for both sequential WC calls.

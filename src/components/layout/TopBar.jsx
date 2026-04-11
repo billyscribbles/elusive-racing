@@ -6,8 +6,9 @@ import './TopBar.css';
 
 export default function TopBar() {
   const navigate   = useNavigate();
-  const { user, logout, isLoggedIn } = useAuthStore();
+  const { user, logout, isLoggedIn, isWholesale } = useAuthStore();
   const loggedIn   = isLoggedIn();
+  const wholesale  = loggedIn && isWholesale();
 
   function handleLogout() {
     logout();
@@ -33,7 +34,9 @@ export default function TopBar() {
 
         {/* Right — account links */}
         <div className="topbar-right">
-          <a href="/wholesale-registration" className="topbar-link">WHOLESALE</a>
+          <a href={wholesale ? '/wholesale' : '/wholesale-registration'} className="topbar-link">
+            {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
+          </a>
           <span className="topbar-divider">|</span>
           {loggedIn ? (
             <>

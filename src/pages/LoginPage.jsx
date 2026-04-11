@@ -68,7 +68,7 @@ export default function LoginPage() {
         }
       }
 
-      navigate('/my-account/dashboard');
+      navigate(data.user?.role === 'wholesale_customer' ? '/wholesale' : '/my-account/dashboard');
     } catch {
       setStatus('error');
       setErrorMsg('Something went wrong. Please try again.');

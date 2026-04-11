@@ -171,3 +171,65 @@ export async function queryProducts({
     totalPages: Math.ceil((results.estimatedTotalHits ?? results.nbHits ?? 0) / perPage),
   };
 }
+
+/**
+ * Wholesale-tuned product query — larger page size, includes stock + wholesale price fields.
+ * Defaults to alphabetical sort for catalog browsing.
+ */
+export async function queryWholesaleProducts({
+  query      = '',
+  page       = 1,
+  perPage    = 50,
+  brands     = [],
+  categories = [],
+  inStock    = false,
+  sort       = 'a-z',
+} = {}) {
+  if (!HOST || !SEARCH_KEY) return { hits: [], totalHits: 0, totalPages: 0 };
+
+  const index = getClient().index(INDEX_NAME);
+
+  const filters = [];
+  if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));
+  if (categories.length) filters.push(categories.map(c => `categoryHandles = "${c}"`).join(' OR '));
+  if (inStock)           filters.push('stockStatus != "outofstock"');
+
+  const sortMap = {
+    'a-z':        ['title:asc'],
+    'z-a':        ['title:desc'],
+    'price-asc':  ['price:asc'],
+    'price-desc': ['price:desc'],
+    'newest':     ['dateCreated:desc'],
+    'sku':        ['sku:asc'],
+  };
+  const sortParam = sortMap[sort] || ['title:asc'];
+
+  const searchOpts = {
+    offset: (page - 1) * perPage,
+    limit:  perPage,
+    filter: filters.length ? filters.join(' AND ') : undefined,
+    sort:   sortParam,
+    attributesToRetrieve: [
+      'id', 'title', 'handle', 'vendor', 'sku', 'price', 'regularPrice',
+      'onSale', 'stockStatus', 'stockQuantity', 'wholesalePrice',
+      'hasVariants', 'imageUrl', 'imageAlt',
+    ],
+  };
+
+  let results;
+  try {
+    results = await index.search(query, searchOpts);
+  } catch (err) {
+    if (err?.message?.includes('not sortable')) {
+      results = await index.search(query, { ...searchOpts, sort: undefined });
+    } else {
+      throw err;
+    }
+  }
+
+  return {
+    hits:       results.hits,
+    totalHits:  results.estimatedTotalHits ?? results.nbHits ?? 0,
+    totalPages: Math.ceil((results.estimatedTotalHits ?? results.nbHits ?? 0) / perPage),
+  };
+}

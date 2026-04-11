@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, CheckCircle, Building2 } from 'lucide-react';
+import useAuthStore from '../store/authStore';
 import './WholesalePage.css';
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
@@ -41,6 +42,9 @@ function passwordStrength(pw) {
 }
 
 export default function WholesalePage() {
+  const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
+
   const [form, setForm] = useState({
     businessName: '',
     abn: '',
@@ -98,10 +102,50 @@ export default function WholesalePage() {
 
     setStatus('submitting');
 
-    // Wholesale applications are reviewed manually — no live API call yet.
-    // Replace this with your backend/WooCommerce wholesale flow when ready.
-    await new Promise((r) => setTimeout(r, 1200));
-    setStatus('success');
+    try {
+      const res = await fetch('/api/auth/wholesale-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:        form.email,
+          password:     form.password,
+          firstName:    form.firstName,
+          lastName:     form.lastName,
+          businessName: form.businessName,
+          abn:          form.abn,
+          businessType: form.businessType,
+          website:      form.website,
+          phone:        form.phone,
+          address:      form.address,
+          suburb:       form.suburb,
+          state:        form.state,
+          postcode:     form.postcode,
+          hearAbout:    form.hearAbout,
+          notes:        form.notes,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Registration failed. Please try again.');
+        setStatus('error');
+        return;
+      }
+
+      // Auto-login if token returned
+      if (data.token) {
+        login(data);
+        setStatus('success');
+        // Redirect to wholesale orders after a moment
+        setTimeout(() => navigate('/wholesale'), 2000);
+      } else {
+        setStatus('success');
+      }
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.');
+      setStatus('error');
+    }
   }
 
   if (status === 'success') {

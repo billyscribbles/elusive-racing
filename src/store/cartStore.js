@@ -25,6 +25,26 @@ const useCartStore = create(
         });
       },
 
+      addItems: (products) => {
+        set((s) => {
+          let items = [...s.items];
+          for (const product of products) {
+            const qty = product.quantity ?? 1;
+            const idx = items.findIndex((i) => i.id === product.id && i.variantId === product.variantId);
+            if (idx !== -1) {
+              const max = items[idx].stockQuantity ?? product.stockQuantity ?? null;
+              const newQty = max !== null ? Math.min(max, items[idx].quantity + qty) : items[idx].quantity + qty;
+              items[idx] = { ...items[idx], quantity: newQty };
+            } else {
+              const max = product.stockQuantity ?? null;
+              const clampedQty = max !== null ? Math.min(max, qty) : qty;
+              items = [...items, { ...product, quantity: clampedQty }];
+            }
+          }
+          return { items };
+        });
+      },
+
       removeItem: (id) =>
         set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
 
