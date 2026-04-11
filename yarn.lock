@@ -1320,7 +1320,6 @@ __metadata:
     react-day-picker: "npm:^9.14.0"
     react-dom: "npm:^18.3.1"
     react-helmet-async: "npm:^3.0.0"
-    react-icons: "npm:^5.6.0"
     react-router-dom: "npm:^6.28.0"
     react-svg-credit-card-payment-icons: "npm:^5.1.2"
     serve: "npm:^14.2.4"
@@ -2311,15 +2310,6 @@ __metadata:
   peerDependencies:
     react: ^16.6.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
   checksum: 10c0/bdbb2c1823ae20895aa1b854943d863bb7c5dd1b7888f7da9dd2fa9d02e2ccb9ebf68c7dd17edb39ad85ca714c009ee19ea82b03a2f1b79f7995657cd4bba825
-  languageName: node
-  linkType: hard
-
-"react-icons@npm:^5.6.0":
-  version: 5.6.0
-  resolution: "react-icons@npm:5.6.0"
-  peerDependencies:
-    react: "*"
-  checksum: 10c0/addba1ebfd45cdf7f69291d0c93df64fca1271cfdb66df657abd223e3451c73356b035f50e75858627dd182b02129596c79eaaaa45d32eb52658e443a992645c
   languageName: node
   linkType: hard
 
