@@ -23,6 +23,7 @@ import {
   getCategoryDescendantSlugs,
 } from "../data/categories";
 import { BRAND_NAMES } from "../data/brands";
+import WholesalePrice from '../components/ui/WholesalePrice';
 import "./ShopPage.css";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ function mapProduct(h) {
     variantId: h.hasVariants ? null : h.id,
     hasVariants: h.hasVariants || false,
     stockQuantity: h.stockQuantity != null ? h.stockQuantity : null,
+    wholesalePrices: h.wholesalePrices || null,
   };
 }
 
@@ -225,6 +227,11 @@ function ProductCard({ product, index = 0 }) {
           {product.backorder ? "Available on backorder" : ""}
         </p>
         <div className="shop-product-pricing">
+          <WholesalePrice
+            retailPrice={product.originalPrice || product.price}
+            wholesalePrices={product.wholesalePrices}
+            compact
+          />
           <span className={`shop-product-price${product.originalPrice ? ' shop-product-price--sale' : ''}`}>
             ${product.price.toFixed(2)}
           </span>

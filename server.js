@@ -309,6 +309,27 @@ function decodeHtml(str) {
   return (str ?? '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 }
 
+// ── Wholesale Suite tier definitions (duplicated from src/lib/wholesaleTiers.js for Node.js) ──
+const WS_TIERS = [
+  { role: 'wholesale_customer',   label: 'Wholesale',          tierNumber: 0, metaKey: 'wholesale_customer_wholesale_price' },
+  { role: 'wholesale_customer_1', label: 'Wholesale Tier 1',   tierNumber: 1, metaKey: 'wholesale_customer_1_wholesale_price' },
+  { role: 'wholesale_customer_2', label: 'Wholesale Tier 2',   tierNumber: 2, metaKey: 'wholesale_customer_2_wholesale_price' },
+];
+const WS_ROLE_MAP = Object.fromEntries(WS_TIERS.map(t => [t.role, t]));
+function isWsRole(role) { return (role || '').startsWith('wholesale_customer'); }
+function getWsTier(role) { return WS_ROLE_MAP[role] ?? null; }
+
+function extractWsPrices(metaData) {
+  if (!Array.isArray(metaData)) return {};
+  const prices = {};
+  for (const t of WS_TIERS) {
+    const entry = metaData.find(m => m.key === t.metaKey);
+    const val = parseFloat(entry?.value || '0');
+    if (val > 0) prices[t.role] = val;
+  }
+  return prices;
+}
+
 function normaliseMsProduct(p) {
   const brand = decodeHtml(
     p.brands?.[0]?.name ??
@@ -330,6 +351,7 @@ function normaliseMsProduct(p) {
     stockStatus:     p.stock_status || 'instock',
     stockQuantity:   typeof p.stock_quantity === 'number' ? p.stock_quantity : null,
     wholesalePrice:  parseFloat((p.meta_data ?? []).find(m => m.key === 'wholesale_customer_wholesale_price')?.value || '0') || null,
+    wholesalePrices: extractWsPrices(p.meta_data),
     imageUrl:        p.images?.[0]?.src || '',
     imageAlt:        decodeHtml(p.images?.[0]?.alt || p.name),
     tags:            (p.tags  ?? []).map(t => decodeHtml(t.name)),
@@ -969,8 +991,10 @@ async function handleAuthLogin(req, res) {
       const authData = await authRes.json();
 
       // 2. Fetch WC customer record by email for name + saved addresses
+      //    role=all is required because WC defaults to role=customer and
+      //    would miss wholesale_customer_1 etc.
       const custRes = await fetch(
-        `${WC_URL}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&per_page=1`,
+        `${WC_URL}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&per_page=1&role=all`,
         { headers: { Authorization: auth } }
       );
       let customer = null;
@@ -996,6 +1020,12 @@ async function handleAuthLogin(req, res) {
           memberSince:  customer?.date_created ?? null,
           storeCredit:  customer?.store_credit?.balances?.[0]?.available_balance ?? 0,
           role:         customer?.role ?? 'customer',
+          wholesaleTier: isWsRole(customer?.role) ? {
+            role:       customer.role,
+            tierNumber: getWsTier(customer.role)?.tierNumber ?? 0,
+            label:      getWsTier(customer.role)?.label ?? 'Wholesale',
+            metaKey:    getWsTier(customer.role)?.metaKey ?? null,
+          } : null,
           billing:      customer?.billing  ?? null,
           shipping:     customer?.shipping ?? null,
         },
@@ -1129,6 +1159,12 @@ async function handleWholesaleRegister(req, res) {
           firstName: customer.first_name,
           lastName:  customer.last_name,
           role:      customer.role || 'wholesale_customer',
+          wholesaleTier: {
+            role:       customer.role || 'wholesale_customer',
+            tierNumber: getWsTier(customer.role || 'wholesale_customer')?.tierNumber ?? 0,
+            label:      getWsTier(customer.role || 'wholesale_customer')?.label ?? 'Wholesale',
+            metaKey:    getWsTier(customer.role || 'wholesale_customer')?.metaKey ?? null,
+          },
           billing:   customer.billing  ?? null,
           shipping:  customer.shipping ?? null,
         },

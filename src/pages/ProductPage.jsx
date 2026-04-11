@@ -8,6 +8,7 @@ import { getProductByHandle as getMeiliProduct } from '../lib/meilisearch';
 import useCartStore from '../store/cartStore';
 import { brands as BRAND_LIST } from '../data/navigation';
 import { pageTitle, SITE_URL, schemaProduct, schemaBreadcrumb } from '../lib/seo';
+import WholesalePrice from '../components/ui/WholesalePrice';
 import './ProductPage.css';
 
 function mapProduct(p) {
@@ -37,6 +38,7 @@ function mapProduct(p) {
     variants,
     hasVariants,
     stockQuantity: p.stockQuantity ?? null,
+    wholesalePrices: p.wholesalePrices || null,
     backorder: p.stockStatus === 'onbackorder',
     inStock: p.stockStatus === 'instock',
     _isVariable: p._isVariable ?? false,
@@ -73,6 +75,7 @@ function mapMeiliProduct(h) {
     hasVariants: h.hasVariants ?? false,
     _isVariable: h.hasVariants ?? false,
     stockQuantity: null,
+    wholesalePrices: h.wholesalePrices || null,
     backorder: h.stockStatus === 'onbackorder',
     inStock: h.stockStatus === 'instock',
   };
@@ -106,6 +109,7 @@ function mapNavProduct(p) {
     hasVariants: p.hasVariants ?? false,
     _isVariable: p.hasVariants ?? false,
     stockQuantity: p.stockQuantity ?? null,
+    wholesalePrices: p.wholesalePrices || null,
     backorder: p.backorder ?? false,
     inStock: !p.backorder,
   };
@@ -470,6 +474,10 @@ export default function ProductPage() {
             )}
 
             <div className="product-page-pricing">
+              <WholesalePrice
+                retailPrice={effectiveOriginal || displayPrice}
+                wholesalePrices={display.wholesalePrices}
+              />
               <span className="product-page-price">${displayPrice.toFixed(2)}</span>
               {effectiveOriginal && (
                 <>

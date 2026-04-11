@@ -34,7 +34,7 @@ const PAGE_DELAY = 150; // ms between pages — be gentle to WC server
 
 // Fields we need from WC (reduces response payload size)
 const WC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating,meta_data';
 
 // ── Meilisearch index settings ────────────────────────────────────────────────
 
@@ -121,6 +121,24 @@ function extractBrand(p) {
   );
 }
 
+// Wholesale Suite tier definitions (keep in sync with src/lib/wholesaleTiers.js)
+const WS_TIERS = [
+  { role: 'wholesale_customer',   metaKey: 'wholesale_customer_wholesale_price' },
+  { role: 'wholesale_customer_1', metaKey: 'wholesale_customer_1_wholesale_price' },
+  { role: 'wholesale_customer_2', metaKey: 'wholesale_customer_2_wholesale_price' },
+];
+
+function extractWsPrices(metaData) {
+  if (!Array.isArray(metaData)) return {};
+  const prices = {};
+  for (const t of WS_TIERS) {
+    const entry = metaData.find(m => m.key === t.metaKey);
+    const val = parseFloat(entry?.value || '0');
+    if (val > 0) prices[t.role] = val;
+  }
+  return prices;
+}
+
 /** Normalize a raw WC product into a flat Meilisearch document */
 function normalizeProduct(p) {
   const price        = parseFloat(p.price || p.regular_price || '0');
@@ -144,6 +162,8 @@ function normalizeProduct(p) {
     categories:    (p.categories ?? []).map(c => decodeHtml(c.name)),
     categoryHandles: (p.categories ?? []).map(c => c.slug),
     fitmentTags:   extractFitmentTags(p),
+    wholesalePrice:  parseFloat((p.meta_data ?? []).find(m => m.key === 'wholesale_customer_wholesale_price')?.value || '0') || null,
+    wholesalePrices: extractWsPrices(p.meta_data),
     dateCreated:   p.date_created || '',
     totalSales:    parseInt(p.total_sales || '0', 10),
     averageRating: parseFloat(p.average_rating || '0'),

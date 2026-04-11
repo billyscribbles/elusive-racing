@@ -139,22 +139,26 @@ export default function WholesaleOrderPage() {
     return product.stockQuantity ?? null;
   };
 
+  const tierKey = user?.wholesaleTier?.role || 'wholesale_customer';
+
   const getDisplayPrice = (product) => {
     if (product.hasVariants) {
       const variantId = selectedVariants[product.id];
       const variant = variantCache[product.id]?.find((v) => v.id === variantId);
       if (variant) {
+        const ws = variant.wholesalePrices?.[tierKey] ?? variant.wholesalePrice;
         return {
-          wholesale: variant.wholesalePrice,
+          wholesale: ws,
           retail: variant.regularPrice || variant.price,
-          price: variant.wholesalePrice || variant.price,
+          price: ws || variant.price,
         };
       }
     }
+    const ws = product.wholesalePrices?.[tierKey] ?? product.wholesalePrice;
     return {
-      wholesale: product.wholesalePrice,
+      wholesale: ws,
       retail: product.regularPrice || product.price,
-      price: product.wholesalePrice || product.price,
+      price: ws || product.price,
     };
   };
 
@@ -251,10 +255,12 @@ export default function WholesaleOrderPage() {
   const renderPrice = (product) => {
     const { wholesale, retail, price } = getDisplayPrice(product);
     if (wholesale && wholesale !== retail) {
+      const pct = Math.round(((retail - wholesale) / retail) * 100);
       return (
         <div className="wholesale-price-cell">
           <span className="wholesale-price-ws">${wholesale.toFixed(2)}</span>
           <span className="wholesale-price-retail">${retail.toFixed(2)}</span>
+          {pct > 0 && <span className="wholesale-price-savings">{pct}% off</span>}
         </div>
       );
     }

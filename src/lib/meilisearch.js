@@ -41,7 +41,7 @@ export async function searchProducts(query, limit = 6) {
   const index   = getClient().index(INDEX_NAME);
   const results = await index.search(query, {
     limit,
-    attributesToRetrieve: ['id', 'title', 'handle', 'vendor', 'price', 'regularPrice', 'imageUrl', 'imageAlt'],
+    attributesToRetrieve: ['id', 'title', 'handle', 'vendor', 'price', 'regularPrice', 'wholesalePrices', 'imageUrl', 'imageAlt'],
   });
 
   return results.hits.map(h => ({
@@ -69,7 +69,7 @@ export async function getProductByHandle(handle) {
       attributesToRetrieve: [
         'id', 'title', 'handle', 'vendor', 'sku', 'price', 'regularPrice',
         'onSale', 'stockStatus', 'hasVariants', 'imageUrl', 'imageAlt',
-        'description', 'tags', 'categories', 'categoryHandles',
+        'description', 'tags', 'categories', 'categoryHandles', 'wholesalePrices',
       ],
     });
     return results.hits[0] ?? null;
@@ -211,7 +211,7 @@ export async function queryWholesaleProducts({
     sort:   sortParam,
     attributesToRetrieve: [
       'id', 'title', 'handle', 'vendor', 'sku', 'price', 'regularPrice',
-      'onSale', 'stockStatus', 'stockQuantity', 'wholesalePrice',
+      'onSale', 'stockStatus', 'stockQuantity', 'wholesalePrice', 'wholesalePrices',
       'hasVariants', 'imageUrl', 'imageAlt',
     ],
   };

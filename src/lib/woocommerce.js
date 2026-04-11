@@ -3,6 +3,7 @@
 // Store API (/wc/store/v1) — no auth, used for cart (session-cookie based)
 
 import { BRANDS } from '../data/brands.js';
+import { extractWholesalePrices } from './wholesaleTiers.js';
 
 const WC_URL = import.meta.env.VITE_WC_URL;
 const KEY = import.meta.env.VITE_WC_CONSUMER_KEY;
@@ -19,7 +20,7 @@ function decodeHtml(str) {
 
 // ── Field masks — only fetch what normalizeProduct/normalizeProductDetail need ──
 const PRODUCT_LIST_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,variations,date_created,short_description';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,variations,date_created,short_description,meta_data';
 const PRODUCT_DETAIL_FIELDS =
   `${PRODUCT_LIST_FIELDS},description,type,weight,dimensions`;
 const CATEGORY_LIST_FIELDS = 'id,name,slug,description,image,count';
@@ -132,6 +133,7 @@ function normalizeProduct(p) {
     stockQuantity: typeof p.stock_quantity === 'number' ? p.stock_quantity : null,
     tags: p.tags?.map(t => decodeHtml(t.name)) ?? [],
     categories: p.categories?.map(c => ({ id: String(c.id), title: decodeHtml(c.name), handle: c.slug })) ?? [],
+    wholesalePrices: extractWholesalePrices(p.meta_data),
     variants: p.variations?.length
       ? p.variations.map(v => ({ id: String(v.id) }))
       : [{ id: String(p.id), title: 'Default', availableForSale: p.stock_status === 'instock' }],
@@ -398,6 +400,7 @@ export async function getProductVariants(productId) {
     price: parseFloat(v.price || '0'),
     regularPrice: parseFloat(v.regular_price || v.price || '0'),
     wholesalePrice: parseFloat((v.meta_data ?? []).find(m => m.key === 'wholesale_customer_wholesale_price')?.value || '0') || null,
+    wholesalePrices: extractWholesalePrices(v.meta_data),
     availableForSale: v.stock_status !== 'outofstock',
     stockQuantity: typeof v.stock_quantity === 'number' ? v.stock_quantity : null,
     stockStatus: v.stock_status || 'instock',

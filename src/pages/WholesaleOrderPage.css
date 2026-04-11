@@ -256,6 +256,17 @@
   margin-left: 6px;
 }
 
+.wholesale-price-savings {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: #d94040;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
 .wholesale-price-same {
   font-weight: 600;
   color: #ddd;

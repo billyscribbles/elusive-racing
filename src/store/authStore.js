@@ -12,10 +12,11 @@ const useAuthStore = create(
       isLoggedIn: ()         => !!get().user?.token,
       isWholesale: ()        => (get().user?.role || '').startsWith('wholesale_customer'),
       isAdmin:    ()         => get().user?.role === 'administrator',
+      getWholesaleTierKey: () => get().user?.wholesaleTier?.role ?? null,
       userTypeLabel: ()      => {
         const role = get().user?.role || '';
         if (role === 'administrator') return 'Admin';
-        if (role.startsWith('wholesale_customer')) return 'Wholesale';
+        if (role.startsWith('wholesale_customer')) return get().user?.wholesaleTier?.label || 'Wholesale';
         return 'Customer';
       },
     }),

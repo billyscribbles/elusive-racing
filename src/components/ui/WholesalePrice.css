@@ -1,0 +1,48 @@
+/* Wholesale tier price display */
+
+.ws-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ws-price__amount {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-red, #d94040);
+}
+
+.ws-price__retail {
+  font-size: 0.85rem;
+  color: #888;
+  text-decoration: line-through;
+}
+
+.ws-price__badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-red, #d94040);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Compact variant for product cards */
+.ws-price--compact {
+  gap: 5px;
+}
+
+.ws-price--compact .ws-price__amount {
+  font-size: 0.95rem;
+}
+
+.ws-price--compact .ws-price__retail {
+  font-size: 0.75rem;
+}
+
+.ws-price--compact .ws-price__badge {
+  font-size: 0.65rem;
+  padding: 1px 4px;
+}
