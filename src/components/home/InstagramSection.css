@@ -104,6 +104,10 @@
   object-position: center;
 }
 
+.reel-placeholder {
+  background: #1a1a1a;
+}
+
 /* Overlay */
 .reel-overlay {
   position: absolute;

@@ -1,14 +1,11 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminProductForm from './pages/admin/AdminProductForm';
-import AdminPromoBanner from './pages/admin/AdminPromoBanner';
-import AdminDeveloper from './pages/admin/AdminDeveloper';
 import AdminRoute from './components/admin/AdminRoute';
+import WholesaleRoute from './components/auth/WholesaleRoute';
 import useAuthStore from './store/authStore';
 import useCartStore from './store/cartStore';
+import MainLayout from './layouts/MainLayout';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -33,27 +30,32 @@ function CartRepricer() {
 
   return null;
 }
-import MainLayout from './layouts/MainLayout';
-import HomePage from './pages/HomePage';
-import ServicesPage from './pages/ServicesPage';
-import ShopPage from './pages/ShopPage';
-import CheckoutPage from './pages/CheckoutPage';
-import ContactPage from './pages/ContactPage';
-import PaymentPage from './pages/PaymentPage';
-import ProductPage from './pages/ProductPage';
-import BrandsPage from './pages/BrandsPage';
-import BookingPage from './pages/BookingPage';
-import AboutPage from './pages/AboutPage';
-import ContactUsPage from './pages/ContactUsPage';
-import TermsPage from './pages/TermsPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AccountDashboard from './pages/AccountDashboard';
-import TrackOrderPage from './pages/TrackOrderPage';
-import WholesalePage from './pages/WholesalePage';
-import WholesaleOrderPage from './pages/WholesaleOrderPage';
-import WholesaleRoute from './components/auth/WholesaleRoute';
-import OrderConfirmationPage from './pages/OrderConfirmationPage';
+
+// Lazy-load all page components for code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+const ShopPage = lazy(() => import('./pages/ShopPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const ProductPage = lazy(() => import('./pages/ProductPage'));
+const BrandsPage = lazy(() => import('./pages/BrandsPage'));
+const BookingPage = lazy(() => import('./pages/BookingPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactUsPage = lazy(() => import('./pages/ContactUsPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const AccountDashboard = lazy(() => import('./pages/AccountDashboard'));
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
+const WholesalePage = lazy(() => import('./pages/WholesalePage'));
+const WholesaleOrderPage = lazy(() => import('./pages/WholesaleOrderPage'));
+const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage'));
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminProductForm = lazy(() => import('./pages/admin/AdminProductForm'));
+const AdminPromoBanner = lazy(() => import('./pages/admin/AdminPromoBanner'));
+const AdminDeveloper = lazy(() => import('./pages/admin/AdminDeveloper'));
 
 export default function App() {
   return (
@@ -61,6 +63,7 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <CartRepricer />
+      <Suspense fallback={null}>
       <Routes>
         {/* Admin routes — no site layout */}
         <Route path="/admin" element={<AdminLogin />} />
@@ -94,6 +97,7 @@ export default function App() {
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
     </HelmetProvider>
   );

@@ -54,7 +54,7 @@ export default function CategoryGrid() {
         <div className="category-grid">
           {categories.map((cat) => (
             <a key={cat.href} href={cat.href} className="cat-card">
-              <img src={cat.image} alt={cat.title} loading="lazy" className="cat-card-img" />
+              <img src={cat.image} alt={cat.title} loading="lazy" className="cat-card-img" width={400} height={300} />
               <div className="cat-card-overlay" />
               <div className="cat-card-label">
                 <span className="cat-card-name">{cat.title}</span>

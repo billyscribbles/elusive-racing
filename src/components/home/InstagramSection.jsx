@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { FaInstagram } from 'react-icons/fa6';
 import './InstagramSection.css';
 
@@ -11,7 +11,7 @@ const posts = [
   { src: '/instagram/post6.mp4', href: 'https://www.instagram.com/elusive_racing/' },
 ];
 
-function ReelCard({ src, href }) {
+function ReelCard({ src, href, visible }) {
   const videoRef = useRef(null);
 
   const handleMouseEnter = () => videoRef.current?.play();
@@ -33,15 +33,19 @@ function ReelCard({ src, href }) {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <video
-        ref={videoRef}
-        className="reel-video"
-        src={src}
-        muted
-        playsInline
-        loop
-        preload="metadata"
-      />
+      {visible ? (
+        <video
+          ref={videoRef}
+          className="reel-video"
+          src={src}
+          muted
+          playsInline
+          loop
+          preload="metadata"
+        />
+      ) : (
+        <div className="reel-video reel-placeholder" />
+      )}
       <div className="reel-overlay">
         <div className="reel-play-icon">
           <svg viewBox="0 0 24 24" fill="white" width="40" height="40">
@@ -55,8 +59,27 @@ function ReelCard({ src, href }) {
 }
 
 export default function InstagramSection() {
+  const sectionRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="instagram-section">
+    <section className="instagram-section" ref={sectionRef}>
       <div className="instagram-header">
         <a
           href="https://www.instagram.com/elusive_racing/"
@@ -73,7 +96,7 @@ export default function InstagramSection() {
       <div className="reel-wrapper">
         <div className="reel-track">
           {posts.map((post, i) => (
-            <ReelCard key={i} {...post} />
+            <ReelCard key={i} {...post} visible={visible} />
           ))}
         </div>
       </div>

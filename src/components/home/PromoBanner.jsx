@@ -26,9 +26,14 @@ export default function PromoBanner() {
 
   return (
     <section className="promo-banner">
-      <div
+      <img
         className="promo-banner-image"
-        style={{ backgroundImage: `url('${config.image || DEFAULTS.image}')` }}
+        src={config.image || DEFAULTS.image}
+        alt={config.title || DEFAULTS.title}
+        width={1600}
+        height={900}
+        fetchpriority="high"
+        loading="eager"
       />
       <div className="promo-banner-overlay" />
       <div className="promo-banner-slash" aria-hidden="true" />

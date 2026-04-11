@@ -1,10 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, MessageCircle } from 'lucide-react';
-import { marked } from 'marked';
 import useVehicleStore from '../../store/vehicleStore';
 import './ChatWidget.css';
 
-marked.setOptions({ breaks: true });
+let _marked = null;
+async function getMarked() {
+  if (!_marked) {
+    const mod = await import('marked');
+    _marked = mod.marked;
+    _marked.setOptions({ breaks: true });
+  }
+  return _marked;
+}
 
 const BOT_NAME = 'Elusive Racing AI';
 const API_URL = '/api/chat';
@@ -42,9 +49,17 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState(loadMessages);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [markedReady, setMarkedReady] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const windowRef = useRef(null);
+
+  // Load marked lazily when chat is opened
+  useEffect(() => {
+    if (open && !markedReady) {
+      getMarked().then(() => setMarkedReady(true));
+    }
+  }, [open, markedReady]);
 
   useEffect(() => {
     try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(messages)); } catch { /* ignore */ }
@@ -170,7 +185,7 @@ export default function ChatWidget() {
             {messages.map((msg, i) => (
               <div key={i} className={`chat-msg chat-msg--${msg.from}`}>
                 {msg.from === 'bot'
-                  ? <div className="chat-bubble chat-bubble--md" dangerouslySetInnerHTML={{ __html: marked.parse(msg.text) }} />
+                  ? <div className="chat-bubble chat-bubble--md" dangerouslySetInnerHTML={{ __html: _marked ? _marked.parse(msg.text) : msg.text }} />
                   : <div className="chat-bubble">{msg.text}</div>
                 }
               </div>

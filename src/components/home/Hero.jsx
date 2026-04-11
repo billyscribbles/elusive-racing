@@ -124,7 +124,7 @@ export default function Hero() {
       {/* ── Desktop: video left + floating finder right ── */}
       <div className="hero-desktop">
         <div className="hero-video-panel">
-          <img src="/hnats1.jpg" alt="" className="hero-poster" fetchpriority="high" />
+          <img src="/hnats1.jpg" alt="" className="hero-poster" fetchpriority="high" width={1280} height={800} />
           <video
             className={`hero-video ${videoReady ? 'hero-video--ready' : ''}`}
             autoPlay

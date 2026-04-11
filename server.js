@@ -2,6 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import zlib from 'zlib';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
@@ -1482,16 +1483,49 @@ const server = http.createServer((req, res) => {
 
   fs.stat(filePath, (err, stats) => {
     if (!err && stats.isFile()) {
-      // Serve the exact file that was requested
       const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': contentType });
-      fs.createReadStream(filePath).pipe(res);
+      const headers = { 'Content-Type': contentType };
+
+      // Cache headers: hashed assets get immutable year-long cache, others get 1 day
+      const isHashedAsset = urlPath.startsWith('/assets/');
+      if (isHashedAsset) {
+        headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+      } else if (ext === '.html') {
+        headers['Cache-Control'] = 'public, max-age=0, must-revalidate';
+      } else {
+        headers['Cache-Control'] = 'public, max-age=86400';
+      }
+
+      // Gzip compression for text-based assets (skip already-compressed formats)
+      const skipCompress = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.mp4', '.webm', '.woff2', '.woff', '.br', '.gz']);
+      const acceptEncoding = (req.headers['accept-encoding'] || '');
+      if (!skipCompress.has(ext) && acceptEncoding.includes('gzip') && stats.size > 1024) {
+        headers['Content-Encoding'] = 'gzip';
+        headers['Vary'] = 'Accept-Encoding';
+        res.writeHead(200, headers);
+        fs.createReadStream(filePath).pipe(zlib.createGzip({ level: 6 })).pipe(res);
+      } else {
+        res.writeHead(200, headers);
+        fs.createReadStream(filePath).pipe(res);
+      }
     } else {
       // SPA fallback — serve index.html for all non-file requests
       const index = path.join(DIST, 'index.html');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      fs.createReadStream(index).pipe(res);
+      const headers = {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+      };
+      const acceptEncoding = (req.headers['accept-encoding'] || '');
+      if (acceptEncoding.includes('gzip')) {
+        headers['Content-Encoding'] = 'gzip';
+        headers['Vary'] = 'Accept-Encoding';
+        res.writeHead(200, headers);
+        fs.createReadStream(index).pipe(zlib.createGzip({ level: 6 })).pipe(res);
+      } else {
+        res.writeHead(200, headers);
+        fs.createReadStream(index).pipe(res);
+      }
     }
   });
 });

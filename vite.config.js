@@ -13,4 +13,16 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: 'all',
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
+  },
 })

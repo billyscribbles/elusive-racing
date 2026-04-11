@@ -51,7 +51,7 @@ function ProductCard({ product }) {
     <Link to={product.href} className="product-card" onMouseEnter={() => prefetchProduct(product.slug)}>
       <div className="product-image-wrap">
         {product.image
-          ? <img src={product.image} alt={product.name} loading="lazy" className="product-image" />
+          ? <img src={product.image} alt={product.name} loading="lazy" className="product-image" width={300} height={300} />
           : <div className="product-image-placeholder" />
         }
         {product.badge && (
@@ -112,8 +112,7 @@ export default function FeaturedProducts() {
     el.scrollBy({ left: dir * 280, behavior: 'smooth' });
   }
 
-  if (loading) return null;
-  if (!products.length) return null;
+  if (!loading && !products.length) return null;
 
   return (
     <section className="featured-products-section">
@@ -122,6 +121,22 @@ export default function FeaturedProducts() {
           <h2 className="section-title">Featured Products</h2>
           <p className="section-subtitle">Hand-picked performance parts from top brands</p>
         </div>
+        {loading ? (
+          <div className="carousel-wrapper">
+            <div className="products-carousel">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="product-card product-card--skeleton">
+                  <div className="product-image-wrap skeleton-shimmer" style={{ height: 200 }} />
+                  <div className="product-info">
+                    <div className="skeleton-shimmer" style={{ height: 12, width: '40%', marginBottom: 8 }} />
+                    <div className="skeleton-shimmer" style={{ height: 16, width: '80%', marginBottom: 8 }} />
+                    <div className="skeleton-shimmer" style={{ height: 14, width: '30%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
         <div className="carousel-wrapper">
           <button className="carousel-arrow carousel-arrow--left" onClick={() => scroll(-1)} aria-label="Scroll left">&#8249;</button>
           <div className="products-carousel" ref={carouselRef}>
@@ -131,6 +146,7 @@ export default function FeaturedProducts() {
           </div>
           <button className="carousel-arrow carousel-arrow--right" onClick={() => scroll(1)} aria-label="Scroll right">&#8250;</button>
         </div>
+        )}
         <div className="products-cta">
           <a href="/shop" className="btn-primary">View All Products</a>
         </div>
