@@ -435,7 +435,7 @@ export default function Navigation() {
                 </li>
               ))}
               <li className="mobile-menu-item mobile-menu-item--secondary">
-                <a href={wholesale ? '/wholesale' : '/wholesale-registration'} className="mobile-menu-link">
+                <a href={wholesale ? '/wholesale' : '/login'} className="mobile-menu-link">
                   {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
                 </a>
               </li>

@@ -872,6 +872,19 @@
   text-decoration: line-through;
 }
 
+.shop-product-stock {
+  display: block;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a6e2e;
+  margin-top: 6px;
+}
+
+.shop-product-stock--low {
+  color: var(--color-red);
+}
+
 /* Add to cart — always visible on mobile, hover reveal on desktop */
 .shop-product-actions {
   padding: 0 16px 14px;

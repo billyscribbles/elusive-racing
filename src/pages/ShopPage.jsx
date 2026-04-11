@@ -49,6 +49,7 @@ function mapProduct(h) {
     dateCreated: h.dateCreated || "",
     variantId: h.hasVariants ? null : h.id,
     hasVariants: h.hasVariants || false,
+    stockQuantity: h.stockQuantity != null ? h.stockQuantity : null,
   };
 }
 
@@ -233,6 +234,11 @@ function ProductCard({ product, index = 0 }) {
             </span>
           )}
         </div>
+        {product.stockQuantity != null && (
+          <span className={`shop-product-stock${product.stockQuantity <= 3 ? ' shop-product-stock--low' : ''}`}>
+            {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
+          </span>
+        )}
       </div>
       <div className="shop-product-actions">
         {product.hasVariants ? (

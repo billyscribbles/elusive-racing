@@ -268,6 +268,19 @@
   font-family: var(--font-primary);
 }
 
+.product-stock {
+  display: block;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a6e2e;
+  margin-top: 6px;
+}
+
+.product-stock--low {
+  color: var(--color-red);
+}
+
 .products-cta {
   text-align: center;
 }

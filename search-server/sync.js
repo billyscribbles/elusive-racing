@@ -34,7 +34,7 @@ const PAGE_DELAY = 150; // ms between pages — be gentle to WC server
 
 // Fields we need from WC (reduces response payload size)
 const WC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating';
 
 // ── Meilisearch index settings ────────────────────────────────────────────────
 
@@ -137,6 +137,7 @@ function normalizeProduct(p) {
     regularPrice,
     onSale:        Boolean(p.on_sale),
     stockStatus:   p.stock_status || 'instock',
+    stockQuantity: p.stock_quantity != null ? parseInt(p.stock_quantity, 10) : null,
     imageUrl:      p.images?.[0]?.src  || '',
     imageAlt:      decodeHtml(p.images?.[0]?.alt || p.name),
     tags:          (p.tags  ?? []).map(t => decodeHtml(t.name)),

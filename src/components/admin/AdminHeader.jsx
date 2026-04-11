@@ -19,6 +19,7 @@ export default function AdminHeader({ theme, onToggleTheme }) {
         <nav className="adm-nav">
           <NavLink to="/admin/products" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Products</NavLink>
           <NavLink to="/admin/promo-banner" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Promo Banner</NavLink>
+          <NavLink to="/admin/developer" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Developer</NavLink>
         </nav>
       </div>
       <div className="adm-header-right">

@@ -1,0 +1,63 @@
+.adev-page { min-height: 100vh; background: #141414; color: #d8d8d8; transition: background 0.2s, color 0.2s; }
+.adev-page[data-admin-theme="light"] { background: #f4f5f7; color: #111827; }
+
+.adev-main { max-width: 800px; margin: 0 auto; padding: 32px; }
+
+.adev-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+}
+
+.adev-section {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 24px;
+}
+.adev-page[data-admin-theme="light"] .adev-section {
+  background: #fff;
+  border-color: #e0e0e0;
+}
+
+.adev-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.adev-section-desc {
+  font-size: 0.875rem;
+  color: #888;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.adev-page[data-admin-theme="light"] .adev-section-desc { color: #666; }
+
+.adev-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--color-red, #d94040);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.adev-btn:hover { background: var(--color-red-hover, #c03333); }
+.adev-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.adev-spin { animation: adev-rotate 1s linear infinite; }
+@keyframes adev-rotate { to { transform: rotate(360deg); } }
+
+.adev-result {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.adev-result--ok { color: #22c55e; }
+.adev-result--err { color: #ef4444; }

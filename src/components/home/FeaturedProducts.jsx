@@ -24,6 +24,7 @@ function mapProduct(p) {
     badgeType: originalPrice ? 'sale' : p.stockStatus === 'onbackorder' ? 'backorder' : null,
     variantId: isDefaultOnly ? variants[0]?.id : null,
     hasVariants,
+    stockQuantity: p.stockQuantity != null ? p.stockQuantity : (p.stock_quantity != null ? parseInt(p.stock_quantity, 10) : null),
   };
 }
 
@@ -58,6 +59,11 @@ function ProductCard({ product }) {
             </>
           )}
         </div>
+        {product.stockQuantity != null && (
+          <span className={`product-stock${product.stockQuantity <= 3 ? ' product-stock--low' : ''}`}>
+            {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
+          </span>
+        )}
       </div>
       <div className="product-actions">
         {product.hasVariants ? (
