@@ -33,6 +33,7 @@ import TrackOrderPage from './pages/TrackOrderPage';
 import WholesalePage from './pages/WholesalePage';
 import WholesaleOrderPage from './pages/WholesaleOrderPage';
 import WholesaleRoute from './components/auth/WholesaleRoute';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
 
 export default function App() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/checkout"         element={<CheckoutPage />} />
           <Route path="/checkout/contact" element={<ContactPage />} />
           <Route path="/checkout/payment" element={<PaymentPage />} />
+          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
