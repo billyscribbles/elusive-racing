@@ -176,14 +176,15 @@
 }
 
 /* Column widths — generous so content fits on one line */
-.wholesale-table th.col-img    { width: 80px; }
-.wholesale-table th.col-sku    { width: 140px; }
-.wholesale-table th.col-name   { /* takes remaining space */ }
-.wholesale-table th.col-brand  { width: 140px; }
-.wholesale-table th.col-stock  { width: 110px; text-align: center; }
-.wholesale-table th.col-price  { width: 170px; text-align: right; }
-.wholesale-table th.col-qty    { width: 130px; text-align: center; }
-.wholesale-table th.col-action { width: 90px; text-align: center; }
+.wholesale-table th.col-img     { width: 80px; }
+.wholesale-table th.col-sku     { width: 220px; }
+.wholesale-table th.col-name    { /* takes remaining space */ }
+.wholesale-table th.col-variant { width: 200px; }
+.wholesale-table th.col-brand   { width: 140px; }
+.wholesale-table th.col-stock   { width: 140px; text-align: center; }
+.wholesale-table th.col-price   { width: 170px; text-align: right; }
+.wholesale-table th.col-qty     { width: 130px; text-align: center; }
+.wholesale-table th.col-action  { width: 90px; text-align: center; }
 
 .wholesale-table td {
   padding: 10px 14px;
@@ -196,8 +197,8 @@
   text-overflow: ellipsis;
 }
 
-/* Allow name column to wrap for variants */
-.wholesale-table td.cell-name {
+/* Variant column — allow wrapping for select dropdown */
+.wholesale-table td.cell-variant {
   white-space: normal;
   overflow: visible;
 }
@@ -432,7 +433,7 @@
 
 .wholesale-variant-select {
   display: block;
-  margin-top: 4px;
+  margin-top: 0;
   padding: 6px 32px 6px 10px;
   background: #fff;
   border: 2px solid #ddd;
@@ -459,7 +460,7 @@
 
 .wholesale-load-variants-btn {
   display: inline-block;
-  margin-top: 4px;
+  margin-top: 0;
   padding: 6px 14px;
   background: #f0f0f0;
   border: 2px solid #ccc;

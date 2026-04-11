@@ -280,17 +280,17 @@ export default function WholesaleOrderPage() {
   // ── Stock badge helper ─────────────────────────────────────────────────────
 
   const renderStock = (product) => {
-    if (isOutOfStock(product)) {
-      return <span className="wholesale-stock stock-out">Out</span>;
-    }
     const stock = product.hasVariants
       ? variantCache[product.id]?.find((v) => v.id === selectedVariants[product.id])?.stockQuantity ?? product.stockQuantity
       : product.stockQuantity;
+    if (isOutOfStock(product) || stock === 0) {
+      return <span className="wholesale-stock stock-out">Not Available</span>;
+    }
     if (stock === null || stock === undefined) {
       return <span className="wholesale-stock stock-high">In Stock</span>;
     }
-    if (stock <= 5) return <span className="wholesale-stock stock-low">{stock}</span>;
-    return <span className="wholesale-stock stock-high">{stock}</span>;
+    if (stock <= 5) return <span className="wholesale-stock stock-low">{stock} In Stock</span>;
+    return <span className="wholesale-stock stock-high">{stock} In Stock</span>;
   };
 
   // ── Price render ───────────────────────────────────────────────────────────
@@ -411,6 +411,7 @@ export default function WholesaleOrderPage() {
                   <th className="col-img"></th>
                   <th className="col-sku">SKU</th>
                   <th className="col-name">Product</th>
+                  <th className="col-variant">Variant</th>
                   <th className="col-brand">Brand</th>
                   <th className="col-stock">Stock</th>
                   <th className="col-price">Price</th>
@@ -451,7 +452,7 @@ export default function WholesaleOrderPage() {
                         <span className="wholesale-sku">{product.sku || '—'}</span>
                       </td>
 
-                      {/* Product name + variant selector */}
+                      {/* Product name */}
                       <td className="cell-name">
                         <div className="wholesale-product-name">
                           <Link to={`/products/${product.handle}`}>{product.title}</Link>
@@ -461,8 +462,11 @@ export default function WholesaleOrderPage() {
                           <span>{product.sku || '—'}</span>
                           {product.vendor && <span>{product.vendor}</span>}
                         </div>
-                        {/* Variant selector */}
-                        {product.hasVariants && (
+                      </td>
+
+                      {/* Variant */}
+                      <td className="cell-variant">
+                        {product.hasVariants ? (
                           <>
                             {!variants && !isLoadingVariants && (
                               <button
@@ -497,6 +501,8 @@ export default function WholesaleOrderPage() {
                               </select>
                             )}
                           </>
+                        ) : (
+                          <span style={{ color: '#aaa', fontSize: '12px' }}>—</span>
                         )}
                       </td>
 
@@ -507,11 +513,7 @@ export default function WholesaleOrderPage() {
 
                       {/* Stock */}
                       <td className="cell-stock">
-                        {/* Mobile: price + stock inline */}
-                        <div className="wholesale-mobile-row">
-                          {renderStock(product)}
-                          <span className="wholesale-mobile-price">{renderPrice(product)}</span>
-                        </div>
+                        {renderStock(product)}
                       </td>
 
                       {/* Price */}
