@@ -63,7 +63,7 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <CartRepricer />
-      <Suspense fallback={null}>
+      <Suspense fallback={<div style={{minHeight:'100vh',background:'#0a0a0a'}} />}>
       <Routes>
         {/* Admin routes — no site layout */}
         <Route path="/admin" element={<AdminLogin />} />

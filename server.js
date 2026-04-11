@@ -1497,10 +1497,18 @@ const server = http.createServer((req, res) => {
         headers['Cache-Control'] = 'public, max-age=86400';
       }
 
-      // Gzip compression for text-based assets (skip already-compressed formats)
+      // Gzip compression — prefer pre-compressed .gz files, fall back to runtime
       const skipCompress = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.mp4', '.webm', '.woff2', '.woff', '.br', '.gz']);
       const acceptEncoding = (req.headers['accept-encoding'] || '');
-      if (!skipCompress.has(ext) && acceptEncoding.includes('gzip') && stats.size > 1024) {
+      const gzPath = filePath + '.gz';
+      if (!skipCompress.has(ext) && acceptEncoding.includes('gzip') && stats.size > 1024 && fs.existsSync(gzPath)) {
+        // Serve pre-compressed file (built by vite-plugin-compression)
+        headers['Content-Encoding'] = 'gzip';
+        headers['Vary'] = 'Accept-Encoding';
+        res.writeHead(200, headers);
+        fs.createReadStream(gzPath).pipe(res);
+      } else if (!skipCompress.has(ext) && acceptEncoding.includes('gzip') && stats.size > 1024) {
+        // Fallback: runtime gzip
         headers['Content-Encoding'] = 'gzip';
         headers['Vary'] = 'Accept-Encoding';
         res.writeHead(200, headers);

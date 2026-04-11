@@ -1,7 +1,22 @@
+import { useState, useEffect } from 'react';
 import { Truck, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { FaFacebook, FaFacebookMessenger, FaInstagram, FaYoutube, FaApplePay, FaGooglePay } from 'react-icons/fa6';
-import { PaymentIcon } from 'react-svg-credit-card-payment-icons';
 import './Footer.css';
+
+// Lazy-load heavy payment icon library (3.2MB) — footer is below the fold
+let _PaymentIcon = null;
+function usePaymentIcon() {
+  const [ready, setReady] = useState(!!_PaymentIcon);
+  useEffect(() => {
+    if (!_PaymentIcon) {
+      import('react-svg-credit-card-payment-icons').then(mod => {
+        _PaymentIcon = mod.PaymentIcon;
+        setReady(true);
+      });
+    }
+  }, []);
+  return ready ? _PaymentIcon : null;
+}
 
 const infoStrip = [
   {
@@ -51,6 +66,7 @@ const information = [
 ];
 
 export default function Footer() {
+  const PaymentIcon = usePaymentIcon();
   return (
     <footer className="footer">
 
@@ -148,10 +164,12 @@ export default function Footer() {
           <div className="container footer-payments-inner">
             <span className="footer-payments-label">Accepted Payments</span>
             <div className="footer-payments-icons">
+              {PaymentIcon && <>
               <span className="payment-chip"><PaymentIcon type="Paypal" format="flatRounded" width={52} /></span>
               <span className="payment-chip"><PaymentIcon type="Visa" format="flatRounded" width={52} /></span>
               <span className="payment-chip"><PaymentIcon type="Mastercard" format="flatRounded" width={52} /></span>
               <span className="payment-chip"><PaymentIcon type="Amex" format="flatRounded" width={52} /></span>
+              </>}
               {/* Afterpay — not in library, custom SVG */}
               <span className="payment-chip">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 38" width="52" height="33" role="img" aria-label="Afterpay">

@@ -109,15 +109,16 @@ function MobileFinderForm() {
 
 export default function Hero() {
   const [videoReady, setVideoReady] = useState(false);
+  const [isMobile] = useState(() => window.innerWidth <= 900);
 
   useLayoutEffect(() => {
-    if (window.innerWidth <= 900) {
+    if (isMobile) {
       document.documentElement.style.setProperty('--finder-height', '50px');
       return () => {
         document.documentElement.style.setProperty('--finder-height', '0px');
       };
     }
-  }, []);
+  }, [isMobile]);
 
   return (
     <>
@@ -125,16 +126,18 @@ export default function Hero() {
       <div className="hero-desktop">
         <div className="hero-video-panel">
           <img src="/hnats1.jpg" alt="" className="hero-poster" fetchpriority="high" width={1280} height={800} />
-          <video
-            className={`hero-video ${videoReady ? 'hero-video--ready' : ''}`}
-            autoPlay
-            muted
-            loop
-            playsInline
-            onCanPlay={() => setVideoReady(true)}
-          >
-            <source src="/hero-video.mp4" type="video/mp4" />
-          </video>
+          {!isMobile && (
+            <video
+              className={`hero-video ${videoReady ? 'hero-video--ready' : ''}`}
+              autoPlay
+              muted
+              loop
+              playsInline
+              onCanPlay={() => setVideoReady(true)}
+            >
+              <source src="/hero-video.mp4" type="video/mp4" />
+            </video>
+          )}
           <div className="hero-overlay" />
           <div className="hero-video-content">
             <span className="hero-tag">Melbourne, Australia</span>
@@ -165,7 +168,7 @@ export default function Hero() {
         </div>
 
         <div className="hero-mobile-img-wrap">
-          <img src="/hnats1.jpg" alt="" className="hero-mobile-img" />
+          <img src="/hnats1.jpg" alt="" className="hero-mobile-img" width={640} height={400} />
           <div className="hero-mobile-overlay" />
           <div className="hero-mobile-content">
             <span className="hero-mobile-tag">Melbourne, Australia</span>

@@ -9,16 +9,15 @@
  *   VITE_MEILISEARCH_SEARCH_KEY  read-only public key from Meilisearch dashboard
  */
 
-import { Meilisearch } from 'meilisearch';
-
 const HOST       = import.meta.env.VITE_MEILISEARCH_HOST;
 const SEARCH_KEY = import.meta.env.VITE_MEILISEARCH_SEARCH_KEY;
 const INDEX_NAME = 'products';
 
 let _client = null;
 
-function getClient() {
+async function getClient() {
   if (!_client) {
+    const { Meilisearch } = await import('meilisearch');
     _client = new Meilisearch({ host: HOST, apiKey: SEARCH_KEY });
   }
   return _client;
@@ -38,7 +37,8 @@ export async function searchProducts(query, limit = 6) {
     return [];
   }
 
-  const index   = getClient().index(INDEX_NAME);
+  const client  = await getClient();
+  const index   = client.index(INDEX_NAME);
   const results = await index.search(query, {
     limit,
     attributesToRetrieve: ['id', 'title', 'handle', 'vendor', 'price', 'regularPrice', 'wholesalePrices', 'imageUrl', 'imageAlt'],
@@ -62,7 +62,8 @@ export async function searchProducts(query, limit = 6) {
 export async function getProductByHandle(handle) {
   if (!HOST || !SEARCH_KEY) return null;
   try {
-    const index   = getClient().index(INDEX_NAME);
+    const client  = await getClient();
+    const index   = client.index(INDEX_NAME);
     const results = await index.search('', {
       filter: `handle = "${handle}"`,
       limit:  1,
@@ -113,7 +114,7 @@ export async function queryProducts({
 } = {}) {
   if (!HOST || !SEARCH_KEY) return { hits: [], totalHits: 0, totalPages: 0 };
 
-  const index = getClient().index(INDEX_NAME);
+  const index = (await getClient()).index(INDEX_NAME);
 
   // Vehicle terms are appended to the text query so Meilisearch searches
   // make/model across title, tags, and description. Year is omitted because
@@ -187,7 +188,7 @@ export async function queryWholesaleProducts({
 } = {}) {
   if (!HOST || !SEARCH_KEY) return { hits: [], totalHits: 0, totalPages: 0 };
 
-  const index = getClient().index(INDEX_NAME);
+  const index = (await getClient()).index(INDEX_NAME);
 
   const filters = [];
   if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));

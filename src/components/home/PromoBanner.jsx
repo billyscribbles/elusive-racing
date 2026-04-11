@@ -12,17 +12,17 @@ const DEFAULTS = {
 };
 
 export default function PromoBanner() {
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState(DEFAULTS);
 
   useEffect(() => {
     fetch('/api/admin/promo-banner')
       .then(r => r.json())
-      .then(setConfig)
-      .catch(() => setConfig(DEFAULTS));
+      .then(data => { if (data && data.visible !== false) setConfig(data); })
+      .catch(() => {});
   }, []);
 
-  const expired = config?.expiresAt && new Date(config.expiresAt + 'T23:59:59') < new Date();
-  if (!config || !config.visible || expired) return null;
+  const expired = config.expiresAt && new Date(config.expiresAt + 'T23:59:59') < new Date();
+  if (!config.visible || expired) return null;
 
   return (
     <section className="promo-banner">
