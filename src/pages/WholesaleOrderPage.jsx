@@ -234,6 +234,49 @@ export default function WholesaleOrderPage() {
 
   const handleClearAll = () => setQuantities({});
 
+  // Per-row quick add to cart
+  const [rowAdded, setRowAdded] = useState({});
+
+  const handleRowAddToCart = (product) => {
+    const qty = getQty(product);
+    if (qty <= 0) return;
+    const key = getQtyKey(product);
+    const [productId, variantId] = key.split('__');
+
+    let price, stockQuantity, title, image;
+    if (variantId && variantId !== productId) {
+      const variant = variantCache[productId]?.find((v) => v.id === variantId);
+      const { price: displayPrice } = getDisplayPrice(product);
+      price = displayPrice;
+      stockQuantity = variant?.stockQuantity ?? product.stockQuantity;
+      title = `${product.title} - ${variant?.title || ''}`;
+      image = product.imageUrl;
+    } else {
+      const { price: displayPrice } = getDisplayPrice(product);
+      price = displayPrice;
+      stockQuantity = product.stockQuantity;
+      title = product.title;
+      image = product.imageUrl;
+    }
+
+    addItems([{
+      id: productId,
+      variantId: variantId || productId,
+      title,
+      price,
+      quantity: qty,
+      sku: product.sku,
+      stockQuantity,
+      image,
+      href: `/products/${product.handle}`,
+    }]);
+
+    // Clear qty for this row
+    setQuantities((prev) => ({ ...prev, [key]: 0 }));
+    setRowAdded((prev) => ({ ...prev, [product.id]: true }));
+    setTimeout(() => setRowAdded((prev) => ({ ...prev, [product.id]: false })), 1500);
+  };
+
   // ── Stock badge helper ─────────────────────────────────────────────────────
 
   const renderStock = (product) => {
@@ -370,6 +413,7 @@ export default function WholesaleOrderPage() {
                   <th className="col-stock">Stock</th>
                   <th className="col-price">Price</th>
                   <th className="col-qty">Qty</th>
+                  <th className="col-action"></th>
                 </tr>
               </thead>
               <tbody>
@@ -420,11 +464,10 @@ export default function WholesaleOrderPage() {
                           <>
                             {!variants && !isLoadingVariants && (
                               <button
-                                className="wholesale-variant-select"
+                                className="wholesale-load-variants-btn"
                                 onClick={() => loadVariants(product.id)}
-                                style={{ cursor: 'pointer', textAlign: 'left' }}
                               >
-                                Load variants...
+                                Select variant ▾
                               </button>
                             )}
                             {isLoadingVariants && (
@@ -505,6 +548,17 @@ export default function WholesaleOrderPage() {
                             </button>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Quick Add to Cart */}
+                      <td className="cell-action">
+                        <button
+                          className={`wholesale-row-cart-btn${rowAdded[product.id] ? ' wholesale-row-cart-btn--added' : ''}`}
+                          onClick={() => handleRowAddToCart(product)}
+                          disabled={oos || qty <= 0}
+                        >
+                          {rowAdded[product.id] ? 'Added!' : 'Add'}
+                        </button>
                       </td>
                     </tr>
                   );

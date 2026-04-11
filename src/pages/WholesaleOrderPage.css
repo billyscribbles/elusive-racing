@@ -1,28 +1,33 @@
+/* ── Wholesale Catalogue — Light Theme ─────────────────────────────────────── */
+
 .wholesale-page {
   min-height: 80vh;
-  background: #0a0a0a;
-  padding: 32px 24px 120px;
-  color: #fff;
+  background: #f7f7f8;
+  padding: 0 0 120px;
+  color: #1a1a1a;
 }
 
 .wholesale-container {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 
 .wholesale-header {
-  margin-bottom: 24px;
+  padding: 28px 40px 0;
+  margin-bottom: 0;
 }
 
 .wholesale-header h1 {
   font-family: var(--font-primary);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
+  color: #111;
 }
 
 .wholesale-greeting {
@@ -31,63 +36,79 @@
   margin: 0;
 }
 
-/* ── Search + Filters ───────────────────────────────────────────────────────── */
+/* ── Search + Filters (sticky) ─────────────────────────────────────────────── */
 
 .wholesale-controls {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  padding: 20px 40px 16px;
   flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f7f7f8;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .wholesale-search {
   flex: 1;
-  min-width: 240px;
+  min-width: 300px;
   position: relative;
 }
 
 .wholesale-search-icon {
   position: absolute;
-  left: 14px;
+  left: 18px;
   top: 50%;
   transform: translateY(-50%);
-  color: #666;
+  color: #999;
   pointer-events: none;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 
 .wholesale-search input {
   width: 100%;
-  padding: 10px 14px 10px 40px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  color: #fff;
-  font-size: 14px;
+  padding: 14px 18px 14px 50px;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  color: #111;
+  font-size: 16px;
+  font-weight: 500;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .wholesale-search input:focus {
   border-color: #d94040;
+  box-shadow: 0 0 0 3px rgba(217, 64, 64, 0.1);
 }
 
 .wholesale-search input::placeholder {
-  color: #666;
+  color: #aaa;
+  font-weight: 400;
 }
 
+/* Custom select styling */
 .wholesale-filter-select {
-  padding: 10px 14px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  color: #fff;
+  padding: 12px 36px 12px 14px;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  color: #333;
   font-size: 14px;
   min-width: 160px;
   outline: none;
   cursor: pointer;
-  appearance: auto;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px;
 }
 
 .wholesale-filter-select:focus {
@@ -98,13 +119,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  color: #ccc;
+  color: #555;
   user-select: none;
   white-space: nowrap;
   transition: border-color 0.2s;
@@ -112,7 +133,8 @@
 
 .wholesale-stock-toggle.active {
   border-color: #d94040;
-  color: #fff;
+  color: #d94040;
+  background: #fef2f2;
 }
 
 .wholesale-stock-toggle input[type="checkbox"] {
@@ -122,9 +144,10 @@
 /* ── Table ──────────────────────────────────────────────────────────────────── */
 
 .wholesale-table-wrapper {
-  border: 1px solid #222;
-  border-radius: 8px;
-  overflow: hidden;
+  border: none;
+  border-radius: 0;
+  overflow-x: auto;
+  padding: 0 40px;
 }
 
 .wholesale-table {
@@ -134,82 +157,99 @@
 }
 
 .wholesale-table th {
-  background: #111;
-  border-bottom: 2px solid #d94040;
-  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 12px 14px;
   font-family: var(--font-primary);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #999;
+  letter-spacing: 0.8px;
+  color: #888;
   text-align: left;
   position: sticky;
-  top: 0;
-  z-index: 2;
+  top: 73px;
+  z-index: 5;
 }
 
-.wholesale-table th.col-img { width: 50px; }
-.wholesale-table th.col-sku { width: 120px; }
-.wholesale-table th.col-name { }
-.wholesale-table th.col-brand { width: 120px; }
-.wholesale-table th.col-stock { width: 80px; text-align: center; }
-.wholesale-table th.col-price { width: 130px; text-align: right; }
-.wholesale-table th.col-qty { width: 140px; text-align: center; }
+/* Column widths — generous so content fits on one line */
+.wholesale-table th.col-img    { width: 80px; }
+.wholesale-table th.col-sku    { width: 140px; }
+.wholesale-table th.col-name   { /* takes remaining space */ }
+.wholesale-table th.col-brand  { width: 140px; }
+.wholesale-table th.col-stock  { width: 110px; text-align: center; }
+.wholesale-table th.col-price  { width: 170px; text-align: right; }
+.wholesale-table th.col-qty    { width: 130px; text-align: center; }
+.wholesale-table th.col-action { width: 90px; text-align: center; }
 
 .wholesale-table td {
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 14px;
-  color: #ddd;
-  border-bottom: 1px solid #1e1e1e;
+  color: #333;
+  border-bottom: 1px solid #eee;
   vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Allow name column to wrap for variants */
+.wholesale-table td.cell-name {
+  white-space: normal;
+  overflow: visible;
 }
 
 .wholesale-table tr:nth-child(even) td {
-  background: #111;
+  background: #fafafa;
 }
 
 .wholesale-table tr:nth-child(odd) td {
-  background: #0e0e0e;
+  background: #fff;
 }
 
 .wholesale-table tr:hover td {
-  background: #1a1a1a;
+  background: #fdf2f2;
 }
 
 .wholesale-table tr.row-active td {
+  background: #fef2f2;
   border-left: 3px solid #d94040;
 }
 
 .wholesale-table tr.row-active td:first-child {
-  padding-left: 9px;
+  padding-left: 11px;
 }
 
 .wholesale-table tr.row-out-of-stock td {
   opacity: 0.4;
 }
 
-/* Cell content */
+/* ── Cell content ──────────────────────────────────────────────────────────── */
+
 .wholesale-thumb {
-  width: 36px;
-  height: 36px;
+  width: 60px;
+  height: 60px;
   object-fit: cover;
-  border-radius: 4px;
-  background: #1a1a1a;
+  border-radius: 6px;
+  background: #f0f0f0;
+  border: 1px solid #e8e8e8;
+  display: block;
 }
 
 .wholesale-sku {
-  font-family: monospace;
+  font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 12px;
-  color: #999;
+  color: #888;
+  white-space: nowrap;
 }
 
 .wholesale-product-name {
   font-weight: 600;
-  color: #fff;
+  color: #111;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .wholesale-product-name a {
@@ -223,7 +263,7 @@
 
 .wholesale-brand {
   font-size: 13px;
-  color: #888;
+  color: #777;
 }
 
 /* Stock badge */
@@ -231,11 +271,26 @@
   text-align: center;
   font-size: 12px;
   font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  white-space: nowrap;
 }
 
-.wholesale-stock.stock-high { color: #38a169; }
-.wholesale-stock.stock-low { color: #dd6b20; }
-.wholesale-stock.stock-out { color: #e53e3e; }
+.wholesale-stock.stock-high {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.wholesale-stock.stock-low {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.wholesale-stock.stock-out {
+  color: #991b1b;
+  background: #fee2e2;
+}
 
 /* Price */
 .wholesale-price-cell {
@@ -246,34 +301,37 @@
 .wholesale-price-ws {
   font-weight: 700;
   color: #d94040;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .wholesale-price-retail {
-  font-size: 12px;
-  color: #666;
+  display: block;
+  font-size: 11px;
+  color: #aaa;
   text-decoration: line-through;
-  margin-left: 6px;
+  margin-top: 1px;
 }
 
 .wholesale-price-savings {
+  display: inline-block;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
   background: #d94040;
-  padding: 1px 4px;
-  border-radius: 3px;
-  margin-left: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
   white-space: nowrap;
 }
 
 .wholesale-price-same {
   font-weight: 600;
-  color: #ddd;
-  font-size: 14px;
+  color: #333;
+  font-size: 15px;
 }
 
-/* Quantity controls */
+/* ── Quantity controls ─────────────────────────────────────────────────────── */
+
 .wholesale-qty-cell {
   text-align: center;
 }
@@ -282,18 +340,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
-  border: 1px solid #333;
-  border-radius: 4px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
   overflow: hidden;
+  background: #fff;
 }
 
 .wholesale-qty-btn {
-  width: 28px;
-  height: 30px;
+  width: 32px;
+  height: 34px;
   border: none;
-  background: #1a1a1a;
-  color: #ccc;
-  font-size: 16px;
+  background: #f5f5f5;
+  color: #555;
+  font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -302,8 +361,8 @@
 }
 
 .wholesale-qty-btn:hover {
-  background: #333;
-  color: #fff;
+  background: #e0e0e0;
+  color: #111;
 }
 
 .wholesale-qty-btn:disabled {
@@ -312,13 +371,13 @@
 }
 
 .wholesale-qty-input {
-  width: 40px;
-  height: 30px;
+  width: 42px;
+  height: 34px;
   border: none;
-  border-left: 1px solid #333;
-  border-right: 1px solid #333;
-  background: #111;
-  color: #fff;
+  border-left: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+  background: #fff;
+  color: #111;
   text-align: center;
   font-size: 14px;
   font-weight: 600;
@@ -332,28 +391,92 @@
   margin: 0;
 }
 
-/* Variant dropdown */
+/* ── Quick Add to Cart button (per row) ────────────────────────────────────── */
+
+.wholesale-row-cart-btn {
+  padding: 7px 14px;
+  background: #d94040;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.wholesale-row-cart-btn:hover {
+  background: #c03333;
+}
+
+.wholesale-row-cart-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.wholesale-row-cart-btn--added {
+  background: #16a34a;
+}
+
+.wholesale-row-cart-btn--added:hover {
+  background: #16a34a;
+}
+
+/* ── Variant controls ──────────────────────────────────────────────────────── */
+
 .wholesale-variant-select {
   display: block;
   margin-top: 4px;
-  padding: 4px 6px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #ccc;
-  font-size: 11px;
+  padding: 6px 32px 6px 10px;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  color: #333;
+  font-size: 12px;
   width: 100%;
-  max-width: 200px;
+  max-width: 220px;
   outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
 }
 
 .wholesale-variant-select:focus {
   border-color: #d94040;
 }
 
+.wholesale-load-variants-btn {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 6px 14px;
+  background: #f0f0f0;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  color: #444;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wholesale-load-variants-btn:hover {
+  background: #e0e0e0;
+  border-color: #999;
+  color: #111;
+}
+
 .wholesale-variant-loading {
   font-size: 11px;
-  color: #666;
+  color: #999;
   margin-top: 4px;
 }
 
@@ -364,13 +487,14 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: #111;
+  background: #fff;
   border-top: 2px solid #d94040;
-  padding: 14px 24px;
+  padding: 14px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   animation: slideUp 0.2s ease;
 }
 
@@ -381,11 +505,11 @@
 
 .wholesale-bulk-summary {
   font-size: 14px;
-  color: #ccc;
+  color: #555;
 }
 
 .wholesale-bulk-summary strong {
-  color: #fff;
+  color: #111;
 }
 
 .wholesale-bulk-actions {
@@ -396,9 +520,9 @@
 .wholesale-btn-clear {
   padding: 10px 20px;
   background: transparent;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: #ccc;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  color: #555;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -406,15 +530,15 @@
 }
 
 .wholesale-btn-clear:hover {
-  border-color: #888;
-  color: #fff;
+  border-color: #999;
+  color: #111;
 }
 
 .wholesale-btn-add-cart {
   padding: 10px 24px;
   background: #d94040;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -434,17 +558,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 20px;
-  padding-bottom: 20px;
+  gap: 6px;
+  margin-top: 24px;
+  padding: 0 40px 20px;
 }
 
 .wholesale-page-btn {
   padding: 8px 14px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #ccc;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  color: #555;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
@@ -452,7 +576,7 @@
 
 .wholesale-page-btn:hover:not(:disabled) {
   border-color: #d94040;
-  color: #fff;
+  color: #d94040;
 }
 
 .wholesale-page-btn:disabled {
@@ -478,20 +602,20 @@
 .wholesale-loading,
 .wholesale-empty {
   text-align: center;
-  padding: 60px 20px;
-  color: #666;
+  padding: 80px 20px;
+  color: #999;
   font-size: 15px;
 }
 
 .wholesale-loading .spinner {
   display: inline-block;
-  width: 24px;
-  height: 24px;
-  border: 3px solid #333;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e0e0e0;
   border-top-color: #d94040;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 @keyframes spin {
@@ -504,14 +628,15 @@
   position: fixed;
   top: 80px;
   right: 24px;
-  background: #1a1a1a;
-  border: 1px solid #38a169;
-  border-radius: 8px;
+  background: #fff;
+  border: 2px solid #16a34a;
+  border-radius: 10px;
   padding: 14px 20px;
-  color: #38a169;
+  color: #166534;
   font-size: 14px;
   font-weight: 600;
   z-index: 200;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   animation: fadeInOut 2.5s ease forwards;
 }
 
@@ -524,9 +649,9 @@
 
 /* ── Mobile (cards layout) ──────────────────────────────────────────────────── */
 
-@media (max-width: 768px) {
-  .wholesale-page {
-    padding: 20px 16px 140px;
+@media (max-width: 900px) {
+  .wholesale-header {
+    padding: 20px 16px 0;
   }
 
   .wholesale-header h1 {
@@ -535,10 +660,17 @@
 
   .wholesale-controls {
     flex-direction: column;
+    padding: 16px;
+    gap: 8px;
   }
 
   .wholesale-search {
     min-width: unset;
+  }
+
+  .wholesale-search input {
+    font-size: 15px;
+    padding: 12px 16px 12px 44px;
   }
 
   .wholesale-filter-select {
@@ -547,8 +679,7 @@
   }
 
   .wholesale-table-wrapper {
-    border: none;
-    border-radius: 0;
+    padding: 0 16px;
   }
 
   .wholesale-table,
@@ -565,32 +696,35 @@
   }
 
   .wholesale-table tr {
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
     margin-bottom: 10px;
-    padding: 12px;
+    padding: 14px;
     display: grid;
-    grid-template-columns: 44px 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 4px 10px;
+    grid-template-columns: 64px 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 4px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   .wholesale-table tr:hover {
-    background: #1a1a1a;
+    background: #fdf2f2;
   }
 
   .wholesale-table tr.row-active {
     border-left: 3px solid #d94040;
+    background: #fef2f2;
   }
 
   .wholesale-table td {
     padding: 0;
     border: none;
     background: transparent !important;
+    white-space: normal;
+    overflow: visible;
   }
 
-  /* Image cell — spans 3 rows */
   .wholesale-table td.cell-img {
     grid-row: 1 / 3;
     grid-column: 1;
@@ -600,11 +734,10 @@
   }
 
   .wholesale-thumb {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
   }
 
-  /* Name + SKU + brand row */
   .wholesale-table td.cell-name {
     grid-row: 1;
     grid-column: 2;
@@ -623,7 +756,6 @@
     margin-top: 2px;
   }
 
-  /* Stock + price + qty row */
   .wholesale-table td.cell-stock {
     grid-row: 2;
     grid-column: 2;
@@ -644,12 +776,22 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #1e1e1e;
-    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    margin-top: 6px;
   }
 
-  /* Price + stock inline on mobile */
+  .wholesale-table td.cell-action {
+    grid-row: 4;
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+
+  .wholesale-row-cart-btn {
+    width: 100%;
+    padding: 10px;
+  }
+
   .wholesale-mobile-row {
     display: flex;
     align-items: center;
@@ -669,14 +811,30 @@
     padding: 10px 16px;
     font-size: 13px;
   }
+
+  .wholesale-pagination {
+    padding: 0 16px 20px;
+  }
 }
 
 @media (max-width: 480px) {
   .wholesale-page {
-    padding: 16px 12px 140px;
+    padding: 0 0 140px;
+  }
+
+  .wholesale-header {
+    padding: 16px 12px 0;
   }
 
   .wholesale-header h1 {
     font-size: 20px;
+  }
+
+  .wholesale-controls {
+    padding: 12px;
+  }
+
+  .wholesale-table-wrapper {
+    padding: 0 12px;
   }
 }

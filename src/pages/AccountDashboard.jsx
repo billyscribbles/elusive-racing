@@ -136,8 +136,8 @@ export default function AccountDashboard() {
           </Link>
         )}
 
-        {/* Wholesale Tabs */}
-        {wholesale && (
+        {/* Wholesale / Admin Catalogue Tabs */}
+        {(wholesale || admin) && (
           <div className="dash-tabs">
             <button
               className={`dash-tab${activeTab === 'overview' ? ' dash-tab--active' : ''}`}
@@ -152,11 +152,6 @@ export default function AccountDashboard() {
               Catalogue
             </button>
           </div>
-        )}
-
-        {/* Wholesale Catalogue Tab */}
-        {wholesale && activeTab === 'catalogue' && (
-          <WholesaleOrderPage />
         )}
 
         {/* Overview Tab (default for all users) */}
@@ -333,6 +328,11 @@ export default function AccountDashboard() {
 
         </div>}
       </div>
+
+      {/* Wholesale Catalogue Tab — rendered outside .container for full width */}
+      {(wholesale || admin) && activeTab === 'catalogue' && (
+        <WholesaleOrderPage />
+      )}
     </div>
   );
 }
