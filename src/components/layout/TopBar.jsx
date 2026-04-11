@@ -34,7 +34,7 @@ export default function TopBar() {
 
         {/* Right — account links */}
         <div className="topbar-right">
-          <a href={loggedIn ? '/my-account/dashboard' : '/wholesale-registration'} className="topbar-link">
+          <a href={wholesale ? '/my-account/dashboard' : '/wholesale-registration'} className="topbar-link">
             {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
           </a>
           <span className="topbar-divider">|</span>

@@ -436,7 +436,7 @@ export default function Navigation() {
                 </li>
               ))}
               <li className="mobile-menu-item mobile-menu-item--secondary">
-                <a href={loggedIn ? '/my-account/dashboard' : '/wholesale-registration'} className="mobile-menu-link">
+                <a href={wholesale ? '/my-account/dashboard' : '/wholesale-registration'} className="mobile-menu-link">
                   {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
                 </a>
               </li>
