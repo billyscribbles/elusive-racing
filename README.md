@@ -1,6 +1,6 @@
 # Elusive Racing
 
-Melbourne's premier Honda performance parts storefront. Built with React + Vite, designed for Shopify integration.
+Melbourne's premier Honda performance parts storefront. Built with React + Vite, powered by WooCommerce and Meilisearch.
 
 ## Live Deployment
 
@@ -62,14 +62,15 @@ yarn preview
 
 ## Environment Variables
 
-Create a `.env` file in the project root when you're ready to connect Shopify:
+Create a `.env` file in the project root with your WooCommerce and service credentials:
 
 ```env
-VITE_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
-VITE_SHOPIFY_STOREFRONT_TOKEN=your-public-storefront-access-token
+VITE_WC_URL=https://elusiveracing.com.au
+VITE_WC_CONSUMER_KEY=ck_your_key
+VITE_WC_CONSUMER_SECRET=cs_your_secret
 ```
 
-These are used by `src/lib/shopify.js` which contains the Storefront API client.
+These are used by `src/lib/woocommerce.js` which contains the WooCommerce REST API client.
 
 ---
 
@@ -88,7 +89,8 @@ src/
   data/
     navigation.js         # Nav items, brands, vehicle data, featured categories
   lib/
-    shopify.js            # Shopify Storefront API client (products, collections, cart)
+    woocommerce.js        # WooCommerce REST API client (products, categories, orders)
+    meilisearch.js        # Meilisearch search client
   index.css               # Global styles and CSS variables
 ```
 
@@ -212,17 +214,3 @@ import MyNewPage from './pages/MyNewPage';
 <Route path="/my-page" element={<MyNewPage />} />
 ```
 
----
-
-## Shopify Integration
-
-The Storefront API client is ready in `src/lib/shopify.js`. Available functions:
-
-- `getFeaturedProducts(count)` — fetch best-selling products
-- `getProductByHandle(handle)` — fetch a single product
-- `searchProducts(query, count)` — search products
-- `getCollectionByHandle(handle, count)` — fetch a collection with products
-- `createCart()` — create a new cart
-- `addToCart(cartId, variantId, quantity)` — add item to cart
-- `removeFromCart(cartId, lineIds)` — remove item from cart
-- `updateCartLine(cartId, lineId, quantity)` — update item quantity

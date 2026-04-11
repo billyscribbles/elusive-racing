@@ -22,11 +22,11 @@
 ## Project Overview
 
 We are rebuilding the Elusive Racing website (https://elusiveracing.com.au) as a modern,
-custom React application. The goal is to replicate and improve the existing frontend while
-delegating all shopping functionality (cart, checkout, payments, shipping, freight, tax,
-fulfilment) to Shopify via the Storefront API.
+custom React application. The goal is to replicate and improve the existing frontend with
+a custom checkout flow powered by Stripe and WooCommerce.
 
-This is a **headless Shopify** setup. We own the entire frontend. Shopify is the backend.
+This is a **headless WooCommerce** setup. We own the entire frontend. WooCommerce is the
+product/inventory backend, and we handle cart, checkout, and payments ourselves.
 
 ---
 
@@ -43,7 +43,9 @@ unless explicitly asked to migrate.
 - Homepage: Hero (video + vehicle finder), ServicesStrip, ContactBanner, CategoryGrid, FeaturedProducts, BrandsSection, InstagramSection (video reel)
 - StickyFinder bar (slides in above nav on scroll)
 - `/services` page with hero, service rows, FAQ, CTA — booking links to MechanicDesk
-- Shopify Storefront API client in `src/lib/shopify.js` (native fetch, no hydrogen-react yet)
+- WooCommerce REST API client in `src/lib/woocommerce.js`
+- Meilisearch integration for product search in `src/lib/meilisearch.js`
+- Custom checkout with Stripe (card payments) and BACS (bank transfer)
 - All styling via plain CSS with CSS custom properties (no Tailwind yet)
 
 **Key business details:**
@@ -61,11 +63,13 @@ unless explicitly asked to migrate.
 - **Framework**: React 18+ with TypeScript
 - **Routing**: React Router v6
 - **Styling**: Tailwind CSS
-- **Shopping**: Shopify Storefront API (GraphQL) via `@shopify/hydrogen-react`
+- **Shopping Backend**: WooCommerce REST API
+- **Search**: Meilisearch
+- **Payments**: Stripe (card) + BACS (bank transfer)
 - **UI Icons**: `lucide-react`
 - **Social/Brand Icons**: `react-icons` (fa6 subset)
 - **Payment Icons**: `react-svg-credit-card-payment-icons`
-- **State Management**: Zustand (UI state) + Shopify cart API (commerce state)
+- **State Management**: Zustand (UI state + cart state)
 - **Build Tool**: Vite
 
 ---
@@ -75,26 +79,29 @@ unless explicitly asked to migrate.
 Elusive Racing uses **Cin7** as the inventory management system. Cin7 is the source of truth for stock levels, SKUs, and product availability.
 
 The sync flow is:
-- **Cin7 → Shopify**: stock levels, product availability, and SKUs should sync from Cin7 to Shopify (via Cin7's native Shopify integration or webhooks). Do not manage inventory directly in Shopify.
-- **Shopify → Frontend**: the React frontend reads stock/availability from Shopify Storefront API as normal — Cin7 is upstream and invisible to the frontend.
+- **Cin7 → WooCommerce**: stock levels, product availability, and SKUs sync from Cin7 to WooCommerce. Do not manage inventory directly in WooCommerce.
+- **WooCommerce → Meilisearch → Frontend**: the React frontend reads products from Meilisearch (synced from WooCommerce) for fast search, and from WooCommerce REST API for full product details.
 
-Do not build any direct Cin7 API calls in the React frontend. All inventory data the frontend needs should come through Shopify after Cin7 has synced it.
+Do not build any direct Cin7 API calls in the React frontend. All inventory data the frontend needs comes through WooCommerce after Cin7 has synced it.
 
 ---
 
-## What Shopify Handles (Do NOT rebuild these)
+## What WooCommerce Handles
 
 - Product catalogue, inventory, and variants
-- Cart and checkout flow
-- Payments (credit card, Afterpay, PayPal, etc.)
-- Shipping, freight, and delivery calculations
-- Tax calculations
 - Order management and fulfilment
-- Customer accounts and order history
+- Customer accounts (via JWT authentication)
 - Discount codes and promotions
+- Tax calculations
+- Wholesale tier pricing (role-based percentage discounts)
 
-All of the above should be routed through Shopify's Storefront API or by redirecting
-to the Shopify-hosted checkout URL. Never build custom payment or shipping logic.
+## What the Custom Frontend Handles
+
+- Cart state (Zustand store, persisted in localStorage)
+- Multi-step checkout flow (contact → shipping → payment)
+- Payments via Stripe (card) and BACS (bank transfer)
+- Shipping rate calculation (Australia Post API via server.js)
+- Order placement (WooCommerce REST API)
 
 ---
 
@@ -103,12 +110,12 @@ to the Shopify-hosted checkout URL. Never build custom payment or shipping logic
 - Full site layout and navigation
 - Homepage with hero, featured products, brand logos, banners
 - Product listing pages (by category, brand, vehicle fitment)
-- Product detail pages (pulling data from Shopify Storefront API)
+- Product detail pages (pulling data from WooCommerce REST API)
 - Brand directory page
 - Vehicle fitment selector / search
-- "Add to Cart" — calls Shopify Storefront API to create/update cart
-- Cart drawer/sidebar — reads from Shopify cart, links to Shopify checkout
-- Search (using Shopify Storefront search API)
+- "Add to Cart" — adds to Zustand cart store (persisted in localStorage)
+- Cart drawer/sidebar — reads from local cart store
+- Search (using Meilisearch)
 - Static pages: About, Contact, Wholesale enquiry
 - Blog/news section
 - Footer with social links, payment icons, trust badges
@@ -145,7 +152,7 @@ Based on https://elusiveracing.com.au, the key sections are:
 - Product title, brand, SKU, price
 - Variant selector (size, spec options)
 - Vehicle fitment table
-- Add to Cart button → Shopify cart
+- Add to Cart button → local cart (Zustand)
 - Product description tabs (Description, Fitment, Shipping)
 - Related products
 
@@ -155,9 +162,9 @@ Based on https://elusiveracing.com.au, the key sections are:
 
 ### Cart
 - Slide-out cart drawer
-- Line items from Shopify cart
+- Line items from local cart store
 - Subtotal
-- "Proceed to Checkout" button → redirect to Shopify checkout URL (do not rebuild checkout)
+- "Proceed to Checkout" button → custom multi-step checkout
 
 ---
 
@@ -169,30 +176,9 @@ Based on https://elusiveracing.com.au, the key sections are:
 - **Cards**: Dark cards with subtle borders, hover lift effects
 - **Imagery**: Large, high-quality hero images. Motorsport photography aesthetic.
 - **Mobile-first**: Design mobile-first
-- **Performance**: Lazy load images, skeleton loaders while Shopify data fetches
+- **Performance**: Lazy load images, skeleton loaders while API data fetches
 - **Trust signals**: Payment icons (Visa, Mastercard, Afterpay, PayPal, Amex) in footer
 - Brand logo wall — smooth infinite scroll marquee
-
----
-
-## Shopify Integration Notes
-
-Use `@shopify/hydrogen-react` for all Shopify data fetching (target — currently using native fetch in `src/lib/shopify.js`).
-
-Key Storefront API operations needed:
-- `getProducts` — product listing pages
-- `getProduct` — product detail page
-- `getCollections` — category/brand pages
-- `createCart` / `addCartLines` / `updateCartLines` / `removeCartLines` — cart management
-- `getCart` — read current cart
-- `predictiveSearch` / `search` — search bar
-- Cart checkout URL: `cart.checkoutUrl` — redirect here, never build custom checkout
-
-Store the Shopify Storefront API token in `.env`:
-```
-VITE_SHOPIFY_STORE_DOMAIN=elusiveracing.myshopify.com
-VITE_SHOPIFY_STOREFRONT_TOKEN=your_token_here
-```
 
 ---
 
@@ -220,12 +206,13 @@ src/
     useSearch.ts
     useProducts.ts
   lib/
-    shopify.ts
-    queries.ts
+    woocommerce.js
+    meilisearch.js
+    formatPrice.js
   store/
-    cartStore.ts
-  types/
-    shopify.ts
+    cartStore.js
+    authStore.js
+    vehicleStore.js
 ```
 
 ---
@@ -234,10 +221,10 @@ src/
 
 - All components use TypeScript with explicit prop types
 - Tailwind only for styling — no CSS files except global reset
-- All Shopify data fetching in hooks, never inline in components
-- Cart state lives in Shopify (via Storefront API) — persist `cartId` in localStorage
+- All WooCommerce data fetching in lib modules, never inline in components
+- Cart state lives in Zustand store, persisted in localStorage
 - Images use `loading="lazy"` and explicit `width`/`height` to prevent layout shift
-- Never hardcode product data — everything comes from Shopify Storefront API
+- Never hardcode product data — everything comes from WooCommerce REST API or Meilisearch
 - Mobile breakpoints: design mobile-first, then `md:` and `lg:` for larger screens
 - Accessibility: all interactive elements have aria labels, images have alt text
 
@@ -245,10 +232,8 @@ src/
 
 ## What NOT to Do
 
-- Do not build a custom checkout page
-- Do not store payment information
-- Do not build order management
-- Do not reinvent what Shopify already handles
+- Do not store raw payment card details — Stripe handles PCI compliance
+- Do not build order management UI (WooCommerce admin handles this)
 - Do not use CSS modules or styled-components — Tailwind only (target)
 - Do not use class components — functional components + hooks only
 - Do not install Redux — use Zustand for any state beyond React useState
