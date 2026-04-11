@@ -162,6 +162,44 @@ yarn dev
 
 ---
 
+## Stripe Test Mode
+
+The app uses Stripe test keys for development. No real charges are made.
+
+### Test Card Numbers
+
+| Scenario | Card Number | Expiry | CVC |
+|---|---|---|---|
+| **Successful payment** | `4242 4242 4242 4242` | Any future date (e.g. `12/28`) | Any 3 digits (e.g. `123`) |
+| **Card declined** | `4000 0000 0000 0002` | Any future date | Any 3 digits |
+| **Insufficient funds** | `4000 0000 0000 9995` | Any future date | Any 3 digits |
+| **3D Secure required** | `4000 0025 0000 3155` | Any future date | Any 3 digits |
+| **Expired card** | `4000 0000 0000 0069` | Any future date | Any 3 digits |
+| **Incorrect CVC** | `4000 0000 0000 0127` | Any future date | Any 3 digits |
+| **Processing error** | `4000 0000 0000 0119` | Any future date | Any 3 digits |
+
+### How to Test
+
+1. Add items to cart and go through checkout
+2. Fill in contact and shipping details (any test data is fine)
+3. On the payment page, select "Pay Online"
+4. Enter a test card number from the table above
+5. Click "Complete Order"
+6. You should see the order confirmation receipt page
+
+View test payments in the Stripe dashboard: https://dashboard.stripe.com/test/payments (make sure "Test mode" is toggled on).
+
+### Stripe Environment Variables
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+Both must be **test** keys (prefixed with `sk_test_` and `pk_test_`). Never use live keys in development.
+
+---
+
 ## Adding a New Page
 
 1. Create the page component in `src/pages/`

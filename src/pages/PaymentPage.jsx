@@ -7,6 +7,7 @@ import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Bu
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
+import useOrderStore from '../store/orderStore';
 import './PaymentPage.css';
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
@@ -98,13 +99,35 @@ function MiniOrderSummary({ shippingCost }) {
   );
 }
 
+// ── Build order snapshot for confirmation page ───────────────────────────────
+function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod }) {
+  const subtotal     = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const shippingCost = fulfillment === 'collect' ? 0 : (freight?.price ?? 0);
+  return {
+    orderId:            wcResponse?.order_id ?? wcResponse?.id ?? `ER-${Date.now()}`,
+    orderDate:          new Date().toISOString(),
+    customer:           { ...contact },
+    shippingAddress:    fulfillment === 'collect'
+      ? { address1: '1/32 Graham Rd', city: 'Clayton South', state: 'VIC', postcode: '3169', country: 'Australia' }
+      : { ...shipping },
+    fulfillment,
+    items:              items.map(i => ({ name: i.name, brand: i.brand, quantity: i.quantity, price: i.price, image: i.image })),
+    subtotal,
+    shippingCost,
+    shippingLabel:      fulfillment === 'collect' ? 'Click & Collect' : (freight?.label ?? 'Shipping'),
+    total:              subtotal + shippingCost,
+    paymentMethod,
+    paymentMethodLabel: paymentMethod === 'stripe_cc' ? 'Credit Card (Stripe)' : 'Direct Bank Transfer',
+  };
+}
+
 // ── Stripe payment form (inside Elements provider) ────────────────────────────
 function StripePaymentForm({ onSuccess }) {
   const stripe   = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
   const { items } = useCartStore();
-  const { contact, shipping, fulfillment } = useCheckoutStore();
+  const { contact, shipping, fulfillment, freight } = useCheckoutStore();
 
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
@@ -136,11 +159,14 @@ function StripePaymentForm({ onSuccess }) {
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        await placeOrder({
+        const wcResponse = await placeOrder({
           items, contact, shipping, fulfillment,
           paymentMethod: 'stripe_cc',
           paymentData:   [{ key: 'stripe_payment_method', value: paymentIntent.payment_method }],
-        }).catch(() => {}); // best-effort — payment already taken
+        }).catch(() => null); // best-effort — payment already taken
+        useOrderStore.getState().setOrder(
+          buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod: 'stripe_cc' })
+        );
         onSuccess();
         navigate('/order-confirmation');
       }
@@ -170,7 +196,7 @@ function StripePaymentForm({ onSuccess }) {
 function BacsForm({ onSuccess }) {
   const navigate = useNavigate();
   const { items } = useCartStore();
-  const { contact, shipping, fulfillment } = useCheckoutStore();
+  const { contact, shipping, fulfillment, freight } = useCheckoutStore();
 
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
@@ -180,7 +206,10 @@ function BacsForm({ onSuccess }) {
     setError(null);
     setLoading(true);
     try {
-      await placeOrder({ items, contact, shipping, fulfillment, paymentMethod: 'bacs', paymentData: [] });
+      const wcResponse = await placeOrder({ items, contact, shipping, fulfillment, paymentMethod: 'bacs', paymentData: [] });
+      useOrderStore.getState().setOrder(
+        buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod: 'bacs' })
+      );
       onSuccess();
       navigate('/order-confirmation');
     } catch (err) {

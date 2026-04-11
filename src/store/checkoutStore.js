@@ -13,6 +13,12 @@ const useCheckoutStore = create(
       setShipping:    (data) => set((s) => ({ shipping: { ...s.shipping, ...data }, freight: null })),
       setFulfillment: (val)  => set({ fulfillment: val, freight: null }),
       setFreight:     (val)  => set({ freight: val }),
+      resetCheckout:  ()     => set({
+        contact:     { email: '', firstName: '', lastName: '', phone: '' },
+        shipping:    { address1: '', address2: '', city: '', state: '', postcode: '', country: 'Australia' },
+        fulfillment: 'delivery',
+        freight:     null,
+      }),
     }),
     { name: 'elusive-checkout' }
   )

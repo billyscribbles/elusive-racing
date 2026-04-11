@@ -19,6 +19,8 @@
     "@stripe/react-stripe-js": "^6.0.0",
     "@stripe/stripe-js": "^9.0.0",
     "date-fns": "^4.1.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.468.0",
     "marked": "^17.0.5",
     "meilisearch": "^0.57.0",

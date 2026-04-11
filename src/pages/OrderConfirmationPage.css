@@ -1,27 +1,23 @@
 .oc-page {
   background: var(--color-bg);
   min-height: 100vh;
-  padding: 80px 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  padding: 60px 0 80px;
 }
-
-.oc-card {
-  max-width: 560px;
+.oc-page .container {
+  max-width: 720px;
   margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Success header ── */
+.oc-success {
   text-align: center;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 10px;
-  padding: 56px 40px;
+  margin-bottom: 32px;
 }
-
-.oc-icon {
+.oc-success-icon {
   color: #22c55e;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
-
 .oc-title {
   font-family: var(--font-primary);
   font-size: 26px;
@@ -29,44 +25,244 @@
   color: var(--color-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 10px;
-}
-
-.oc-subtitle {
-  font-size: 15px;
-  color: var(--color-mid);
   margin-bottom: 8px;
 }
-
-.oc-email {
+.oc-subtitle {
   font-size: 14px;
   color: var(--color-mid);
-  margin-bottom: 24px;
+  line-height: 1.5;
 }
-.oc-email strong {
+.oc-subtitle strong {
   color: var(--color-dark);
 }
 
-.oc-collect-note {
+/* ── Receipt card ── */
+.oc-receipt {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 10px;
+  padding: 40px;
+  margin-bottom: 28px;
+}
+
+/* ── Business header ── */
+.oc-receipt-biz {
+  margin-bottom: 4px;
+}
+.oc-receipt-biz-name {
+  font-family: var(--font-primary);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.oc-receipt-biz p {
+  font-size: 13px;
+  color: var(--color-mid);
+  line-height: 1.6;
+}
+
+/* ── Divider ── */
+.oc-receipt-divider {
+  height: 1px;
+  background: var(--color-border, #e5e5e5);
+  margin: 20px 0;
+}
+
+/* ── Order meta row ── */
+.oc-receipt-meta {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.oc-receipt-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.oc-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid);
+}
+.oc-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-dark);
+}
+.oc-payment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Customer + Delivery details ── */
+.oc-receipt-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.oc-receipt-section-title {
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid);
+  margin-bottom: 8px;
+}
+.oc-detail-line {
+  font-size: 13px;
+  color: var(--color-dark);
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.oc-detail-line svg {
+  color: var(--color-mid);
+  flex-shrink: 0;
+}
+.oc-collect-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   background: #fef3c7;
   color: #92400e;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 6px;
-  margin-bottom: 28px;
 }
 
+/* ── Items table ── */
+.oc-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.oc-items-table thead tr {
+  border-bottom: 2px solid var(--color-border, #e5e5e5);
+}
+.oc-items-table th {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid);
+  padding: 10px 8px;
+  text-align: left;
+}
+.oc-th-qty,
+.oc-th-price,
+.oc-th-total {
+  text-align: right;
+}
+.oc-items-table tbody tr {
+  border-bottom: 1px solid var(--color-border, #e5e5e5);
+}
+.oc-items-table td {
+  padding: 12px 8px;
+  vertical-align: top;
+  color: var(--color-dark);
+}
+.oc-td-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.oc-item-brand {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.oc-item-name {
+  font-weight: 500;
+}
+.oc-td-qty,
+.oc-td-price,
+.oc-td-total {
+  text-align: right;
+  white-space: nowrap;
+}
+.oc-td-total {
+  font-weight: 600;
+}
+
+/* ── Totals ── */
+.oc-totals {
+  margin-top: 16px;
+  border-top: 1px solid var(--color-border, #e5e5e5);
+  padding-top: 16px;
+}
+.oc-totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--color-dark);
+}
+.oc-totals-total {
+  border-top: 2px solid var(--color-dark);
+  margin-top: 8px;
+  padding-top: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: var(--font-primary);
+}
+
+/* ── BACS note ── */
+.oc-bacs-note {
+  margin-top: 20px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 16px;
+  font-size: 13px;
+  color: #0c4a6e;
+  line-height: 1.7;
+}
+.oc-bacs-note strong {
+  color: #0c4a6e;
+}
+
+/* ── PDF button ── */
+.oc-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 12px 24px;
+  background: var(--color-dark);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.oc-pdf-btn:hover {
+  background: #333;
+}
+
+/* ── Actions ── */
 .oc-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 28px;
+  align-items: center;
 }
-
 .oc-btn {
   display: inline-flex;
   align-items: center;
@@ -80,8 +276,9 @@
   padding: 14px 28px;
   border-radius: 6px;
   transition: background 0.15s, color 0.15s;
+  width: 100%;
+  max-width: 320px;
 }
-
 .oc-btn--primary {
   background: var(--color-red);
   color: #fff;
@@ -89,7 +286,6 @@
 .oc-btn--primary:hover {
   background: #c03333;
 }
-
 .oc-btn--secondary {
   background: transparent;
   color: var(--color-mid);
@@ -100,11 +296,41 @@
   border-color: var(--color-dark);
 }
 
+/* ── Empty state ── */
+.oc-card--empty {
+  max-width: 480px;
+  margin: 80px auto 0;
+  text-align: center;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 10px;
+  padding: 56px 40px;
+}
+
+/* ── Mobile ── */
 @media (max-width: 480px) {
-  .oc-card {
-    padding: 40px 24px;
+  .oc-page {
+    padding: 40px 0 60px;
+  }
+  .oc-receipt {
+    padding: 24px 16px;
   }
   .oc-title {
     font-size: 22px;
+  }
+  .oc-receipt-meta {
+    gap: 16px;
+  }
+  .oc-receipt-details {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .oc-items-table th,
+  .oc-items-table td {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  .oc-card--empty {
+    padding: 40px 24px;
   }
 }
