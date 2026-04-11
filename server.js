@@ -977,6 +977,9 @@ async function handleAuthLogin(req, res) {
       if (custRes.ok) {
         const list = await custRes.json();
         customer = list[0] ?? null;
+        console.log(`[login] WC customer lookup for ${email}: found=${!!customer}, role=${customer?.role ?? 'N/A'}, id=${customer?.id ?? 'N/A'}`);
+      } else {
+        console.log(`[login] WC customer lookup failed for ${email}: ${custRes.status}`);
       }
 
       const displayName = authData.user_display_name || '';
