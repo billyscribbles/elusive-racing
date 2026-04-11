@@ -695,6 +695,16 @@ export async function placeOrder({ items, contact, shipping, fulfillment, paymen
   return result;
 }
 
+// Tell the server to re-sync ordered product stock to Meilisearch (fire-and-forget).
+export function syncProductsToSearch(productIds) {
+  if (!productIds?.length) return;
+  fetch('/api/sync-products', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productIds }),
+  }).catch(() => {});
+}
+
 // Sync local cart + customer info to WooCommerce, then return the checkout URL.
 // Call this right before redirecting to checkout.
 export async function syncToWooCommerceCheckout(items, contact, shipping, fulfillment) {

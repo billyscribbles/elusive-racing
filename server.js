@@ -420,6 +420,61 @@ async function runMsSync() {
   }
 }
 
+// Re-sync specific products to Meilisearch (e.g. after order reduces stock)
+async function handleSyncProducts(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  if (!MS_HOST || !MS_KEY) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, skipped: true }));
+    return;
+  }
+
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { productIds } = JSON.parse(body);
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'productIds array required' }));
+        return;
+      }
+
+      const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+      const ms    = new Meilisearch({ host: MS_HOST, apiKey: MS_KEY });
+      const index = ms.index(MS_INDEX);
+      const docs  = [];
+
+      for (const id of productIds.slice(0, 50)) {
+        try {
+          const r = await fetch(
+            `${WC_URL}/wp-json/wc/v3/products/${id}?_fields=${WC_SYNC_FIELDS}`,
+            { headers: { Authorization: auth } }
+          );
+          if (r.ok) {
+            const product = await r.json();
+            docs.push(normaliseMsProduct(product));
+          }
+        } catch (err) {
+          console.error(`[sync-products] Failed to fetch product ${id}:`, err.message);
+        }
+      }
+
+      if (docs.length > 0) {
+        await index.addDocuments(docs, { primaryKey: 'id' });
+        console.log(`[sync-products] Upserted ${docs.length} products: ${docs.map(d => d.id).join(', ')}`);
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, synced: docs.length }));
+    } catch (err) {
+      console.error('[sync-products] error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
 async function handleSync(req, res) {
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
   if (SYNC_TOKEN) {
@@ -1344,8 +1399,9 @@ async function handleSitemap(req, res) {
 }
 
 const server = http.createServer((req, res) => {
-  // Meilisearch sync trigger
+  // Meilisearch sync triggers
   if (req.url === '/api/sync') { handleSync(req, res); return; }
+  if (req.url === '/api/sync-products') { handleSyncProducts(req, res); return; }
 
   // Dynamic sitemap
   if (req.url === '/sitemap.xml') { handleSitemap(req, res); return; }

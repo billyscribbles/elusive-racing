@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { placeOrder } from '../lib/woocommerce';
+import { placeOrder, syncProductsToSearch } from '../lib/woocommerce';
 import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Building2 } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
@@ -164,6 +164,7 @@ function StripePaymentForm({ onSuccess }) {
           paymentMethod: 'stripe_cc',
           paymentData:   [{ key: 'stripe_payment_method', value: paymentIntent.payment_method }],
         }).catch(() => null); // best-effort — payment already taken
+        syncProductsToSearch(items.map(i => parseInt(i.id, 10)));
         useOrderStore.getState().setOrder(
           buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod: 'stripe_cc' })
         );
@@ -207,6 +208,7 @@ function BacsForm({ onSuccess }) {
     setLoading(true);
     try {
       const wcResponse = await placeOrder({ items, contact, shipping, fulfillment, paymentMethod: 'bacs', paymentData: [] });
+      syncProductsToSearch(items.map(i => parseInt(i.id, 10)));
       useOrderStore.getState().setOrder(
         buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod: 'bacs' })
       );
