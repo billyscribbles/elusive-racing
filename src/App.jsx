@@ -59,6 +59,7 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/my-account" element={<LoginPage />} />
           <Route path="/my-account/register" element={<RegisterPage />} />
           <Route path="/my-account/dashboard" element={<AccountDashboard />} />

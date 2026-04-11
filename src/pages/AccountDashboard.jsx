@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag } from 'lucide-react';
+import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag, Settings } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import { clearAdminAuth } from '../lib/adminAuth';
+import WholesaleOrderPage from './WholesaleOrderPage';
 import './AccountPage.css';
 
 const STATUS_LABEL = {
@@ -36,8 +38,12 @@ function formatAddress(addr) {
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
-  const { user, logout, isLoggedIn, isWholesale } = useAuthStore();
+  const { user, logout, isLoggedIn, isWholesale, isAdmin, userTypeLabel } = useAuthStore();
   const wholesale = isLoggedIn() && isWholesale();
+  const admin = isLoggedIn() && isAdmin();
+  const roleLabel = userTypeLabel();
+
+  const [activeTab, setActiveTab] = useState('overview');
 
   const [orders,   setOrders]   = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -61,6 +67,7 @@ export default function AccountDashboard() {
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleLogout() {
+    clearAdminAuth();
     logout();
     navigate('/my-account');
   }
@@ -84,7 +91,10 @@ export default function AccountDashboard() {
               </div>
             )}
             <div>
-              <h1 className="dash-name">{user?.firstName} {user?.lastName}</h1>
+              <h1 className="dash-name">
+                {user?.firstName} {user?.lastName}
+                <span className={`dash-role-badge dash-role-badge--${roleLabel.toLowerCase()}`}>{roleLabel}</span>
+              </h1>
               <p className="dash-email">{user?.email}</p>
               <div className="dash-meta">
                 {user?.phone && (
@@ -114,19 +124,43 @@ export default function AccountDashboard() {
           </div>
         )}
 
-        {/* Wholesale Quick Link */}
-        {wholesale && (
-          <Link to="/wholesale" className="dash-wholesale-link">
-            <ShoppingBag size={18} />
+        {/* Admin Quick Link */}
+        {admin && (
+          <Link to="/admin/products" className="dash-admin-link">
+            <Settings size={18} />
             <div>
-              <strong>Wholesale Orders</strong>
-              <span>Quick bulk ordering with wholesale pricing</span>
+              <strong>Admin Panel</strong>
+              <span>Manage products, promo banners, and developer tools</span>
             </div>
             <ChevronRight size={18} />
           </Link>
         )}
 
-        <div className="dash-layout">
+        {/* Wholesale Tabs */}
+        {wholesale && (
+          <div className="dash-tabs">
+            <button
+              className={`dash-tab${activeTab === 'overview' ? ' dash-tab--active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Overview
+            </button>
+            <button
+              className={`dash-tab${activeTab === 'catalogue' ? ' dash-tab--active' : ''}`}
+              onClick={() => setActiveTab('catalogue')}
+            >
+              Catalogue
+            </button>
+          </div>
+        )}
+
+        {/* Wholesale Catalogue Tab */}
+        {wholesale && activeTab === 'catalogue' && (
+          <WholesaleOrderPage />
+        )}
+
+        {/* Overview Tab (default for all users) */}
+        {activeTab === 'overview' && <div className="dash-layout">
 
           {/* Orders */}
           <div className="dash-section">
@@ -297,7 +331,7 @@ export default function AccountDashboard() {
             </a>
           </div>
 
-        </div>
+        </div>}
       </div>
     </div>
   );

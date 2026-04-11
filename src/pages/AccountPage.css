@@ -210,6 +210,18 @@
 
 .account-switch a:hover { opacity: 0.8; }
 
+.account-switch--admin { margin-top: 12px; }
+.account-admin-toggle {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+.account-admin-toggle:hover { color: #999; }
+
 /* Error / success banners */
 .account-error {
   display: flex;
@@ -420,6 +432,69 @@
 .dash-wholesale-link > svg:last-child {
   color: #666;
   flex-shrink: 0;
+}
+
+/* Role Badge */
+.dash-role-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.dash-role-badge--customer { background: #e8e8e8; color: #666; }
+.dash-role-badge--wholesale { background: #d94040; color: #fff; }
+.dash-role-badge--admin { background: #1a1a1a; color: #fff; }
+
+/* Admin Quick Link */
+.dash-admin-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  text-decoration: none;
+  color: #fff;
+  transition: border-color 0.2s, background 0.2s;
+}
+.dash-admin-link:hover { border-color: #d94040; background: #222; }
+.dash-admin-link > svg:first-child { color: #d94040; flex-shrink: 0; }
+.dash-admin-link > div { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.dash-admin-link strong { font-size: 15px; font-weight: 700; }
+.dash-admin-link span { font-size: 13px; color: #888; }
+.dash-admin-link > svg:last-child { color: #666; flex-shrink: 0; }
+
+/* Dashboard Tabs */
+.dash-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 24px;
+}
+.dash-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 10px 20px;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.dash-tab:hover { color: #333; }
+.dash-tab--active {
+  color: #111;
+  border-bottom-color: var(--color-red, #d94040);
 }
 
 .dash-logout {

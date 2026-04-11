@@ -205,7 +205,8 @@ export default function Navigation() {
   const navigate = useNavigate();
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const { isLoggedIn, isWholesale } = useAuthStore();
-  const wholesale = isLoggedIn() && isWholesale();
+  const loggedIn = isLoggedIn();
+  const wholesale = loggedIn && isWholesale();
   const { make: vMake, model: vModel, year: vYear, setVehicle, clearVehicle } = useVehicleStore();
   const vModels = vMake ? (vehicleData.models[vMake] || []) : [];
 
@@ -435,7 +436,7 @@ export default function Navigation() {
                 </li>
               ))}
               <li className="mobile-menu-item mobile-menu-item--secondary">
-                <a href={wholesale ? '/wholesale' : '/login'} className="mobile-menu-link">
+                <a href={loggedIn ? '/my-account/dashboard' : '/wholesale-registration'} className="mobile-menu-link">
                   {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
                 </a>
               </li>
