@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useCartStore from '../store/cartStore';
+import { getWholesalePrice } from '../hooks/useWholesalePrice';
 import { queryWholesaleProducts } from '../lib/meilisearch';
 import { getProductVariants } from '../lib/woocommerce';
 import './WholesaleOrderPage.css';
@@ -142,23 +143,24 @@ export default function WholesaleOrderPage() {
   const tierKey = user?.wholesaleTier?.role || 'wholesale_customer';
 
   const getDisplayPrice = (product) => {
+    let retail, wsPrices;
     if (product.hasVariants) {
       const variantId = selectedVariants[product.id];
       const variant = variantCache[product.id]?.find((v) => v.id === variantId);
       if (variant) {
-        const ws = variant.wholesalePrices?.[tierKey] ?? variant.wholesalePrice;
-        return {
-          wholesale: ws,
-          retail: variant.regularPrice || variant.price,
-          price: ws || variant.price,
-        };
+        retail = variant.regularPrice || variant.price;
+        wsPrices = variant.wholesalePrices;
       }
     }
-    const ws = product.wholesalePrices?.[tierKey] ?? product.wholesalePrice;
+    if (!retail) {
+      retail = product.regularPrice || product.price;
+      wsPrices = product.wholesalePrices;
+    }
+    const { effectivePrice, isWholesalePrice } = getWholesalePrice(retail, wsPrices, tierKey);
     return {
-      wholesale: ws,
-      retail: product.regularPrice || product.price,
-      price: ws || product.price,
+      wholesale: isWholesalePrice ? effectivePrice : null,
+      retail,
+      price: effectivePrice,
     };
   };
 
@@ -190,17 +192,18 @@ export default function WholesaleOrderPage() {
       const product = hits.find((h) => h.id === productId);
       if (!product) continue;
 
-      let price, stockQuantity, title, image;
+      const { price: displayPrice } = getDisplayPrice(product);
+      let stockQuantity, title, image, retail;
       if (variantId) {
         const variant = variantCache[productId]?.find((v) => v.id === variantId);
-        price = variant?.wholesalePrice || variant?.price || product.wholesalePrice || product.price;
         stockQuantity = variant?.stockQuantity ?? product.stockQuantity;
         title = `${product.title} - ${variant?.title || ''}`;
+        retail = variant?.regularPrice || variant?.price || product.regularPrice || product.price;
         image = product.imageUrl;
       } else {
-        price = product.wholesalePrice || product.price;
         stockQuantity = product.stockQuantity;
         title = product.title;
+        retail = product.regularPrice || product.price;
         image = product.imageUrl;
       }
 
@@ -208,7 +211,9 @@ export default function WholesaleOrderPage() {
         id: productId,
         variantId: variantId || productId,
         title,
-        price,
+        price: displayPrice,
+        retailPrice: retail,
+        wholesalePrices: product.wholesalePrices,
         quantity: qty,
         sku: product.sku,
         stockQuantity,
@@ -243,19 +248,18 @@ export default function WholesaleOrderPage() {
     const key = getQtyKey(product);
     const [productId, variantId] = key.split('__');
 
-    let price, stockQuantity, title, image;
+    const { price: displayPrice } = getDisplayPrice(product);
+    let stockQuantity, title, image, retail;
     if (variantId && variantId !== productId) {
       const variant = variantCache[productId]?.find((v) => v.id === variantId);
-      const { price: displayPrice } = getDisplayPrice(product);
-      price = displayPrice;
       stockQuantity = variant?.stockQuantity ?? product.stockQuantity;
       title = `${product.title} - ${variant?.title || ''}`;
+      retail = variant?.regularPrice || variant?.price || product.regularPrice || product.price;
       image = product.imageUrl;
     } else {
-      const { price: displayPrice } = getDisplayPrice(product);
-      price = displayPrice;
       stockQuantity = product.stockQuantity;
       title = product.title;
+      retail = product.regularPrice || product.price;
       image = product.imageUrl;
     }
 
@@ -263,7 +267,9 @@ export default function WholesaleOrderPage() {
       id: productId,
       variantId: variantId || productId,
       title,
-      price,
+      price: displayPrice,
+      retailPrice: retail,
+      wholesalePrices: product.wholesalePrices,
       quantity: qty,
       sku: product.sku,
       stockQuantity,
