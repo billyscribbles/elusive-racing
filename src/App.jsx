@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -7,10 +7,30 @@ import AdminProductForm from './pages/admin/AdminProductForm';
 import AdminPromoBanner from './pages/admin/AdminPromoBanner';
 import AdminDeveloper from './pages/admin/AdminDeveloper';
 import AdminRoute from './components/admin/AdminRoute';
+import useAuthStore from './store/authStore';
+import useCartStore from './store/cartStore';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
+function CartRepricer() {
+  const user = useAuthStore(s => s.user);
+  const repriceAll = useCartStore(s => s.repriceAll);
+  const prevRole = useRef(user?.role);
+
+  useEffect(() => {
+    if (user?.role !== prevRole.current) {
+      const tierKey = (user?.role || '').startsWith('wholesale_customer')
+        ? user?.wholesaleTier?.role ?? null
+        : null;
+      repriceAll(tierKey);
+      prevRole.current = user?.role;
+    }
+  }, [user, repriceAll]);
+
   return null;
 }
 import MainLayout from './layouts/MainLayout';
@@ -40,6 +60,7 @@ export default function App() {
     <HelmetProvider>
     <BrowserRouter>
       <ScrollToTop />
+      <CartRepricer />
       <Routes>
         {/* Admin routes — no site layout */}
         <Route path="/admin" element={<AdminLogin />} />

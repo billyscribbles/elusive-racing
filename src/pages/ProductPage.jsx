@@ -8,7 +8,8 @@ import { getProductByHandle as getMeiliProduct } from '../lib/meilisearch';
 import useCartStore from '../store/cartStore';
 import { brands as BRAND_LIST } from '../data/navigation';
 import { pageTitle, SITE_URL, schemaProduct, schemaBreadcrumb } from '../lib/seo';
-import WholesalePrice from '../components/ui/WholesalePrice';
+import useAuthStore from '../store/authStore';
+import { getWholesalePrice } from '../hooks/useWholesalePrice';
 import './ProductPage.css';
 
 function mapProduct(p) {
@@ -202,6 +203,8 @@ export default function ProductPage() {
   // If nav state provided prefill, start with loading=false immediately
   const [loading, setLoading] = useState(!location.state?.prefill);
   const [variantsLoading, setVariantsLoading] = useState(false);
+  const isWholesale = useAuthStore(s => s.isWholesale);
+  const tierKey = useAuthStore(s => s.getWholesaleTierKey);
 
   // Reset state and scroll to top when navigating to a different product
   useEffect(() => {
@@ -323,13 +326,20 @@ export default function ProductPage() {
     new Map((display.images ?? []).map(img => [img.url, img])).values()
   );
 
-  const displayPrice = activeVariant?.price?.amount
+  const retailPrice = activeVariant?.price?.amount
     ? parseFloat(activeVariant.price.amount)
     : display.price ?? 0;
+  const variantWsPrices = activeVariant?.wholesalePrices ?? display.wholesalePrices;
+  const { effectivePrice: displayPrice, isWholesalePrice } = getWholesalePrice(
+    retailPrice, variantWsPrices, isWholesale() ? tierKey() : null
+  );
   const displayOriginalPrice = activeVariant?.compareAtPrice?.amount
     ? parseFloat(activeVariant.compareAtPrice.amount)
     : display.originalPrice ?? null;
-  const effectiveOriginal = displayOriginalPrice > displayPrice ? displayOriginalPrice : null;
+  // Show original/compare-at price, or retail price when wholesale is active
+  const effectiveOriginal = isWholesalePrice
+    ? retailPrice
+    : (displayOriginalPrice > displayPrice ? displayOriginalPrice : null);
   const discount = effectiveOriginal
     ? Math.round(((effectiveOriginal - displayPrice) / effectiveOriginal) * 100)
     : null;
@@ -351,6 +361,8 @@ export default function ProductPage() {
       name: display.name,
       brand: display.brand,
       price: displayPrice,
+      retailPrice: retailPrice,
+      wholesalePrices: variantWsPrices,
       image: display.image,
       variantId: variantId ?? null,
       variantTitle: selectedVariant?.title ?? null,
@@ -474,10 +486,6 @@ export default function ProductPage() {
             )}
 
             <div className="product-page-pricing">
-              <WholesalePrice
-                retailPrice={effectiveOriginal || displayPrice}
-                wholesalePrices={display.wholesalePrices}
-              />
               <span className="product-page-price">${displayPrice.toFixed(2)}</span>
               {effectiveOriginal && (
                 <>

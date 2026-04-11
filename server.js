@@ -311,9 +311,11 @@ function decodeHtml(str) {
 
 // ── Wholesale Suite tier definitions (duplicated from src/lib/wholesaleTiers.js for Node.js) ──
 const WS_TIERS = [
-  { role: 'wholesale_customer',   label: 'Wholesale',          tierNumber: 0, metaKey: 'wholesale_customer_wholesale_price' },
-  { role: 'wholesale_customer_1', label: 'Wholesale Tier 1',   tierNumber: 1, metaKey: 'wholesale_customer_1_wholesale_price' },
-  { role: 'wholesale_customer_2', label: 'Wholesale Tier 2',   tierNumber: 2, metaKey: 'wholesale_customer_2_wholesale_price' },
+  { role: 'wholesale_customer',    label: 'Wholesale 5%',  tierNumber: 0, discount: 5,  metaKey: 'wholesale_customer_wholesale_price' },
+  { role: 'wholesale_customer_10', label: 'Wholesale 10%', tierNumber: 1, discount: 10, metaKey: 'wholesale_customer_10_wholesale_price' },
+  { role: 'wholesale_customer_15', label: 'Wholesale 15%', tierNumber: 2, discount: 15, metaKey: 'wholesale_customer_15_wholesale_price' },
+  { role: 'wholesale_customer_20', label: 'Wholesale 20%', tierNumber: 3, discount: 20, metaKey: 'wholesale_customer_20_wholesale_price' },
+  { role: 'wholesale_customer_25', label: 'Wholesale 25%', tierNumber: 4, discount: 25, metaKey: 'wholesale_customer_25_wholesale_price' },
 ];
 const WS_ROLE_MAP = Object.fromEntries(WS_TIERS.map(t => [t.role, t]));
 function isWsRole(role) { return (role || '').startsWith('wholesale_customer'); }
@@ -1079,6 +1081,7 @@ async function handleAuthLogin(req, res) {
             role:       customer.role,
             tierNumber: getWsTier(customer.role)?.tierNumber ?? 0,
             label:      getWsTier(customer.role)?.label ?? 'Wholesale',
+            discount:   getWsTier(customer.role)?.discount ?? 0,
             metaKey:    getWsTier(customer.role)?.metaKey ?? null,
           } : null,
           billing:      customer?.billing  ?? null,
@@ -1218,6 +1221,7 @@ async function handleWholesaleRegister(req, res) {
             role:       customer.role || 'wholesale_customer',
             tierNumber: getWsTier(customer.role || 'wholesale_customer')?.tierNumber ?? 0,
             label:      getWsTier(customer.role || 'wholesale_customer')?.label ?? 'Wholesale',
+            discount:   getWsTier(customer.role || 'wholesale_customer')?.discount ?? 0,
             metaKey:    getWsTier(customer.role || 'wholesale_customer')?.metaKey ?? null,
           },
           billing:   customer.billing  ?? null,

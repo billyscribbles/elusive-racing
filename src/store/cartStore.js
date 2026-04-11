@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getWholesalePrice } from '../hooks/useWholesalePrice';
 
 const useCartStore = create(
   persist(
@@ -21,7 +22,8 @@ const useCartStore = create(
           }
           const max = product.stockQuantity ?? null;
           const clampedQty = max !== null ? Math.min(max, qty) : qty;
-          return { items: [...s.items, { ...product, quantity: clampedQty }] };
+          const retailPrice = product.retailPrice ?? product.price;
+          return { items: [...s.items, { ...product, retailPrice, wholesalePrices: product.wholesalePrices ?? null, quantity: clampedQty }] };
         });
       },
 
@@ -38,7 +40,8 @@ const useCartStore = create(
             } else {
               const max = product.stockQuantity ?? null;
               const clampedQty = max !== null ? Math.min(max, qty) : qty;
-              items = [...items, { ...product, quantity: clampedQty }];
+              const retailPrice = product.retailPrice ?? product.price;
+              items = [...items, { ...product, retailPrice, wholesalePrices: product.wholesalePrices ?? null, quantity: clampedQty }];
             }
           }
           return { items };
@@ -61,6 +64,15 @@ const useCartStore = create(
           }));
         }
       },
+
+      repriceAll: (tierKey) =>
+        set((s) => ({
+          items: s.items.map((i) => {
+            const retail = i.retailPrice ?? i.price;
+            const { effectivePrice } = getWholesalePrice(retail, i.wholesalePrices, tierKey);
+            return { ...i, price: effectivePrice };
+          }),
+        })),
 
       clearCart: () => set({ items: [] }),
     }),

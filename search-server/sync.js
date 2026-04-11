@@ -123,9 +123,11 @@ function extractBrand(p) {
 
 // Wholesale Suite tier definitions (keep in sync with src/lib/wholesaleTiers.js)
 const WS_TIERS = [
-  { role: 'wholesale_customer',   metaKey: 'wholesale_customer_wholesale_price' },
-  { role: 'wholesale_customer_1', metaKey: 'wholesale_customer_1_wholesale_price' },
-  { role: 'wholesale_customer_2', metaKey: 'wholesale_customer_2_wholesale_price' },
+  { role: 'wholesale_customer',    metaKey: 'wholesale_customer_wholesale_price' },
+  { role: 'wholesale_customer_10', metaKey: 'wholesale_customer_10_wholesale_price' },
+  { role: 'wholesale_customer_15', metaKey: 'wholesale_customer_15_wholesale_price' },
+  { role: 'wholesale_customer_20', metaKey: 'wholesale_customer_20_wholesale_price' },
+  { role: 'wholesale_customer_25', metaKey: 'wholesale_customer_25_wholesale_price' },
 ];
 
 function extractWsPrices(metaData) {

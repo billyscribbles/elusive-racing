@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
+import useAuthStore from '../../store/authStore';
+import { getWholesalePrice } from '../../hooks/useWholesalePrice';
 import { getFeaturedProducts, prefetchProduct } from '../../lib/woocommerce';
 import './FeaturedProducts.css';
 
@@ -25,15 +27,23 @@ function mapProduct(p) {
     variantId: isDefaultOnly ? variants[0]?.id : null,
     hasVariants,
     stockQuantity: p.stockQuantity != null ? p.stockQuantity : (p.stock_quantity != null ? parseInt(p.stock_quantity, 10) : null),
+    wholesalePrices: p.wholesalePrices || null,
   };
 }
 
 function ProductCard({ product }) {
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
+  const isWholesale = useAuthStore(s => s.isWholesale);
+  const tierKey = useAuthStore(s => s.getWholesaleTierKey);
 
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const { effectivePrice, isWholesalePrice } = getWholesalePrice(
+    product.price, product.wholesalePrices, isWholesale() ? tierKey() : null
+  );
+
+  const comparePrice = isWholesalePrice ? product.price : product.originalPrice;
+  const discount = comparePrice && comparePrice > effectivePrice
+    ? Math.round(((comparePrice - effectivePrice) / comparePrice) * 100)
     : null;
 
   return (
@@ -51,10 +61,10 @@ function ProductCard({ product }) {
         <span className="product-brand">{product.brand}</span>
         <h3 className="product-name">{product.name}</h3>
         <div className="product-pricing">
-          <span className="product-price">${product.price.toFixed(2)}</span>
-          {product.originalPrice && (
+          <span className="product-price">${effectivePrice.toFixed(2)}</span>
+          {comparePrice && comparePrice > effectivePrice && (
             <>
-              <span className="product-original-price">${product.originalPrice.toFixed(2)}</span>
+              <span className="product-original-price">${comparePrice.toFixed(2)}</span>
               <span className="product-discount">-{discount}%</span>
             </>
           )}
@@ -73,7 +83,7 @@ function ProductCard({ product }) {
         ) : (
           <button
             className="product-quick-add"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(product); openCart(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ ...product, price: effectivePrice, retailPrice: product.price }); openCart(); }}
           >
             Add to Cart
           </button>

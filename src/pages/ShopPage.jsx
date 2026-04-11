@@ -23,7 +23,8 @@ import {
   getCategoryDescendantSlugs,
 } from "../data/categories";
 import { BRAND_NAMES } from "../data/brands";
-import WholesalePrice from '../components/ui/WholesalePrice';
+import useAuthStore from '../store/authStore';
+import { getWholesalePrice } from '../hooks/useWholesalePrice';
 import "./ShopPage.css";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -174,17 +175,23 @@ function CollapsibleSection({ title, defaultOpen = false, children }) {
 function ProductCard({ product, index = 0 }) {
   const { addItem, openCart } = useCartStore();
   const [added, setAdded] = useState(false);
+  const isWholesale = useAuthStore(s => s.isWholesale);
+  const tierKey = useAuthStore(s => s.getWholesaleTierKey);
 
-  const discount = product.originalPrice
-    ? Math.round(
-        ((product.originalPrice - product.price) / product.originalPrice) * 100,
-      )
+  const { effectivePrice, isWholesalePrice } = getWholesalePrice(
+    product.price, product.wholesalePrices, isWholesale() ? tierKey() : null
+  );
+
+  // Show discount badge: wholesale savings or sale price
+  const comparePrice = isWholesalePrice ? product.price : product.originalPrice;
+  const discount = comparePrice && comparePrice > effectivePrice
+    ? Math.round(((comparePrice - effectivePrice) / comparePrice) * 100)
     : null;
 
   function handleAddToCart(e) {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product);
+    addItem({ ...product, price: effectivePrice, retailPrice: product.price });
     openCart();
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -227,17 +234,12 @@ function ProductCard({ product, index = 0 }) {
           {product.backorder ? "Available on backorder" : ""}
         </p>
         <div className="shop-product-pricing">
-          <WholesalePrice
-            retailPrice={product.originalPrice || product.price}
-            wholesalePrices={product.wholesalePrices}
-            compact
-          />
-          <span className={`shop-product-price${product.originalPrice ? ' shop-product-price--sale' : ''}`}>
-            ${product.price.toFixed(2)}
+          <span className={`shop-product-price${comparePrice ? ' shop-product-price--sale' : ''}`}>
+            ${effectivePrice.toFixed(2)}
           </span>
-          {product.originalPrice && (
+          {comparePrice && comparePrice > effectivePrice && (
             <span className="shop-product-original">
-              ${product.originalPrice.toFixed(2)}
+              ${comparePrice.toFixed(2)}
             </span>
           )}
         </div>

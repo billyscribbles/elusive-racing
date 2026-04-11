@@ -168,6 +168,7 @@ function normalizeProductDetail(p) {
           availableForSale: v.stock_status !== 'outofstock',
           quantityAvailable: typeof v.stock_quantity === 'number' ? v.stock_quantity : null,
           selectedOptions: v.attributes?.map(a => ({ name: a.name, value: a.option })) ?? [],
+          wholesalePrices: extractWholesalePrices(v.meta_data),
         }))
       : [
           {
@@ -434,7 +435,7 @@ export async function getProductByHandle(slug, onBase) {
   // Fetch variations if it's a variable product — slim payload with _fields
   if (isVariable) {
     const variations = await wcFetch(
-      `/products/${p.id}/variations?per_page=100&_fields=id,price,regular_price,sale_price,stock_status,stock_quantity,attributes`
+      `/products/${p.id}/variations?per_page=100&_fields=id,price,regular_price,sale_price,stock_status,stock_quantity,attributes,meta_data`
     );
     p.variations = variations;
   }
