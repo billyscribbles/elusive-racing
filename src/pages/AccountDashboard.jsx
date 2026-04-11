@@ -4,6 +4,7 @@ import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calend
 import useAuthStore from '../store/authStore';
 import { clearAdminAuth } from '../lib/adminAuth';
 import WholesaleOrderPage from './WholesaleOrderPage';
+import { formatPrice } from '../lib/formatPrice';
 import './AccountPage.css';
 
 const STATUS_LABEL = {
@@ -120,7 +121,7 @@ export default function AccountDashboard() {
           <div className="dash-credit">
             <CreditCard size={16} />
             <span>Store Credit</span>
-            <strong>${parseFloat(user.storeCredit).toFixed(2)}</strong>
+            <strong>{formatPrice(parseFloat(user.storeCredit))}</strong>
           </div>
         )}
 

@@ -8,6 +8,7 @@ import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
+import { formatPrice } from '../lib/formatPrice';
 import './PaymentPage.css';
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
@@ -76,23 +77,23 @@ function MiniOrderSummary({ shippingCost }) {
               <span className="pp-order-brand">{item.brand}</span>
               <p className="pp-order-name">{item.name}</p>
             </div>
-            <span className="pp-order-price">${(item.price * item.quantity).toFixed(2)}</span>
+            <span className="pp-order-price">{formatPrice(item.price * item.quantity)}</span>
           </li>
         ))}
       </ul>
       <div className="pp-order-divider" />
       <div className="pp-order-row">
         <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-        <span>${subtotal.toFixed(2)}</span>
+        <span>{formatPrice(subtotal)}</span>
       </div>
       <div className="pp-order-row pp-order-row--muted">
         <span>Shipping</span>
-        <span>{fulfillment === 'collect' ? 'Free' : shipping !== null ? `$${shipping.toFixed(2)}` : 'TBD'}</span>
+        <span>{fulfillment === 'collect' ? 'Free' : shipping !== null ? formatPrice(shipping) : 'TBD'}</span>
       </div>
       {(fulfillment === 'collect' || shipping !== null) && (
         <div className="pp-order-total">
           <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{formatPrice(total)}</span>
         </div>
       )}
     </div>

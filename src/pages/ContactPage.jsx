@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Truck, Store, Package, Zap, Phone, Mail } from '
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
+import { formatPrice } from '../lib/formatPrice';
 import { getWCShippingRates } from '../lib/woocommerce';
 import './ContactPage.css';
 
@@ -135,29 +136,29 @@ function MiniOrderSummary({ taxAmount = 0 }) {
               <span className="cp-mini-brand">{item.brand}</span>
               <p className="cp-mini-name">{item.name}</p>
             </div>
-            <span className="cp-mini-price">${(item.price * item.quantity).toFixed(2)}</span>
+            <span className="cp-mini-price">{formatPrice(item.price * item.quantity)}</span>
           </li>
         ))}
       </ul>
       <div className="cp-mini-divider" />
       <div className="cp-mini-row">
         <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-        <span>${subtotal.toFixed(2)}</span>
+        <span>{formatPrice(subtotal)}</span>
       </div>
       <div className="cp-mini-row cp-mini-row--muted">
         <span>Shipping</span>
-        <span>{fulfillment === 'collect' ? 'Free' : shippingCost !== null ? `$${shippingCost.toFixed(2)}` : 'Calculate below'}</span>
+        <span>{fulfillment === 'collect' ? 'Free' : shippingCost !== null ? formatPrice(shippingCost) : 'Calculate below'}</span>
       </div>
       {taxAmount > 0 && (
         <div className="cp-mini-row cp-mini-row--muted">
           <span>GST (incl.)</span>
-          <span>${taxAmount.toFixed(2)}</span>
+          <span>{formatPrice(taxAmount)}</span>
         </div>
       )}
       {hasTotal && (
         <div className="cp-mini-row cp-mini-total">
           <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{formatPrice(total)}</span>
         </div>
       )}
     </div>
@@ -525,7 +526,7 @@ export default function ContactPage() {
                             {rate.id === 'exp' ? <Zap size={15} /> : <Package size={15} />}
                           </span>
                           <span className="cp-freight-label">{rate.label}</span>
-                          <span className="cp-freight-price">${rate.price.toFixed(2)}</span>
+                          <span className="cp-freight-price">{formatPrice(rate.price)}</span>
                         </label>
                       ))}
                     </div>

@@ -4,6 +4,7 @@ import { Search, Loader2, X, Tag, Layers } from 'lucide-react';
 import { searchProducts as msSearch } from '../../lib/meilisearch';
 import { BRANDS } from '../../data/brands';
 import { CATEGORIES_FLAT } from '../../data/categories';
+import { formatPrice } from '../../lib/formatPrice';
 import './SearchBar.css';
 
 function getLocalSuggestions(query) {
@@ -164,9 +165,9 @@ export default function SearchBar() {
                     <span className="search-result-name">{product.name}</span>
                   </div>
                   <div className="search-result-pricing">
-                    <span className="search-result-price">${product.price.toFixed(2)}</span>
+                    <span className="search-result-price">{formatPrice(product.price)}</span>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="search-result-compare">${product.originalPrice.toFixed(2)}</span>
+                      <span className="search-result-compare">{formatPrice(product.originalPrice)}</span>
                     )}
                   </div>
                 </a>

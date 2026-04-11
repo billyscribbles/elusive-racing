@@ -1,4 +1,5 @@
 import useAuthStore from '../../store/authStore';
+import { formatPrice } from '../../lib/formatPrice';
 import './WholesalePrice.css';
 
 /**
@@ -28,10 +29,10 @@ export default function WholesalePrice({ retailPrice, wholesalePrices, compact =
 
   return (
     <div className={`ws-price${compact ? ' ws-price--compact' : ''}`}>
-      <span className="ws-price__amount">${wsPrice.toFixed(2)}</span>
-      <span className="ws-price__retail">${retail.toFixed(2)}</span>
+      <span className="ws-price__amount">{formatPrice(wsPrice)}</span>
+      <span className="ws-price__retail">{formatPrice(retail)}</span>
       <span className="ws-price__badge">
-        {compact ? `${pct}% off` : `You save $${savings.toFixed(2)} (${pct}% off)`}
+        {compact ? `${pct}% off` : `You save ${formatPrice(savings)} (${pct}% off)`}
       </span>
     </div>
   );

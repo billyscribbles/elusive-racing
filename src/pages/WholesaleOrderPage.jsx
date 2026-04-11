@@ -4,8 +4,10 @@ import { Search } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useCartStore from '../store/cartStore';
 import { getWholesalePrice } from '../hooks/useWholesalePrice';
+import { CATEGORIES, getCategoryDescendantSlugs } from '../data/categories';
 import { queryWholesaleProducts } from '../lib/meilisearch';
 import { getProductVariants } from '../lib/woocommerce';
+import { formatPrice } from '../lib/formatPrice';
 import './WholesaleOrderPage.css';
 
 const PER_PAGE = 50;
@@ -42,10 +44,24 @@ export default function WholesaleOrderPage() {
   // Toast
   const [toast, setToast] = useState(null);
 
-  // Brands + categories extracted from results for filter dropdowns
+  // Brands extracted from results for filter dropdown
   const [allBrands, setAllBrands] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
   const brandsLoaded = useRef(false);
+
+  // Sticky thead: measure sticky-top height and pass as CSS var
+  const stickyTopRef = useRef(null);
+  const tableWrapperRef = useRef(null);
+
+  useEffect(() => {
+    const el = stickyTopRef.current;
+    const wrapper = tableWrapperRef.current;
+    if (!el || !wrapper) return;
+    const update = () => wrapper.style.setProperty('--sticky-top-h', `${el.offsetHeight}px`);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading]);
 
   // Debounce search input
   useEffect(() => {
@@ -56,15 +72,13 @@ export default function WholesaleOrderPage() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Load brand/category lists on first mount (empty query, no filters, large batch)
+  // Load brand list on first mount (empty query, no filters, large batch)
   useEffect(() => {
     if (brandsLoaded.current) return;
     brandsLoaded.current = true;
     queryWholesaleProducts({ perPage: 1000 }).then((res) => {
       const brands = [...new Set(res.hits.map((h) => h.vendor).filter(Boolean))].sort();
-      const cats = [...new Set(res.hits.flatMap((h) => h.categories || []).filter(Boolean))].sort();
       setAllBrands(brands);
-      setAllCategories(cats);
     }).catch(() => {});
   }, []);
 
@@ -72,12 +86,13 @@ export default function WholesaleOrderPage() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
+      const catSlugs = category ? getCategoryDescendantSlugs(category) : [];
       const res = await queryWholesaleProducts({
         query: debouncedQuery,
         page,
         perPage: PER_PAGE,
         brands: brand ? [brand] : [],
-        categories: category ? [category] : [],
+        categories: catSlugs,
         inStock: inStockOnly,
         sort,
       });
@@ -304,18 +319,18 @@ export default function WholesaleOrderPage() {
   const renderPrice = (product) => {
     const { wholesale, retail, price } = getDisplayPrice(product);
     if (wholesale && wholesale !== retail) {
-      const pct = Math.round(((retail - wholesale) / retail) * 100);
       return (
         <div className="wholesale-price-cell">
-          <span className="wholesale-price-ws">${wholesale.toFixed(2)}</span>
-          <span className="wholesale-price-retail">${retail.toFixed(2)}</span>
-          {pct > 0 && <span className="wholesale-price-savings">{pct}% off</span>}
+          <div className="wholesale-price-row">
+            <span className="wholesale-price-ws">{formatPrice(wholesale)}</span>
+            <span className="wholesale-price-retail">{formatPrice(retail)}</span>
+          </div>
         </div>
       );
     }
     return (
       <div className="wholesale-price-cell">
-        <span className="wholesale-price-same">${(price || 0).toFixed(2)}</span>
+        <span className="wholesale-price-same">{formatPrice(price || 0)}</span>
       </div>
     );
   };
@@ -326,7 +341,7 @@ export default function WholesaleOrderPage() {
     <div className="wholesale-page">
       <div className="wholesale-container">
         {/* Sticky top section: header + search/filters */}
-        <div className="wholesale-sticky-top">
+        <div className="wholesale-sticky-top" ref={stickyTopRef}>
           <div className="wholesale-header">
             <h1>Wholesale Orders</h1>
             <p className="wholesale-greeting">
@@ -359,13 +374,18 @@ export default function WholesaleOrderPage() {
           </select>
 
           <select
-            className="wholesale-filter-select"
+            className="wholesale-filter-select wholesale-filter-select--category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="">All Categories</option>
-            {allCategories.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {CATEGORIES.map((top) => (
+              <optgroup key={top.slug} label={top.name}>
+                <option value={top.slug}>{top.name} (All)</option>
+                {(top.children ?? []).map((mid) => (
+                  <option key={mid.slug} value={mid.slug}>{mid.name}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
 
@@ -410,7 +430,7 @@ export default function WholesaleOrderPage() {
 
         {/* Product Table */}
         {!loading && hits.length > 0 && (
-          <div className="wholesale-table-wrapper">
+          <div className="wholesale-table-wrapper" ref={tableWrapperRef}>
             <table className="wholesale-table">
               <thead>
                 <tr>
@@ -463,6 +483,9 @@ export default function WholesaleOrderPage() {
                         <div className="wholesale-product-name">
                           <Link to={`/products/${product.handle}`}>{product.title}</Link>
                         </div>
+                        {product.description && (
+                          <div className="wholesale-product-desc">{product.description}</div>
+                        )}
                         {/* Mobile meta */}
                         <div className="wholesale-mobile-meta">
                           <span>{product.sku || '—'}</span>
@@ -501,7 +524,7 @@ export default function WholesaleOrderPage() {
                                     {v.title}
                                     {v.stockQuantity !== null ? ` (${v.stockQuantity})` : ''}
                                     {!v.availableForSale ? ' — Out of stock' : ''}
-                                    {v.wholesalePrice ? ` — $${v.wholesalePrice.toFixed(2)}` : ''}
+                                    {v.wholesalePrice ? ` — ${formatPrice(v.wholesalePrice)}` : ''}
                                   </option>
                                 ))}
                               </select>

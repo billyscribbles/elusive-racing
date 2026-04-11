@@ -8,6 +8,7 @@ import { getProductByHandle as getMeiliProduct } from '../lib/meilisearch';
 import useCartStore from '../store/cartStore';
 import { brands as BRAND_LIST } from '../data/navigation';
 import { pageTitle, SITE_URL, schemaProduct, schemaBreadcrumb } from '../lib/seo';
+import { formatPrice } from '../lib/formatPrice';
 import useAuthStore from '../store/authStore';
 import { getWholesalePrice } from '../hooks/useWholesalePrice';
 import './ProductPage.css';
@@ -486,10 +487,10 @@ export default function ProductPage() {
             )}
 
             <div className="product-page-pricing">
-              <span className="product-page-price">${displayPrice.toFixed(2)}</span>
+              <span className="product-page-price">{formatPrice(displayPrice)}</span>
               {effectiveOriginal && (
                 <>
-                  <span className="product-page-original">${effectiveOriginal.toFixed(2)}</span>
+                  <span className="product-page-original">{formatPrice(effectiveOriginal)}</span>
                   <span className="product-page-discount">-{discount}%</span>
                 </>
               )}
@@ -532,7 +533,7 @@ export default function ProductPage() {
                       {v.title}
                       {v.price?.amount && parseFloat(v.price.amount) !== display.price && (
                         <span className="product-page-variant-price">
-                          ${parseFloat(v.price.amount).toFixed(2)}
+                          {formatPrice(parseFloat(v.price.amount))}
                         </span>
                       )}
                     </button>
@@ -669,7 +670,7 @@ export default function ProductPage() {
                     </div>
                     <div className="product-related-info">
                       <span className="product-related-name">{p.name}</span>
-                      <span className="product-related-price">${p.price.toFixed(2)}</span>
+                      <span className="product-related-price">{formatPrice(p.price)}</span>
                     </div>
                   </Link>
                 );

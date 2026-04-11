@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react';
 import useCartStore from '../../store/cartStore';
+import { formatPrice } from '../../lib/formatPrice';
 import './CartIcon.css';
 
 export default function CartIcon() {
@@ -14,7 +15,7 @@ export default function CartIcon() {
   return (
     <div className="cart-wrapper">
       <button className="cart-toggle" onClick={openCart} aria-label="View cart">
-        <span className="cart-total" aria-hidden="true">${subtotal.toFixed(2)}</span>
+        <span className="cart-total" aria-hidden="true">{formatPrice(subtotal)}</span>
         <ShoppingBag className="cart-bag-icon" size={22} strokeWidth={1.75} />
         {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
       </button>
@@ -67,7 +68,7 @@ export default function CartIcon() {
                               <Plus size={12} />
                             </button>
                           </div>
-                          <span className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                          <span className="cart-item-price">{formatPrice(item.price * item.quantity)}</span>
                           <button className="cart-item-remove" onClick={() => removeItem(item.id)} aria-label="Remove item">
                             <Trash2 size={14} />
                           </button>
@@ -84,7 +85,7 @@ export default function CartIcon() {
               <div className="cart-drawer-footer">
                 <div className="cart-subtotal-row">
                   <span>Subtotal</span>
-                  <span className="cart-subtotal-amount">${subtotal.toFixed(2)}</span>
+                  <span className="cart-subtotal-amount">{formatPrice(subtotal)}</span>
                 </div>
                 <p className="cart-shipping-note">Shipping &amp; taxes calculated at checkout</p>
                 <a href="/checkout" className="cart-checkout-btn" onClick={closeCart}>

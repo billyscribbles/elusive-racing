@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { pageTitle as seoTitle, SITE_URL, schemaBreadcrumb } from "../lib/seo";
+import { formatPrice } from "../lib/formatPrice";
 import useVehicleStore from "../store/vehicleStore";
 import {
   SlidersHorizontal,
@@ -235,11 +236,11 @@ function ProductCard({ product, index = 0 }) {
         </p>
         <div className="shop-product-pricing">
           <span className={`shop-product-price${comparePrice ? ' shop-product-price--sale' : ''}`}>
-            ${effectivePrice.toFixed(2)}
+            {formatPrice(effectivePrice)}
           </span>
           {comparePrice && comparePrice > effectivePrice && (
             <span className="shop-product-original">
-              ${comparePrice.toFixed(2)}
+              {formatPrice(comparePrice)}
             </span>
           )}
         </div>

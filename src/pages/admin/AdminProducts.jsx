@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { adminFetch, clearAdminAuth, useAdminTheme } from '../../lib/adminAuth';
 import AdminHeader from '../../components/admin/AdminHeader';
+import { formatPrice } from '../../lib/formatPrice';
 import './AdminProducts.css';
 
 const STOCK_LABEL = { instock: 'In Stock', outofstock: 'Out of Stock', onbackorder: 'Backorder' };
@@ -173,9 +174,9 @@ export default function AdminProducts() {
                   <td className="ap-td ap-th--hide-sm ap-text-muted">{getBrand(p)}</td>
                   <td className="ap-td">
                     {p.sale_price && parseFloat(p.sale_price) > 0 ? (
-                      <span className="ap-sale-price">${parseFloat(p.sale_price).toFixed(2)}</span>
+                      <span className="ap-sale-price">{formatPrice(parseFloat(p.sale_price))}</span>
                     ) : (
-                      <span>${parseFloat(p.price || p.regular_price || 0).toFixed(2)}</span>
+                      <span>{formatPrice(parseFloat(p.price || p.regular_price || 0))}</span>
                     )}
                   </td>
                   <td className="ap-td ap-th--hide-sm">

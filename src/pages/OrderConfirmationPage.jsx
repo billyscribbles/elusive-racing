@@ -5,6 +5,7 @@ import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
 import { generateReceiptPdf } from '../lib/generateReceiptPdf';
+import { formatPrice } from '../lib/formatPrice';
 import './OrderConfirmationPage.css';
 
 function formatAddress(addr) {
@@ -134,8 +135,8 @@ export default function OrderConfirmationPage() {
                     <span className="oc-item-name">{item.name}</span>
                   </td>
                   <td className="oc-td-qty">{item.quantity}</td>
-                  <td className="oc-td-price">${item.price.toFixed(2)}</td>
-                  <td className="oc-td-total">${(item.price * item.quantity).toFixed(2)}</td>
+                  <td className="oc-td-price">{formatPrice(item.price)}</td>
+                  <td className="oc-td-total">{formatPrice(item.price * item.quantity)}</td>
                 </tr>
               ))}
             </tbody>
@@ -145,21 +146,21 @@ export default function OrderConfirmationPage() {
           <div className="oc-totals">
             <div className="oc-totals-row">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
             <div className="oc-totals-row">
               <span>{shippingLabel}</span>
-              <span>{shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}</span>
+              <span>{shippingCost === 0 ? 'Free' : formatPrice(shippingCost)}</span>
             </div>
             <div className="oc-totals-row oc-totals-total">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{formatPrice(total)}</span>
             </div>
           </div>
 
           {paymentMethod === 'bacs' && (
             <div className="oc-bacs-note">
-              <p>Please transfer <strong>${total.toFixed(2)} AUD</strong> to:</p>
+              <p>Please transfer <strong>{formatPrice(total)} AUD</strong> to:</p>
               <p><strong>Commonwealth Bank of Australia</strong></p>
               <p>Account Name: Elusive Racing Pty Ltd &middot; BSB: 063-000 &middot; Account: 1234 5678</p>
               <p>Reference: <strong>#{orderId}</strong></p>

@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatPrice } from './formatPrice';
 
 function formatAddress(addr) {
   if (!addr) return '';
@@ -96,8 +97,8 @@ export function generateReceiptPdf(order) {
   const tableRows = order.items.map(item => [
     item.brand ? `${item.brand} — ${item.name}` : item.name,
     String(item.quantity),
-    `$${item.price.toFixed(2)}`,
-    `$${(item.price * item.quantity).toFixed(2)}`,
+    formatPrice(item.price),
+    formatPrice(item.price * item.quantity),
   ]);
 
   autoTable(doc, {
@@ -135,11 +136,11 @@ export function generateReceiptPdf(order) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('Subtotal:', totalsX - 40, y);
-  doc.text(`$${order.subtotal.toFixed(2)}`, totalsX, y, { align: 'right' });
+  doc.text(formatPrice(order.subtotal), totalsX, y, { align: 'right' });
   y += 5.5;
 
   doc.text(`${order.shippingLabel}:`, totalsX - 40, y);
-  doc.text(order.shippingCost === 0 ? 'Free' : `$${order.shippingCost.toFixed(2)}`, totalsX, y, { align: 'right' });
+  doc.text(order.shippingCost === 0 ? 'Free' : formatPrice(order.shippingCost), totalsX, y, { align: 'right' });
   y += 6;
 
   doc.setDrawColor(180);
@@ -149,7 +150,7 @@ export function generateReceiptPdf(order) {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Total:', totalsX - 40, y);
-  doc.text(`$${order.total.toFixed(2)} AUD`, totalsX, y, { align: 'right' });
+  doc.text(`${formatPrice(order.total)} AUD`, totalsX, y, { align: 'right' });
   y += 10;
 
   // ── BACS note ──

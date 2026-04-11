@@ -4,6 +4,7 @@ import { ShoppingBag, Trash2, Minus, Plus, ArrowLeft, Wrench, Lock, ShieldCheck,
 const BOOKING_URL = 'https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
+import { formatPrice } from '../lib/formatPrice';
 import './CheckoutPage.css';
 
 
@@ -31,7 +32,7 @@ function CheckoutLineItem({ item }) {
               <Plus size={12} />
             </button>
           </div>
-          <span className="co-line-price">${(item.price * item.quantity).toFixed(2)}</span>
+          <span className="co-line-price">{formatPrice(item.price * item.quantity)}</span>
           <button className="co-line-remove" onClick={() => removeItem(item.id)} aria-label="Remove">
             <Trash2 size={15} />
           </button>
@@ -132,12 +133,12 @@ export default function CheckoutPage() {
 
               <div className="co-summary-row">
                 <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
 
               <div className="co-summary-total">
                 <span>Estimated Total</span>
-                <span className="co-total-amount">${subtotal.toFixed(2)}</span>
+                <span className="co-total-amount">{formatPrice(subtotal)}</span>
               </div>
 
               <p className="co-tax-note">Taxes and shipping calculated at checkout</p>

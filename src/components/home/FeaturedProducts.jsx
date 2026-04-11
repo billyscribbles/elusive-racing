@@ -4,6 +4,7 @@ import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import { getWholesalePrice } from '../../hooks/useWholesalePrice';
 import { getFeaturedProducts, prefetchProduct } from '../../lib/woocommerce';
+import { formatPrice } from '../../lib/formatPrice';
 import './FeaturedProducts.css';
 
 function mapProduct(p) {
@@ -61,10 +62,10 @@ function ProductCard({ product }) {
         <span className="product-brand">{product.brand}</span>
         <h3 className="product-name">{product.name}</h3>
         <div className="product-pricing">
-          <span className="product-price">${effectivePrice.toFixed(2)}</span>
+          <span className="product-price">{formatPrice(effectivePrice)}</span>
           {comparePrice && comparePrice > effectivePrice && (
             <>
-              <span className="product-original-price">${comparePrice.toFixed(2)}</span>
+              <span className="product-original-price">{formatPrice(comparePrice)}</span>
               <span className="product-discount">-{discount}%</span>
             </>
           )}
