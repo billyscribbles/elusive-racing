@@ -15,6 +15,15 @@
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 
+/* ── Sticky top wrapper (header + controls) ──────────────────────────────── */
+
+.wholesale-sticky-top {
+  position: sticky;
+  top: calc(var(--header-height) + var(--nav-height));
+  z-index: 10;
+  background: #f7f7f8;
+}
+
 .wholesale-header {
   padding: 28px 40px 0;
   margin-bottom: 0;
@@ -43,10 +52,6 @@
   gap: 10px;
   padding: 20px 40px 16px;
   flex-wrap: wrap;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #f7f7f8;
   border-bottom: 1px solid #e0e0e0;
 }
 
@@ -167,8 +172,6 @@
   letter-spacing: 0.8px;
   color: #888;
   text-align: left;
-  position: sticky;
-  top: 73px;
   z-index: 5;
 }
 

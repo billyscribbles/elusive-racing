@@ -319,16 +319,17 @@ export default function WholesaleOrderPage() {
   return (
     <div className="wholesale-page">
       <div className="wholesale-container">
-        {/* Header */}
-        <div className="wholesale-header">
-          <h1>Wholesale Orders</h1>
-          <p className="wholesale-greeting">
-            Welcome back, {user?.firstName || 'Wholesale Customer'}
-          </p>
-        </div>
+        {/* Sticky top section: header + search/filters */}
+        <div className="wholesale-sticky-top">
+          <div className="wholesale-header">
+            <h1>Wholesale Orders</h1>
+            <p className="wholesale-greeting">
+              Welcome back, {user?.firstName || 'Wholesale Customer'}
+            </p>
+          </div>
 
-        {/* Search + Filters */}
-        <div className="wholesale-controls">
+          {/* Search + Filters */}
+          <div className="wholesale-controls">
           <div className="wholesale-search">
             <Search className="wholesale-search-icon" />
             <input
@@ -383,6 +384,7 @@ export default function WholesaleOrderPage() {
             <option value="price-desc">Price High-Low</option>
             <option value="newest">Newest</option>
           </select>
+        </div>
         </div>
 
         {/* Loading */}
