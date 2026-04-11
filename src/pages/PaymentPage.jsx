@@ -240,8 +240,10 @@ export default function PaymentPage() {
       setPiError('Payment unavailable. Please try again or use Direct Bank Transfer.');
       return;
     }
+    if (totalCents <= 0) return;           // wait for cart to hydrate
     setPiError(null);
     setClientSecret(null);
+    let cancelled = false;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000); // 15 s timeout
     fetch('/api/create-payment-intent', {
@@ -250,16 +252,22 @@ export default function PaymentPage() {
       body:    JSON.stringify({ amountCents: totalCents }),
       signal:  controller.signal,
     })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Server error ${r.status}`);
+        return r.json();
+      })
       .then(data => {
+        if (cancelled) return;
         if (data.clientSecret) setClientSecret(data.clientSecret);
         else setPiError('Payment unavailable. Please try again or use Direct Bank Transfer.');
       })
-      .catch(() => {
+      .catch(err => {
+        if (cancelled) return;             // ignore aborted fetches
+        console.error('PaymentIntent fetch failed:', err);
         setPiError('Payment unavailable. Please try again or use Direct Bank Transfer.');
       })
       .finally(() => clearTimeout(timeout));
-    return () => { controller.abort(); clearTimeout(timeout); };
+    return () => { cancelled = true; controller.abort(); clearTimeout(timeout); };
   }, [totalCents, method]);
 
   if (items.length === 0) {
