@@ -21,14 +21,21 @@
 }
 
 .topbar-social-link {
-  color: #666;
   display: flex;
   align-items: center;
-  transition: color 0.2s;
+  opacity: 0.55;
+  transition: opacity 0.2s;
 }
 
 .topbar-social-link:hover {
-  color: var(--color-white);
+  opacity: 1;
+}
+
+.topbar-brand-icon {
+  display: block;
+  /* Make monochrome Simple Icons render pure white so the topbar grey/white
+     hover state comes from the parent link's opacity, not the SVG fill. */
+  filter: brightness(0) invert(1);
 }
 
 /* Shipping message — centre */
