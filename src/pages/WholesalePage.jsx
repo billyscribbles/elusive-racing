@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, CheckCircle, Building2 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import './WholesalePage.css';
@@ -42,7 +42,6 @@ function passwordStrength(pw) {
 }
 
 export default function WholesalePage() {
-  const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
 
   const [form, setForm] = useState({
@@ -133,15 +132,13 @@ export default function WholesalePage() {
         return;
       }
 
-      // Auto-login if token returned
+      // Auto-login if token returned. New applications are pending approval —
+      // they can't access /wholesale yet, so we just show the success screen
+      // and let them land on their account dashboard.
       if (data.token) {
         login(data);
-        setStatus('success');
-        // Redirect to wholesale orders after a moment
-        setTimeout(() => navigate('/wholesale'), 2000);
-      } else {
-        setStatus('success');
       }
+      setStatus('success');
     } catch {
       setErrorMsg('Something went wrong. Please try again.');
       setStatus('error');

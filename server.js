@@ -310,22 +310,43 @@ function decodeHtml(str) {
   return (str ?? '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 }
 
-// ── Wholesale Suite tier definitions (duplicated from src/lib/wholesaleTiers.js for Node.js) ──
-const WS_TIERS = [
+// ── Wholesale Suite tier definitions ─────────────────────────────────────────
+// Live tier list is stored in data/wholesale-tiers.json so admins can edit
+// labels and discount percentages without a deploy. Role keys and metaKeys
+// are fixed — they must match what the WooCommerce WP site has registered.
+
+const WS_TIERS_FILE = path.join(__dirname, 'data', 'wholesale-tiers.json');
+
+const WS_TIERS_SEED = [
   { role: 'wholesale_customer',    label: 'Wholesale 5%',  tierNumber: 0, discount: 5,  metaKey: 'wholesale_customer_wholesale_price' },
   { role: 'wholesale_customer_10', label: 'Wholesale 10%', tierNumber: 1, discount: 10, metaKey: 'wholesale_customer_10_wholesale_price' },
   { role: 'wholesale_customer_15', label: 'Wholesale 15%', tierNumber: 2, discount: 15, metaKey: 'wholesale_customer_15_wholesale_price' },
   { role: 'wholesale_customer_20', label: 'Wholesale 20%', tierNumber: 3, discount: 20, metaKey: 'wholesale_customer_20_wholesale_price' },
   { role: 'wholesale_customer_25', label: 'Wholesale 25%', tierNumber: 4, discount: 25, metaKey: 'wholesale_customer_25_wholesale_price' },
 ];
-const WS_ROLE_MAP = Object.fromEntries(WS_TIERS.map(t => [t.role, t]));
+
+function readWsTiers() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(WS_TIERS_FILE, 'utf8'));
+    if (Array.isArray(parsed) && parsed.length === WS_TIERS_SEED.length) return parsed;
+  } catch {}
+  return WS_TIERS_SEED.map(t => ({ ...t }));
+}
+
+function writeWsTiers(tiers) {
+  fs.mkdirSync(path.dirname(WS_TIERS_FILE), { recursive: true });
+  fs.writeFileSync(WS_TIERS_FILE, JSON.stringify(tiers, null, 2));
+}
+
 function isWsRole(role) { return (role || '').startsWith('wholesale_customer'); }
-function getWsTier(role) { return WS_ROLE_MAP[role] ?? null; }
+function getWsTier(role) {
+  return readWsTiers().find(t => t.role === role) ?? null;
+}
 
 function extractWsPrices(metaData) {
   if (!Array.isArray(metaData)) return {};
   const prices = {};
-  for (const t of WS_TIERS) {
+  for (const t of readWsTiers()) {
     const entry = metaData.find(m => m.key === t.metaKey);
     const val = parseFloat(entry?.value || '0');
     if (val > 0) prices[t.role] = val;
@@ -834,6 +855,243 @@ async function handleAdminCategories(req, res) {
   }
 }
 
+// ── Admin: Users / Customers ─────────────────────────────────────────────────
+// Wraps WC customers API. The "pending" role filter is synthetic — it maps
+// to role=customer + meta_data wholesale_status=pending.
+
+function summariseCustomer(c) {
+  const meta = Array.isArray(c.meta_data) ? c.meta_data : [];
+  const readMeta = key => meta.find(m => m.key === key)?.value || '';
+
+  // Pending detection supports both the legacy Wholesale Suite (WWLC) plugin
+  // (role=wwlc_unapproved + wwlc_is_user_active=no) and the new native flow
+  // (role=customer + wholesale_status=pending).
+  const wwlcActive    = readMeta('wwlc_is_user_active'); // 'yes' | 'no' | ''
+  const wwlcRequested = readMeta('wwlc_role');           // requested tier
+  let wholesaleStatus = readMeta('wholesale_status') || null;
+  if (!wholesaleStatus) {
+    if (c.role === 'wwlc_unapproved' || wwlcActive === 'no') wholesaleStatus = 'pending';
+    else if (wwlcActive === 'yes' && (c.role || '').startsWith('wholesale_customer')) wholesaleStatus = 'approved';
+  }
+
+  return {
+    id:              c.id,
+    email:           c.email,
+    firstName:       c.first_name || '',
+    lastName:        c.last_name  || '',
+    username:        c.username || '',
+    role:            c.role || 'customer',
+    avatarUrl:       c.avatar_url || '',
+    dateCreated:     c.date_created || '',
+    billing:         c.billing  || null,
+    shipping:        c.shipping || null,
+    wholesaleStatus: wholesaleStatus,
+    wholesaleRequestedTier: wwlcRequested || null,
+    wholesale: {
+      abn:          readMeta('wholesale_abn')           || readMeta('wwlc_cf_abn'),
+      businessType: readMeta('wholesale_business_type'),
+      website:      readMeta('wholesale_website'),
+      hearAbout:    readMeta('wholesale_hear_about'),
+      notes:        readMeta('wholesale_notes'),
+      appliedAt:    readMeta('wholesale_applied_at')    || readMeta('wwlc_approval_date'),
+      companyName:  readMeta('wwlc_company_name')       || c.billing?.company || '',
+      phone:        readMeta('wwlc_phone')              || c.billing?.phone   || '',
+    },
+  };
+}
+
+async function handleAdminListUsers(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  const url     = new URL(req.url, 'http://localhost');
+  const page    = url.searchParams.get('page')     || '1';
+  const perPage = url.searchParams.get('per_page') || '20';
+  const search  = url.searchParams.get('search')   || '';
+  const role    = url.searchParams.get('role')     || 'all';
+
+  try {
+    // Pending wholesale applications live under WC role `wwlc_unapproved`
+    // (from the Wholesale Suite plugin). Filtering by that role is fast
+    // because WC handles the paging for us.
+    const wcRole = role === 'pending' ? 'wwlc_unapproved'
+                 : (role && role !== 'all') ? role
+                 : 'all';
+
+    const params = new URLSearchParams({
+      page, per_page: perPage,
+      role: wcRole,
+      orderby: 'registered_date',
+      order:   'desc',
+    });
+    if (search) params.set('search', search);
+
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/customers?${params}`, {
+      headers: { Authorization: wcAuth() },
+    });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    const raw        = await r.json();
+    const total      = parseInt(r.headers.get('X-WP-Total')      || String(raw.length), 10);
+    const totalPages = parseInt(r.headers.get('X-WP-TotalPages') || '1', 10);
+
+    adminJson(res, 200, {
+      users: raw.map(summariseCustomer),
+      total,
+      totalPages,
+    });
+  } catch (err) {
+    console.error('[admin] list users:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch users.' });
+  }
+}
+
+async function handleAdminGetUser(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  try {
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/customers/${id}`, {
+      headers: { Authorization: wcAuth() },
+    });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    const c = await r.json();
+    adminJson(res, 200, summariseCustomer(c));
+  } catch (err) {
+    console.error('[admin] get user:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch user.' });
+  }
+}
+
+function isValidUserRole(role) {
+  if (role === 'customer') return true;
+  return readWsTiers().some(t => t.role === role);
+}
+
+async function updateCustomerRoleAndMeta(id, role, extraMeta = []) {
+  const payload = { role };
+  if (extraMeta.length) payload.meta_data = extraMeta;
+  const r = await fetch(`${WC_URL}/wp-json/wc/v3/customers/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+    body: JSON.stringify(payload),
+  });
+  return r;
+}
+
+// Meta payload that also syncs the Wholesale Suite plugin's approval state.
+function wsApprovedMeta(role) {
+  return [
+    { key: 'wholesale_status',     value: '' },
+    { key: 'wwlc_is_user_active',  value: 'yes' },
+    { key: 'wwlc_role',            value: role },
+    { key: 'wwlc_custom_set_role', value: role },
+  ];
+}
+
+function wsRejectedMeta() {
+  return [
+    { key: 'wholesale_status',    value: 'rejected' },
+    { key: 'wwlc_is_user_active', value: 'no' },
+  ];
+}
+
+async function handleAdminUpdateUserRole(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'PUT') { res.writeHead(405); res.end(); return; }
+  try {
+    const { role } = await readBody(req);
+    if (!isValidUserRole(role)) return adminJson(res, 400, { error: 'Invalid role.' });
+    // Promoting to a wholesale tier clears any pending/rejected flag AND
+    // syncs the Wholesale Suite plugin so it recognises the user.
+    const extraMeta = isWsRole(role) ? wsApprovedMeta(role) : [];
+    const r = await updateCustomerRoleAndMeta(id, role, extraMeta);
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    adminJson(res, 200, summariseCustomer(await r.json()));
+  } catch (err) {
+    console.error('[admin] update user role:', err.message);
+    adminJson(res, 500, { error: 'Failed to update role.' });
+  }
+}
+
+async function handleAdminApproveUser(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  try {
+    const { role } = await readBody(req);
+    if (!isWsRole(role) || !isValidUserRole(role)) {
+      return adminJson(res, 400, { error: 'Approve requires a wholesale tier role.' });
+    }
+    const r = await updateCustomerRoleAndMeta(id, role, wsApprovedMeta(role));
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    adminJson(res, 200, summariseCustomer(await r.json()));
+  } catch (err) {
+    console.error('[admin] approve user:', err.message);
+    adminJson(res, 500, { error: 'Failed to approve user.' });
+  }
+}
+
+async function handleAdminRejectUser(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  try {
+    const r = await updateCustomerRoleAndMeta(id, 'customer', wsRejectedMeta());
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    adminJson(res, 200, summariseCustomer(await r.json()));
+  } catch (err) {
+    console.error('[admin] reject user:', err.message);
+    adminJson(res, 500, { error: 'Failed to reject user.' });
+  }
+}
+
+// ── Admin: Wholesale Tiers editor ────────────────────────────────────────────
+
+async function handleAdminGetWsTiers(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  adminJson(res, 200, { tiers: readWsTiers() });
+}
+
+async function handleAdminSaveWsTiers(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'PUT') { res.writeHead(405); res.end(); return; }
+  try {
+    const { tiers } = await readBody(req);
+    if (!Array.isArray(tiers) || tiers.length !== WS_TIERS_SEED.length) {
+      return adminJson(res, 400, { error: `Expected ${WS_TIERS_SEED.length} tiers.` });
+    }
+    const current = readWsTiers();
+    // Validate each incoming tier matches a seed role (role + metaKey + tierNumber stay fixed).
+    const merged = current.map((existing, i) => {
+      const incoming = tiers[i] || {};
+      if (incoming.role !== existing.role) {
+        throw new Error(`Tier ${i} role mismatch — role keys cannot be changed.`);
+      }
+      const discount = Number(incoming.discount);
+      if (!Number.isFinite(discount) || discount < 0 || discount > 99) {
+        throw new Error(`Tier ${i} discount must be between 0 and 99.`);
+      }
+      const label = typeof incoming.label === 'string' ? incoming.label.trim() : '';
+      if (!label) throw new Error(`Tier ${i} label is required.`);
+      return { ...existing, label, discount };
+    });
+    writeWsTiers(merged);
+    adminJson(res, 200, { tiers: merged });
+  } catch (err) {
+    console.error('[admin] save ws tiers:', err.message);
+    adminJson(res, 400, { error: err.message || 'Failed to save.' });
+  }
+}
+
+// Public read-only echo of the tier list so the frontend can refresh
+// labels/discounts at runtime without exposing admin endpoints.
+async function handlePublicWsTiers(req, res) {
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  res.writeHead(200, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'public, max-age=60',
+  });
+  res.end(JSON.stringify({ tiers: readWsTiers() }));
+}
+
 // ── WooCommerce product webhooks ──────────────────────────────────────────────
 // Register these in WC: WooCommerce → Settings → Advanced → Webhooks
 // Delivery URL: https://your-domain/api/webhook/product-updated  (etc.)
@@ -1065,19 +1323,21 @@ async function handleAuthLogin(req, res) {
       }
 
       const displayName = authData.user_display_name || '';
+      const wholesaleStatus = (customer?.meta_data || []).find(m => m.key === 'wholesale_status')?.value || null;
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({
         token: authData.token,
         user: {
-          id:           customer?.id   ?? null,
-          email:        authData.user_email,
-          firstName:    customer?.first_name || displayName.split(' ')[0] || '',
-          lastName:     customer?.last_name  || displayName.split(' ').slice(1).join(' ') || '',
-          phone:        customer?.billing?.phone || '',
-          avatarUrl:    customer?.avatar_url ?? null,
-          memberSince:  customer?.date_created ?? null,
-          storeCredit:  customer?.store_credit?.balances?.[0]?.available_balance ?? 0,
-          role:         customer?.role ?? 'customer',
+          id:              customer?.id   ?? null,
+          email:           authData.user_email,
+          firstName:       customer?.first_name || displayName.split(' ')[0] || '',
+          lastName:        customer?.last_name  || displayName.split(' ').slice(1).join(' ') || '',
+          phone:           customer?.billing?.phone || '',
+          avatarUrl:       customer?.avatar_url ?? null,
+          memberSince:     customer?.date_created ?? null,
+          storeCredit:     customer?.store_credit?.balances?.[0]?.available_balance ?? 0,
+          role:            customer?.role ?? 'customer',
+          wholesaleStatus: wholesaleStatus,
           wholesaleTier: isWsRole(customer?.role) ? {
             role:       customer.role,
             tierNumber: getWsTier(customer.role)?.tierNumber ?? 0,
@@ -1085,8 +1345,8 @@ async function handleAuthLogin(req, res) {
             discount:   getWsTier(customer.role)?.discount ?? 0,
             metaKey:    getWsTier(customer.role)?.metaKey ?? null,
           } : null,
-          billing:      customer?.billing  ?? null,
-          shipping:     customer?.shipping ?? null,
+          billing:         customer?.billing  ?? null,
+          shipping:        customer?.shipping ?? null,
         },
       }));
     } catch (err) {
@@ -1159,7 +1419,9 @@ async function handleWholesaleRegister(req, res) {
       const d = JSON.parse(body);
       const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 
-      // Create customer with wholesale_customer role + billing/business details
+      // Create customer as regular 'customer' with wholesale_status=pending.
+      // Admin must approve and assign a wholesale tier before they get
+      // wholesale pricing. This replaces the old auto-approve flow.
       const createRes = await fetch(`${WC_URL}/wp-json/wc/v3/customers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: auth },
@@ -1169,7 +1431,7 @@ async function handleWholesaleRegister(req, res) {
           last_name:  d.lastName,
           username:   d.email,
           password:   d.password,
-          role:       'wholesale_customer',
+          role:       'customer',
           billing: {
             first_name: d.firstName,
             last_name:  d.lastName,
@@ -1183,11 +1445,13 @@ async function handleWholesaleRegister(req, res) {
             phone:      d.phone || '',
           },
           meta_data: [
+            { key: 'wholesale_status',        value: 'pending' },
             { key: 'wholesale_abn',           value: d.abn || '' },
             { key: 'wholesale_business_type', value: d.businessType || '' },
             { key: 'wholesale_website',       value: d.website || '' },
             { key: 'wholesale_hear_about',    value: d.hearAbout || '' },
             { key: 'wholesale_notes',         value: d.notes || '' },
+            { key: 'wholesale_applied_at',    value: new Date().toISOString() },
           ],
         }),
       });
@@ -1195,13 +1459,13 @@ async function handleWholesaleRegister(req, res) {
       if (!createRes.ok) {
         const err = await createRes.json().catch(() => ({}));
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message || 'Could not create wholesale account. Email may already be in use.' }));
+        res.end(JSON.stringify({ error: err.message || 'Could not submit wholesale application. Email may already be in use.' }));
         return;
       }
 
       const customer = await createRes.json();
 
-      // Auto-login
+      // Auto-login so the user lands on their account page
       const authRes = await fetch(`${WC_URL}/wp-json/elusive/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1212,21 +1476,18 @@ async function handleWholesaleRegister(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({
         token: authData?.token ?? null,
+        pending: true,
+        message: "Application received — we'll email you once it's approved.",
         user: {
-          id:        customer.id,
-          email:     customer.email,
-          firstName: customer.first_name,
-          lastName:  customer.last_name,
-          role:      customer.role || 'wholesale_customer',
-          wholesaleTier: {
-            role:       customer.role || 'wholesale_customer',
-            tierNumber: getWsTier(customer.role || 'wholesale_customer')?.tierNumber ?? 0,
-            label:      getWsTier(customer.role || 'wholesale_customer')?.label ?? 'Wholesale',
-            discount:   getWsTier(customer.role || 'wholesale_customer')?.discount ?? 0,
-            metaKey:    getWsTier(customer.role || 'wholesale_customer')?.metaKey ?? null,
-          },
-          billing:   customer.billing  ?? null,
-          shipping:  customer.shipping ?? null,
+          id:             customer.id,
+          email:          customer.email,
+          firstName:      customer.first_name,
+          lastName:       customer.last_name,
+          role:           'customer',
+          wholesaleStatus: 'pending',
+          wholesaleTier:  null,
+          billing:        customer.billing  ?? null,
+          shipping:       customer.shipping ?? null,
         },
       }));
     } catch (err) {
@@ -1417,11 +1678,27 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Public (unauth) wholesale tier list — frontend reads this at boot
+  if (req.url === '/api/public/wholesale-tiers') { handlePublicWsTiers(req, res); return; }
+
   // Admin API
   if (req.url === '/api/admin/login') { handleAdminLogin(req, res); return; }
   if (req.url === '/api/admin/promo-banner' && req.method === 'GET') { handleAdminGetPromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner' && req.method === 'PUT') { handleAdminSavePromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner/image' && req.method === 'POST') { handleAdminPromoBannerImage(req, res); return; }
+  if (req.url === '/api/admin/wholesale-tiers' && req.method === 'GET') { handleAdminGetWsTiers(req, res); return; }
+  if (req.url === '/api/admin/wholesale-tiers' && req.method === 'PUT') { handleAdminSaveWsTiers(req, res); return; }
+  if (req.url.startsWith('/api/admin/users')) {
+    const approveMatch = req.url.match(/^\/api\/admin\/users\/(\d+)\/approve/);
+    if (approveMatch) { handleAdminApproveUser(req, res, approveMatch[1]); return; }
+    const rejectMatch = req.url.match(/^\/api\/admin\/users\/(\d+)\/reject/);
+    if (rejectMatch) { handleAdminRejectUser(req, res, rejectMatch[1]); return; }
+    const roleMatch = req.url.match(/^\/api\/admin\/users\/(\d+)\/role/);
+    if (roleMatch) { handleAdminUpdateUserRole(req, res, roleMatch[1]); return; }
+    const idMatch = req.url.match(/^\/api\/admin\/users\/(\d+)(\?|$)/);
+    if (idMatch) { handleAdminGetUser(req, res, idMatch[1]); return; }
+    handleAdminListUsers(req, res); return;
+  }
   if (req.url.startsWith('/api/admin/tags'))       { handleAdminTags(req, res);       return; }
   if (req.url.startsWith('/api/admin/categories')) { handleAdminCategories(req, res); return; }
   if (req.url === '/api/admin/products/upload-image' && req.method === 'POST') { handleAdminProductImageUpload(req, res); return; }

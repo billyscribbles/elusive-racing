@@ -1,0 +1,7 @@
+[
+  { "role": "wholesale_customer",    "label": "Wholesale 5%",  "tierNumber": 0, "discount": 5,  "metaKey": "wholesale_customer_wholesale_price" },
+  { "role": "wholesale_customer_10", "label": "Wholesale 10%", "tierNumber": 1, "discount": 10, "metaKey": "wholesale_customer_10_wholesale_price" },
+  { "role": "wholesale_customer_15", "label": "Wholesale 15%", "tierNumber": 2, "discount": 15, "metaKey": "wholesale_customer_15_wholesale_price" },
+  { "role": "wholesale_customer_20", "label": "Wholesale 20%", "tierNumber": 3, "discount": 20, "metaKey": "wholesale_customer_20_wholesale_price" },
+  { "role": "wholesale_customer_25", "label": "Wholesale 25%", "tierNumber": 4, "discount": 25, "metaKey": "wholesale_customer_25_wholesale_price" }
+]

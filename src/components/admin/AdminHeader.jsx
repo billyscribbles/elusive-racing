@@ -20,6 +20,8 @@ export default function AdminHeader({ theme, onToggleTheme }) {
         <span className="adm-header-title">Admin</span>
         <nav className="adm-nav">
           <NavLink to="/admin/products" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Products</NavLink>
+          <NavLink to="/admin/users" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Users</NavLink>
+          <NavLink to="/admin/wholesale-tiers" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Tiers</NavLink>
           <NavLink to="/admin/promo-banner" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Promo Banner</NavLink>
           <NavLink to="/admin/developer" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Developer</NavLink>
         </nav>
