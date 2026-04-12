@@ -14,7 +14,9 @@ export default function AdminHeader({ theme, onToggleTheme }) {
   return (
     <header className="adm-header" data-admin-theme={theme}>
       <div className="adm-header-left">
-        <img src="/logo-main.svg" alt="Elusive Racing" className="adm-logo" />
+        <a href="/" className="adm-logo-link" aria-label="Back to homepage">
+          <img src="/logo-main.svg" alt="Elusive Racing" className="adm-logo" />
+        </a>
         <span className="adm-header-title">Admin</span>
         <nav className="adm-nav">
           <NavLink to="/admin/products" className={({ isActive }) => `adm-nav-link${isActive ? ' adm-nav-link--active' : ''}`}>Products</NavLink>

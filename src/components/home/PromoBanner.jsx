@@ -17,7 +17,7 @@ export default function PromoBanner() {
   useEffect(() => {
     fetch('/api/admin/promo-banner')
       .then(r => r.json())
-      .then(data => { if (data && data.visible !== false) setConfig(data); })
+      .then(data => { if (data) setConfig({ ...DEFAULTS, ...data }); })
       .catch(() => {});
   }, []);
 
