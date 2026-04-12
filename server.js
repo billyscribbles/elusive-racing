@@ -1041,45 +1041,6 @@ async function handleAdminRejectUser(req, res, id) {
   }
 }
 
-// ── Admin: Wholesale Tiers editor ────────────────────────────────────────────
-
-async function handleAdminGetWsTiers(req, res) {
-  if (!requireAdminAuth(req, res)) return;
-  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
-  adminJson(res, 200, { tiers: readWsTiers() });
-}
-
-async function handleAdminSaveWsTiers(req, res) {
-  if (!requireAdminAuth(req, res)) return;
-  if (req.method !== 'PUT') { res.writeHead(405); res.end(); return; }
-  try {
-    const { tiers } = await readBody(req);
-    if (!Array.isArray(tiers) || tiers.length !== WS_TIERS_SEED.length) {
-      return adminJson(res, 400, { error: `Expected ${WS_TIERS_SEED.length} tiers.` });
-    }
-    const current = readWsTiers();
-    // Validate each incoming tier matches a seed role (role + metaKey + tierNumber stay fixed).
-    const merged = current.map((existing, i) => {
-      const incoming = tiers[i] || {};
-      if (incoming.role !== existing.role) {
-        throw new Error(`Tier ${i} role mismatch — role keys cannot be changed.`);
-      }
-      const discount = Number(incoming.discount);
-      if (!Number.isFinite(discount) || discount < 0 || discount > 99) {
-        throw new Error(`Tier ${i} discount must be between 0 and 99.`);
-      }
-      const label = typeof incoming.label === 'string' ? incoming.label.trim() : '';
-      if (!label) throw new Error(`Tier ${i} label is required.`);
-      return { ...existing, label, discount };
-    });
-    writeWsTiers(merged);
-    adminJson(res, 200, { tiers: merged });
-  } catch (err) {
-    console.error('[admin] save ws tiers:', err.message);
-    adminJson(res, 400, { error: err.message || 'Failed to save.' });
-  }
-}
-
 // Public read-only echo of the tier list so the frontend can refresh
 // labels/discounts at runtime without exposing admin endpoints.
 async function handlePublicWsTiers(req, res) {
@@ -1686,8 +1647,6 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/admin/promo-banner' && req.method === 'GET') { handleAdminGetPromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner' && req.method === 'PUT') { handleAdminSavePromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner/image' && req.method === 'POST') { handleAdminPromoBannerImage(req, res); return; }
-  if (req.url === '/api/admin/wholesale-tiers' && req.method === 'GET') { handleAdminGetWsTiers(req, res); return; }
-  if (req.url === '/api/admin/wholesale-tiers' && req.method === 'PUT') { handleAdminSaveWsTiers(req, res); return; }
   if (req.url.startsWith('/api/admin/users')) {
     const approveMatch = req.url.match(/^\/api\/admin\/users\/(\d+)\/approve/);
     if (approveMatch) { handleAdminApproveUser(req, res, approveMatch[1]); return; }

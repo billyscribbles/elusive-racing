@@ -63,7 +63,7 @@ export default function AdminUsers() {
 
   // Load tier list for labels + role filter options
   useEffect(() => {
-    adminFetch('/api/admin/wholesale-tiers')
+    fetch('/api/public/wholesale-tiers')
       .then(r => r.ok ? r.json() : { tiers: [] })
       .then(data => setTiers(data.tiers || []))
       .catch(() => {});
