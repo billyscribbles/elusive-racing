@@ -19,8 +19,9 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [ ] **C3. BACS bank details are placeholder `"1234 5678"`**
   `src/pages/PaymentPage.jsx:232-237`. Replace with real Elusive Racing CBA account. Extract to config/env.
 
-- [ ] **C4. Stripe is on TEST keys**
-  `.env` `sk_test_*` / `pk_test_*`. Swap to live keys in production env only. Add a `server.js` boot guard that refuses to start if `NODE_ENV==='production'` and key starts with `sk_test_`.
+- [x] ⏳ **C4. Stripe live key boot guard** — CODE DONE, KEYS STILL NEEDED
+  `server.js` now has a `validateProductionConfig()` block that runs at boot. When `NODE_ENV=production`, it refuses to start if Stripe key is missing / is `sk_test_*`, if WC credentials / URL are missing, if `ADMIN_JWT_SECRET` is missing or equals the default placeholder, if admin username/password aren't set, or if `ALLOWED_ORIGINS` is empty. All errors printed together before `process.exit(1)`.
+  **Still need from you:** live Stripe key + all other prod env vars in the deploy environment.
 
 - [x] ✅ **C5. Cart `removeItem` / `updateQuantity` variantId bug** — DONE
   Both now take `(id, variantId)`. Updated callers in `CheckoutPage.jsx` and `CartIcon.jsx`. Also fixed the React `key` collision on same product with different variants (both cart renders now use `` `${id}-${variantId ?? 'base'}` ``).
@@ -32,9 +33,11 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 
 ## 🟠 High — fix before launch (or ship with a documented mitigation)
 
-- [ ] **H1. Admin endpoints: CORS wildcard + no rate limit + weak password**
-  `server.js` ~L492, L602, L623, L629-642. Every response sets `Access-Control-Allow-Origin: *`. `/api/admin/login` has no rate limit. `ADMIN_PASSWORD=Elusive123!` is too weak.
-  **Fix:** restrict CORS to prod + staging origins. Add IP-based rate limit (5 attempts / 15 min) on admin login. Strong random `ADMIN_PASSWORD`. Fail fast at boot if `ADMIN_JWT_SECRET` unset in production (don't rely on `'change-me-in-production'` fallback at `server.js:38`).
+- [x] ⏳ **H1. Admin hardening** — CODE DONE, PROD VALUES STILL NEEDED
+  - **Rate limit:** in-memory IP map on `/api/admin/login` — 5 attempts / 15 min window. Returns `429` with `Retry-After` header. Failed attempts logged with `[admin-login]` prefix.
+  - **CORS allowlist:** new `ALLOWED_ORIGINS` env var (comma-separated). `adminJson()` echoes the request origin if allowed, else falls back to the first allowed origin. Empty in dev = wildcard (dev-only).
+  - **JWT secret boot check:** rolled into `validateProductionConfig()` — refuses to start in prod with default placeholder.
+  **Still need from you:** set `ALLOWED_ORIGINS=https://elusiveracing.com.au,https://www.elusiveracing.com.au,<staging>` and rotate `ADMIN_PASSWORD` to a strong random string in the deploy environment.
 
 - [x] ✅ **H2. 404 catch-all route** — DONE
   Added `NotFoundPage` at `src/pages/NotFoundPage.jsx` + catch-all `<Route path="*" />` in `src/App.jsx`. Injects `<meta name="prerender-status-code" content="404">` for prerender services and sets `<meta name="robots" content="noindex">`. Still serves HTTP 200 at the host layer (SPA) — for true 404s in crawlers you'll need prerender.io or static 404 from hosting.
@@ -52,8 +55,8 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [ ] **H6. No cookie / privacy consent banner**
   Required for AU Privacy Act + GDPR. Use `react-cookie-consent` or similar. Gate analytics (H5) on accept.
 
-- [ ] **H7. Product description HTML not sanitised**
-  `src/pages/ProductPage.jsx:604` — `dangerouslySetInnerHTML` on WC description. Pipe through `DOMPurify.sanitize` with an allowlist. Same for chat widget markdown at `src/components/ui/ChatWidget.jsx:188`.
+- [x] ✅ **H7. HTML sanitisation** — DONE
+  Installed `dompurify`. Added `src/lib/sanitizeHtml.js` with a strict allowlist for tags/attrs WC and marked actually emit. Added an `afterSanitizeAttributes` hook that forces `target="_blank" rel="noopener noreferrer"` on every `<a>`. Wired into `ProductPage` (product description) and `ChatWidget` (bot markdown). Safe for renaming: `sanitizeHtml()` is the single choke-point.
 
 - [x] ✅ **H8. Hero videos on mobile** — ALREADY CORRECT
   Verified: `Hero.jsx:150` already gates the `<video>` elements on `!isMobile` (now `shouldPlayVideo`), so mobile visitors never mount them and never request the mp4 files. Confirmed in source.
@@ -61,9 +64,8 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [x] ✅ **H9. Shipping rate failure UX** — DONE
   `getWCShippingRates` now returns `{ ok, rates, taxAmount, error }`. `ContactPage` surfaces the error string as a red banner (domestic flow) and as a banner + manual-quote fallback (international flow). Distinguishes HTTP errors, network errors, and zone-not-configured states.
 
-- [ ] **H10. No stock re-check before payment**
-  `src/pages/PaymentPage.jsx`. Stock is only checked at add-to-cart. Between add and pay, items can deplete → Stripe charges → WC rejects `placeOrder` → orphan order (ties in with C2).
-  **Fix:** re-validate stock immediately before `stripe.confirmCardPayment`. Block payment if any line is short.
+- [x] ✅ **H10. Live stock re-check before payment** — DONE
+  New `POST /api/check-stock` endpoint in `server.js` that queries WC REST for each cart line and classifies issues as `out_of_stock` / `insufficient_stock` / `not_found`. Fails open on network errors (better than blocking customers during a WC blip). New `checkStock()` helper in `src/lib/woocommerce.js`. `StripePaymentForm.handleSubmit` now calls it before `stripe.confirmPayment` — if any line fails, payment is blocked and the customer sees a per-line breakdown. BACS intentionally skipped (no charge at checkout time, so WC's own stock check suffices).
 
 - [x] ✅ **H11. React error boundary** — DONE
   Added `src/components/ErrorBoundary.jsx` and wrapped `<Suspense><Routes/></Suspense>` in `App.jsx`. Friendly fallback with Reload / Home buttons. Dev mode shows stack trace. Has a commented-out Sentry hook point for when H5 is wired.
@@ -76,7 +78,8 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 ## 🟡 Medium — fix before or shortly after launch
 
 - [ ] **M1. Rotate all secrets regardless** (WC key pair, Stripe restricted key, Meilisearch admin key, `ADMIN_JWT_SECRET`, Anthropic API key, admin password). Document in a password manager.
-- [ ] **M2. Security headers** — CSP, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, HSTS. Set in `server.js` or hosting layer.
+- [x] ✅ **M2. Security headers (baseline)** — DONE
+  Added `securityHeaders()` helper in `server.js`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geo/FLoC off), and `Strict-Transport-Security` (only when `NODE_ENV=production` to avoid breaking localhost). Applied to SPA fallback, static assets, and all admin JSON responses. **CSP deliberately deferred** — needs to enumerate Stripe, GTM, Helmet, Sentry origins first, which happens in H5.
 - [x] ✅ **M3. Stale promo banner** — DONE
   Updated all four copies of the fallback (`server.js:773`, `src/components/home/PromoBanner.jsx:8`, `src/pages/admin/AdminPromoBanner.jsx:15`/253, `data/promo-banner.json:5`) to remove the 2024 date. Note: the banner is not currently visible (`visible: false`) so this was cosmetic, but it removes the embarrassment if anyone toggles it on.
 - [ ] **M4. Meilisearch fallback** — if Meili is down, fall back to WC REST search or show a clear "Search unavailable" state.
@@ -89,7 +92,8 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
   Both `StripePaymentForm.handleSubmit` and `BacsForm.handleSubmit` now early-return if `loading === true`, in addition to the existing disabled-button UX.
 - [x] ✅ **M9. AU phone validation** — DONE
   `ContactPage.validate()` now checks optional phone against `/^(\+?61|0)[2-478]\d{8}$/` (mobile + landline), stripping spaces/dashes/parens/dots first. Field stays optional — empty passes.
-- [ ] **M10. Env var boot validation** — `server.js` should fail fast with clear errors if `STRIPE_SECRET_KEY`, `WC_URL`, `ADMIN_JWT_SECRET`, `MEILISEARCH_HOST` missing in prod.
+- [x] ✅ **M10. Env var boot validation** — DONE
+  `validateProductionConfig()` at top of `server.js` — runs only when `NODE_ENV=production`, collects all missing/bad vars, prints them as a list, then `process.exit(1)`. Covers: Stripe secret key (missing + test key), WC URL + key + secret, ADMIN_JWT_SECRET (missing + default), ADMIN_USERNAME/PASSWORD, ALLOWED_ORIGINS. Meilisearch is intentionally soft-failed because the site works without search.
 - [ ] **M11. Deploy config confirmation** — SPA fallback, immutable cache headers on `/assets/*`, no sourcemaps in prod (`build.sourcemap: false`), Node version pinned, `server.js` supervised (PM2/systemd/Docker).
 - [ ] **M12. Cart version/migration field** for safe future schema changes.
 

@@ -614,6 +614,26 @@ export function getCheckoutUrl() {
   return `${WC_URL}/checkout`;
 }
 
+// Live stock check — called immediately before payment confirmation so we don't
+// charge customers for items that went out of stock between add-to-cart and pay.
+// Returns { ok: true, issues: [] } on success, or { ok: false, issues: [...] } with
+// per-line reasons ('out_of_stock' | 'insufficient_stock' | 'not_found').
+export async function checkStock(items) {
+  try {
+    const res = await fetch('/api/check-stock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: items.map(i => ({ id: i.id, quantity: i.quantity, name: i.name })),
+      }),
+    });
+    if (!res.ok) return { ok: true, issues: [], skipped: true }; // fail open
+    return res.json();
+  } catch {
+    return { ok: true, issues: [], skipped: true }; // fail open on network error
+  }
+}
+
 // ── Live shipping rates (proxied through our server to avoid CORS) ────────────
 // Returns { ok, rates, taxAmount, error } — error is a user-facing string when ok=false.
 export async function getWCShippingRates(items, address = {}) {

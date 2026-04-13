@@ -293,10 +293,11 @@
 
 .pp-error {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 12px;
   padding: 10px 14px;
+  white-space: pre-line;
   background: #fff5f5;
   border: 1px solid #fcc;
   border-radius: 6px;

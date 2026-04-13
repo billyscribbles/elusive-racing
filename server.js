@@ -37,6 +37,105 @@ const ADMIN_USERNAME   = process.env.ADMIN_USERNAME   || '';
 const ADMIN_PASSWORD   = process.env.ADMIN_PASSWORD   || '';
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'change-me-in-production';
 
+// Comma-separated list of allowed origins for admin/API endpoints. Leave blank in dev
+// (wildcard is applied) — MUST be set in production.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// ── Production boot validation ───────────────────────────────────────────────
+// Fail fast with a loud error rather than running a half-configured server.
+(function validateProductionConfig() {
+  if (!IS_PROD) return;
+  const errors = [];
+  if (!process.env.STRIPE_SECRET_KEY) {
+    errors.push('STRIPE_SECRET_KEY is not set');
+  } else if (process.env.STRIPE_SECRET_KEY.startsWith('sk_test_')) {
+    errors.push('STRIPE_SECRET_KEY is a TEST key (sk_test_*) — refusing to start in production');
+  }
+  if (!WC_URL)    errors.push('VITE_WC_URL / WC_URL is not set');
+  if (!WC_KEY)    errors.push('WooCommerce consumer key is not set');
+  if (!WC_SECRET) errors.push('WooCommerce consumer secret is not set');
+  if (!process.env.ADMIN_JWT_SECRET || process.env.ADMIN_JWT_SECRET === 'change-me-in-production') {
+    errors.push('ADMIN_JWT_SECRET is missing or still set to the default placeholder');
+  }
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    errors.push('ADMIN_USERNAME / ADMIN_PASSWORD not configured');
+  }
+  if (ALLOWED_ORIGINS.length === 0) {
+    errors.push('ALLOWED_ORIGINS is not set — refuse to start with wildcard CORS in production');
+  }
+  if (errors.length) {
+    console.error('\n[BOOT] Refusing to start — production config errors:');
+    for (const e of errors) console.error('  - ' + e);
+    console.error('');
+    process.exit(1);
+  }
+})();
+
+// ── CORS helper ──────────────────────────────────────────────────────────────
+// Echo the request origin only if it's in the allowlist; fall back to wildcard in dev.
+function corsOrigin(req) {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.length === 0) return '*'; // dev only
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  return ALLOWED_ORIGINS[0]; // first allowed origin as a safe default (won't match most attackers)
+}
+
+// ── Security headers baseline ────────────────────────────────────────────────
+// Applied to HTML and JSON responses. CSP is deliberately permissive for script/style
+// to avoid breaking Stripe, GTM, and inline React styles — tighten once sources are known.
+function securityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    ...(IS_PROD ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {}),
+  };
+}
+
+// ── Rate limiter for /api/admin/login ────────────────────────────────────────
+// Simple in-memory map keyed by client IP. Resets 15 minutes after first failure.
+const ADMIN_LOGIN_LIMIT = { windowMs: 15 * 60 * 1000, maxAttempts: 5 };
+const adminLoginAttempts = new Map(); // ip → { count, firstAt }
+
+function getClientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string') return fwd.split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+function checkAdminLoginRate(ip) {
+  const now = Date.now();
+  const entry = adminLoginAttempts.get(ip);
+  if (!entry) return { allowed: true };
+  if (now - entry.firstAt > ADMIN_LOGIN_LIMIT.windowMs) {
+    adminLoginAttempts.delete(ip);
+    return { allowed: true };
+  }
+  if (entry.count >= ADMIN_LOGIN_LIMIT.maxAttempts) {
+    const retryAfterMs = ADMIN_LOGIN_LIMIT.windowMs - (now - entry.firstAt);
+    return { allowed: false, retryAfterSec: Math.ceil(retryAfterMs / 1000) };
+  }
+  return { allowed: true };
+}
+
+function recordAdminLoginFailure(ip) {
+  const now = Date.now();
+  const entry = adminLoginAttempts.get(ip);
+  if (!entry || now - entry.firstAt > ADMIN_LOGIN_LIMIT.windowMs) {
+    adminLoginAttempts.set(ip, { count: 1, firstAt: now });
+  } else {
+    entry.count += 1;
+  }
+}
+
+function clearAdminLoginAttempts(ip) {
+  adminLoginAttempts.delete(ip);
+}
+
 const BRAND_TERMS = [
   'skunk2', 'k-tuned', 'ktuned', 'hondata', 'exedy', 'bc racing', 'hks', 'arp', 'acl',
   'spoon', 'mugen', 'bosch', 'ngk', 'mishimoto', 'cusco', 'project mu', 'tein', 'whiteline',
@@ -499,6 +598,63 @@ async function handleSyncProducts(req, res) {
   });
 }
 
+// Check live stock for a list of cart items against the WC REST API. Called immediately
+// before Stripe confirmation so we don't take payment for items that went out of stock
+// between add-to-cart and checkout.
+//
+// Body: { items: [{ id, quantity }] }
+// Response: { ok, issues: [{ id, name, requested, available, reason }] }
+//   - issues is empty when everything is fine
+//   - reason ∈ 'out_of_stock' | 'insufficient_stock' | 'not_found'
+async function handleCheckStock(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { items } = JSON.parse(body || '{}');
+      if (!Array.isArray(items) || items.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'items array required' }));
+        return;
+      }
+      const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+      const issues = [];
+      for (const item of items.slice(0, 100)) {
+        const id = parseInt(item.id, 10);
+        const requested = Math.max(1, parseInt(item.quantity, 10) || 1);
+        if (!id) continue;
+        try {
+          const r = await fetch(
+            `${WC_URL}/wp-json/wc/v3/products/${id}?_fields=id,name,stock_status,stock_quantity,manage_stock`,
+            { headers: { Authorization: auth } }
+          );
+          if (!r.ok) {
+            issues.push({ id, name: item.name || `Product ${id}`, requested, available: 0, reason: 'not_found' });
+            continue;
+          }
+          const p = await r.json();
+          if (p.stock_status === 'outofstock') {
+            issues.push({ id, name: p.name, requested, available: 0, reason: 'out_of_stock' });
+          } else if (p.manage_stock && typeof p.stock_quantity === 'number' && p.stock_quantity < requested) {
+            issues.push({ id, name: p.name, requested, available: p.stock_quantity, reason: 'insufficient_stock' });
+          }
+        } catch (err) {
+          console.error(`[check-stock] Failed to fetch product ${id}:`, err.message);
+          // Fail open on network errors — better to let payment through than block customers
+          // on a transient WC outage. Stock mismatch will be caught by WC at order creation.
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', ...securityHeaders() });
+      res.end(JSON.stringify({ ok: issues.length === 0, issues }));
+    } catch (err) {
+      console.error('[check-stock] error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
 async function handleSync(req, res) {
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
   if (SYNC_TOKEN) {
@@ -619,8 +775,13 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 }
 
-function adminJson(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+function adminJson(res, status, data, req = null) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': req ? corsOrigin(req) : '*',
+    'Vary': 'Origin',
+    ...securityHeaders(),
+  });
   res.end(JSON.stringify(data));
 }
 
@@ -628,15 +789,31 @@ function adminJson(res, status, data) {
 
 async function handleAdminLogin(req, res) {
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  const ip = getClientIp(req);
+  const gate = checkAdminLoginRate(ip);
+  if (!gate.allowed) {
+    res.writeHead(429, {
+      'Content-Type': 'application/json',
+      'Retry-After': String(gate.retryAfterSec),
+      'Access-Control-Allow-Origin': corsOrigin(req),
+      'Vary': 'Origin',
+      ...securityHeaders(),
+    });
+    res.end(JSON.stringify({ error: `Too many login attempts. Try again in ${Math.ceil(gate.retryAfterSec / 60)} minute(s).` }));
+    return;
+  }
   try {
     const { username, password } = await readBody(req);
     if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-      return adminJson(res, 503, { error: 'Admin credentials not configured on server.' });
+      return adminJson(res, 503, { error: 'Admin credentials not configured on server.' }, req);
     }
     if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      return adminJson(res, 401, { error: 'Invalid username or password.' });
+      recordAdminLoginFailure(ip);
+      console.warn(`[admin-login] failed attempt from ${ip} (user="${username}")`);
+      return adminJson(res, 401, { error: 'Invalid username or password.' }, req);
     }
-    adminJson(res, 200, { token: signAdminToken(username), username });
+    clearAdminLoginAttempts(ip);
+    adminJson(res, 200, { token: signAdminToken(username), username }, req);
   } catch {
     res.writeHead(400); res.end();
   }
@@ -1629,6 +1806,7 @@ const server = http.createServer((req, res) => {
   // Meilisearch sync triggers
   if (req.url === '/api/sync') { handleSync(req, res); return; }
   if (req.url === '/api/sync-products') { handleSyncProducts(req, res); return; }
+  if (req.url === '/api/check-stock') { handleCheckStock(req, res); return; }
 
   // Dynamic sitemap
   if (req.url === '/sitemap.xml') { handleSitemap(req, res); return; }
@@ -1721,7 +1899,7 @@ const server = http.createServer((req, res) => {
     if (!err && stats.isFile()) {
       const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-      const headers = { 'Content-Type': contentType };
+      const headers = { 'Content-Type': contentType, ...securityHeaders() };
 
       // Cache headers: hashed assets get immutable year-long cache, others get 1 day
       const isHashedAsset = urlPath.startsWith('/assets/');
@@ -1759,6 +1937,7 @@ const server = http.createServer((req, res) => {
       const headers = {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=0, must-revalidate',
+        ...securityHeaders(),
       };
       const acceptEncoding = (req.headers['accept-encoding'] || '');
       if (acceptEncoding.includes('gzip')) {

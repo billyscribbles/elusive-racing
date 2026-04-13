@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, MessageCircle } from 'lucide-react';
 import useVehicleStore from '../../store/vehicleStore';
+import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import './ChatWidget.css';
 
 let _marked = null;
@@ -185,7 +186,7 @@ export default function ChatWidget() {
             {messages.map((msg, i) => (
               <div key={i} className={`chat-msg chat-msg--${msg.from}`}>
                 {msg.from === 'bot'
-                  ? <div className="chat-bubble chat-bubble--md" dangerouslySetInnerHTML={{ __html: _marked ? _marked.parse(msg.text) : msg.text }} />
+                  ? <div className="chat-bubble chat-bubble--md" dangerouslySetInnerHTML={{ __html: sanitizeHtml(_marked ? _marked.parse(msg.text) : msg.text) }} />
                   : <div className="chat-bubble">{msg.text}</div>
                 }
               </div>

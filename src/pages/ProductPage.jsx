@@ -9,6 +9,7 @@ import useCartStore from '../store/cartStore';
 import { brands as BRAND_LIST } from '../data/navigation';
 import { pageTitle, SITE_URL, schemaProduct, schemaBreadcrumb } from '../lib/seo';
 import { formatPrice } from '../lib/formatPrice';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
 import useAuthStore from '../store/authStore';
 import { getWholesalePrice } from '../hooks/useWholesalePrice';
 import './ProductPage.css';
@@ -601,7 +602,7 @@ export default function ProductPage() {
         {display.description && (
           <div className="product-details-description">
             <h3 className="product-details-heading">Description</h3>
-            <div className="product-details-body" dangerouslySetInnerHTML={{ __html: display.description }} />
+            <div className="product-details-body" dangerouslySetInnerHTML={{ __html: sanitizeHtml(display.description) }} />
           </div>
         )}
 

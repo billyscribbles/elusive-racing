@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { placeOrder, syncProductsToSearch } from '../lib/woocommerce';
+import { placeOrder, syncProductsToSearch, checkStock } from '../lib/woocommerce';
 import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Building2 } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
@@ -158,6 +158,21 @@ function StripePaymentForm({ onSuccess }) {
     setError(null);
     setLoading(true);
     try {
+      // Re-check live stock before taking payment. Between add-to-cart and now,
+      // stock may have depleted. Fail open on network/server errors (see checkStock).
+      const stockResult = await checkStock(items);
+      if (!stockResult.ok && stockResult.issues?.length) {
+        const lines = stockResult.issues.map((i) => {
+          if (i.reason === 'out_of_stock') return `• ${i.name}: out of stock`;
+          if (i.reason === 'insufficient_stock') return `• ${i.name}: only ${i.available} in stock (you have ${i.requested})`;
+          if (i.reason === 'not_found') return `• ${i.name}: no longer available`;
+          return `• ${i.name}: unavailable`;
+        }).join('\n');
+        setError(`Some items in your cart are no longer available:\n${lines}\n\nPlease adjust your cart and try again.`);
+        setLoading(false);
+        return;
+      }
+
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: 'if_required',
