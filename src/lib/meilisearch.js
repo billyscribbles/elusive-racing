@@ -15,6 +15,33 @@ const INDEX_NAME = 'products';
 
 let _client = null;
 
+// Transform a WC-normalised product (from src/lib/woocommerce.js) into the
+// "hit" shape that ShopPage / SearchBar / WholesaleOrderPage expect out of
+// Meilisearch. Used by the WC fallback paths below.
+function wcProductToMeiliHit(p) {
+  return {
+    id:              p.id,
+    title:           p.title,
+    handle:          p.handle,
+    vendor:          p.vendor,
+    sku:             p.sku,
+    price:           parseFloat(p.priceRange?.minVariantPrice?.amount ?? 0),
+    regularPrice:    parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount ?? 0) || parseFloat(p.priceRange?.minVariantPrice?.amount ?? 0),
+    onSale:          !!p.onSale,
+    stockStatus:     p.stockStatus || 'instock',
+    stockQuantity:   p.stockQuantity,
+    hasVariants:     (p.variants?.length ?? 0) > 1,
+    imageUrl:        p.featuredImage?.url ?? null,
+    imageAlt:        p.featuredImage?.altText ?? p.title,
+    description:     p.description ?? '',
+    tags:            p.tags ?? [],
+    categories:      (p.categories ?? []).map(c => c.title),
+    categoryHandles: (p.categories ?? []).map(c => c.handle),
+    wholesalePrices: p.wholesalePrices ?? null,
+    dateCreated:    p.dateCreated ?? '',
+  };
+}
+
 async function getClient() {
   if (!_client) {
     const { Meilisearch } = await import('meilisearch');
@@ -32,27 +59,54 @@ async function getClient() {
  * @returns {Promise<Array<{id,name,brand,price,originalPrice,image,href}>>}
  */
 export async function searchProducts(query, limit = 6) {
-  if (!HOST || !SEARCH_KEY) {
-    console.warn('[meilisearch] VITE_MEILISEARCH_HOST or VITE_MEILISEARCH_SEARCH_KEY not set');
-    return [];
+  // Fall back to WC search if Meilisearch isn't configured or throws.
+  async function wcFallback() {
+    try {
+      const { searchProducts: wcSearch } = await import('./woocommerce.js');
+      const results = await wcSearch(query, limit);
+      return results.slice(0, limit).map((p) => ({
+        id:            p.id,
+        name:          p.title,
+        brand:         p.vendor || '',
+        price:         parseFloat(p.priceRange?.minVariantPrice?.amount ?? 0),
+        originalPrice: parseFloat(p.compareAtPriceRange?.minVariantPrice?.amount ?? 0) > parseFloat(p.priceRange?.minVariantPrice?.amount ?? 0)
+          ? parseFloat(p.compareAtPriceRange.minVariantPrice.amount)
+          : null,
+        image:         p.featuredImage?.url || null,
+        href:          `/products/${p.handle}`,
+      }));
+    } catch (err) {
+      console.error('[meilisearch] WC fallback also failed:', err);
+      return [];
+    }
   }
 
-  const client  = await getClient();
-  const index   = client.index(INDEX_NAME);
-  const results = await index.search(query, {
-    limit,
-    attributesToRetrieve: ['id', 'title', 'handle', 'vendor', 'price', 'regularPrice', 'wholesalePrices', 'imageUrl', 'imageAlt'],
-  });
+  if (!HOST || !SEARCH_KEY) {
+    console.warn('[meilisearch] host/key not set — falling back to WC search');
+    return wcFallback();
+  }
 
-  return results.hits.map(h => ({
-    id:            h.id,
-    name:          h.title,
-    brand:         h.vendor || '',
-    price:         h.price  || 0,
-    originalPrice: h.regularPrice > h.price ? h.regularPrice : null,
-    image:         h.imageUrl || null,
-    href:          `/products/${h.handle}`,
-  }));
+  try {
+    const client  = await getClient();
+    const index   = client.index(INDEX_NAME);
+    const results = await index.search(query, {
+      limit,
+      attributesToRetrieve: ['id', 'title', 'handle', 'vendor', 'price', 'regularPrice', 'wholesalePrices', 'imageUrl', 'imageAlt'],
+    });
+
+    return results.hits.map(h => ({
+      id:            h.id,
+      name:          h.title,
+      brand:         h.vendor || '',
+      price:         h.price  || 0,
+      originalPrice: h.regularPrice > h.price ? h.regularPrice : null,
+      image:         h.imageUrl || null,
+      href:          `/products/${h.handle}`,
+    }));
+  } catch (err) {
+    console.warn('[meilisearch] search failed, falling back to WC:', err?.message);
+    return wcFallback();
+  }
 }
 
 /**
@@ -112,7 +166,38 @@ export async function queryProducts({
   model     = '',
   year      = '',
 } = {}) {
-  if (!HOST || !SEARCH_KEY) return { hits: [], totalHits: 0, totalPages: 0 };
+  // Fallback to WC REST when Meilisearch is unavailable. Categories filtering
+  // by handle isn't trivially convertible to WC's id-based filter so the
+  // fallback drops category filters — better than returning zero results.
+  async function wcFallback() {
+    try {
+      const { getProducts } = await import('./woocommerce.js');
+      const res = await getProducts({
+        query:      [ [make, model].filter(Boolean).join(' '), query ].filter(Boolean).join(' '),
+        count:      perPage,
+        page,
+        brandNames: brands,
+        sort,
+        onSale,
+        minPrice:   minPrice != null ? String(minPrice) : '',
+        maxPrice:   maxPrice != null ? String(maxPrice) : '',
+      });
+      const hits = res.edges.map(e => wcProductToMeiliHit(e.node));
+      return {
+        hits,
+        totalHits:  res.total ?? hits.length,
+        totalPages: res.totalPages ?? 1,
+      };
+    } catch (err) {
+      console.error('[meilisearch] WC fallback also failed:', err);
+      return { hits: [], totalHits: 0, totalPages: 0 };
+    }
+  }
+
+  if (!HOST || !SEARCH_KEY) {
+    console.warn('[meilisearch] host/key not set — falling back to WC');
+    return wcFallback();
+  }
 
   const index = (await getClient()).index(INDEX_NAME);
 
@@ -160,9 +245,15 @@ export async function queryProducts({
     // If the sort field isn't sortable yet (e.g. fresh index before first sync),
     // retry without sort so products still appear.
     if (sortParam.length && err?.message?.includes('not sortable')) {
-      results = await index.search(effectiveQuery, { ...searchOpts, sort: undefined });
+      try {
+        results = await index.search(effectiveQuery, { ...searchOpts, sort: undefined });
+      } catch (inner) {
+        console.warn('[meilisearch] retry without sort failed, falling back to WC:', inner?.message);
+        return wcFallback();
+      }
     } else {
-      throw err;
+      console.warn('[meilisearch] queryProducts failed, falling back to WC:', err?.message);
+      return wcFallback();
     }
   }
 
@@ -186,7 +277,21 @@ export async function queryWholesaleProducts({
   inStock    = false,
   sort       = 'a-z',
 } = {}) {
-  if (!HOST || !SEARCH_KEY) return { hits: [], totalHits: 0, totalPages: 0 };
+  async function wcFallback() {
+    try {
+      const { getProducts } = await import('./woocommerce.js');
+      const res = await getProducts({
+        query, count: perPage, page, brandNames: brands, sort,
+      });
+      const hits = res.edges.map(e => wcProductToMeiliHit(e.node));
+      return { hits, totalHits: res.total ?? hits.length, totalPages: res.totalPages ?? 1 };
+    } catch (err) {
+      console.error('[meilisearch] wholesale WC fallback failed:', err);
+      return { hits: [], totalHits: 0, totalPages: 0 };
+    }
+  }
+
+  if (!HOST || !SEARCH_KEY) return wcFallback();
 
   const index = (await getClient()).index(INDEX_NAME);
 
@@ -222,9 +327,15 @@ export async function queryWholesaleProducts({
     results = await index.search(query, searchOpts);
   } catch (err) {
     if (err?.message?.includes('not sortable')) {
-      results = await index.search(query, { ...searchOpts, sort: undefined });
+      try {
+        results = await index.search(query, { ...searchOpts, sort: undefined });
+      } catch (inner) {
+        console.warn('[meilisearch] wholesale retry failed, falling back to WC:', inner?.message);
+        return wcFallback();
+      }
     } else {
-      throw err;
+      console.warn('[meilisearch] queryWholesaleProducts failed, falling back to WC:', err?.message);
+      return wcFallback();
     }
   }
 
