@@ -107,6 +107,9 @@ function MobileFinderForm() {
   );
 }
 
+const HERO_CLIPS = ['hero-1', 'hero-2'];
+const pickedClip = HERO_CLIPS[Math.floor(Math.random() * HERO_CLIPS.length)];
+
 export default function Hero() {
   const [videoReady, setVideoReady] = useState(false);
   const [isMobile] = useState(() => window.innerWidth <= 900);
@@ -133,9 +136,11 @@ export default function Hero() {
               muted
               loop
               playsInline
+              preload="auto"
+              poster="/hnats1.jpg"
               onCanPlay={() => setVideoReady(true)}
             >
-              <source src="/hero-video.mp4" type="video/mp4" />
+              <source src={`/videos/${pickedClip}.mp4`} type="video/mp4" />
             </video>
           )}
           <div className="hero-overlay" />
