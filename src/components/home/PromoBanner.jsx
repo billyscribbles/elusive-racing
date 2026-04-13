@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import './PromoBanner.css';
 
 const DEFAULTS = {
-  visible: true,
   title: 'Performance Parts',
   subtitle: '10% off all in stock products',
   subtext: "Don't miss out on our best deals of the season!",
@@ -12,15 +11,16 @@ const DEFAULTS = {
 };
 
 export default function PromoBanner() {
-  const [config, setConfig] = useState(DEFAULTS);
+  const [config, setConfig] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin/promo-banner')
       .then(r => r.json())
-      .then(data => { if (data) setConfig({ ...DEFAULTS, ...data }); })
-      .catch(() => {});
+      .then(data => setConfig({ ...DEFAULTS, ...(data || {}) }))
+      .catch(() => setConfig(null));
   }, []);
 
+  if (!config) return null;
   const expired = config.expiresAt && new Date(config.expiresAt + 'T23:59:59') < new Date();
   if (!config.visible || expired) return null;
 
