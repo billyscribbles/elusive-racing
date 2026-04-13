@@ -8,9 +8,12 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 
 ## 🔴 Critical — must fix before launch
 
-- [ ] **C1. WC consumer key/secret leaked in client bundle**
-  `src/lib/woocommerce.js:9-14` — `VITE_WC_CONSUMER_KEY` / `VITE_WC_CONSUMER_SECRET` are baked into `dist/assets/*.js`. Any visitor can extract them and hit WC REST with full read/write.
-  **Fix:** proxy all privileged WC calls through `server.js`. Rename env vars to non-`VITE_` and rotate the key pair in WP admin after cutover.
+- [x] ⏳ **C1. WC consumer key/secret leak** — CODE DONE, ROTATION STILL NEEDED
+  Built a narrowly-whitelisted WC REST proxy at `/api/wc/*` in `server.js` (`handleWcProxy`). Whitelist: `products`, `products/categories`, `products/tags`, `products/attributes`, `brands` — customers/orders/reports/settings are explicitly NOT exposed. `src/lib/woocommerce.js` now calls `/api/wc/*` same-origin with no credentials in the browser. VITE_WC_CONSUMER_KEY/SECRET reads removed from all frontend code (`VITE_WC_URL` retained since it's just the public hostname). Server reads the creds as `WC_CONSUMER_KEY`/`WC_CONSUMER_SECRET` primarily, with `VITE_WC_CONSUMER_KEY`/`SECRET` kept as a fallback for backwards compat.
+  **Verified:** `grep -rE 'ck_[a-f0-9]{30,}|cs_[a-f0-9]{30,}' dist/` → zero matches. Built bundle contains `"/api/wc"` and no `wp-json/wc/v3` references.
+  **Still need from you:**
+  1. Assume the current WC key pair is compromised — rotate it in WP admin (WooCommerce → Settings → Advanced → REST API → revoke & regenerate).
+  2. In your prod env, set `WC_CONSUMER_KEY` / `WC_CONSUMER_SECRET` (non-VITE names). You can delete the `VITE_WC_CONSUMER_*` vars from `.env` entirely.
 
 - [x] ✅ **C2. Stripe orphan orders** — DONE
   Removed silent `.catch`. Added `placeOrderWithRetry` (3 attempts, exponential backoff). Stores PaymentIntent ID on both the WC order metadata and the local snapshot. `OrderConfirmationPage` now shows a warning banner with the PaymentIntent ID as a reference when WC creation fails, so customers can quote it to support. Logs `[orphan-order]` to console — wire to Sentry in H5.

@@ -1,17 +1,23 @@
 // WooCommerce REST API client
-// REST API (/wc/v3) — authenticated, used for products/categories (read)
-// Store API (/wc/store/v1) — no auth, used for cart (session-cookie based)
+//
+// REST API (/wc/v3): authenticated — browser calls OUR server proxy at /api/wc/*,
+// which attaches the consumer key/secret server-side. The credentials NEVER reach
+// the browser bundle. Whitelisted to read-only product/category/brand endpoints
+// (see handleWcProxy in server.js).
+//
+// Store API (/wc/store/v1): unauthenticated, session-cookie based — safe to call
+// directly from the browser. Continues to hit the WC host directly for cart/checkout.
 
 import { BRANDS } from '../data/brands.js';
 import { extractWholesalePrices } from './wholesaleTiers.js';
 
+// VITE_WC_URL is the public WC hostname — not a secret, used only to:
+//   - rewrite relative image URLs inside product description HTML
+//   - build the Store API base URL for cart/checkout
+//   - link out to WC account pages (lost-password, edit-address)
 const WC_URL = import.meta.env.VITE_WC_URL;
-const KEY = import.meta.env.VITE_WC_CONSUMER_KEY;
-const SECRET = import.meta.env.VITE_WC_CONSUMER_SECRET;
-const REST_BASE = `${WC_URL}/wp-json/wc/v3`;
+const REST_BASE = '/api/wc'; // same-origin proxy — no CORS, no credentials leak
 const STORE_BASE = `${WC_URL}/wp-json/wc/store/v1`;
-
-const authHeader = 'Basic ' + btoa(`${KEY}:${SECRET}`);
 
 // Decode HTML entities returned by the WC REST API (e.g. &amp; → &)
 function decodeHtml(str) {
@@ -54,7 +60,10 @@ export async function getCachedCategories() {
 }
 
 async function wcFetch(endpoint, options = {}) {
-  const url = `${REST_BASE}${endpoint}`;
+  // endpoint comes in like "/products?search=foo" — strip the leading slash so the
+  // resulting URL is `/api/wc/products?search=foo` (same-origin, our proxy).
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const url = `${REST_BASE}/${cleanEndpoint}`;
 
   // Return cached response if still fresh (GET requests only)
   if (!options.method || options.method === 'GET') {
@@ -65,14 +74,13 @@ async function wcFetch(endpoint, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers: {
-      Authorization: authHeader,
       'Content-Type': 'application/json',
       ...options.headers,
     },
   });
   if (!res.ok) throw new Error(`WooCommerce API error: ${res.status} ${endpoint}`);
   const data = await res.json();
-  // Attach pagination totals from WC headers
+  // Attach pagination totals forwarded by the proxy
   data.__total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
   data.__totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
 

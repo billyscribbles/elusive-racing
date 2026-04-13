@@ -24,9 +24,12 @@ const PORT = process.env.PORT || 8080;
 const anthropic   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripeClient = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-const WC_URL    = process.env.VITE_WC_URL;
-const WC_KEY    = process.env.VITE_WC_CONSUMER_KEY;
-const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET;
+// Prefer non-VITE names; fall back to legacy VITE_ names for backwards compat.
+// Frontend now reaches WC REST only via /api/wc/* — the consumer key/secret must
+// NEVER be exposed as a VITE_ var because Vite bakes those into the client bundle.
+const WC_URL    = process.env.WC_URL            || process.env.VITE_WC_URL;
+const WC_KEY    = process.env.WC_CONSUMER_KEY   || process.env.VITE_WC_CONSUMER_KEY;
+const WC_SECRET = process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET;
 
 const MS_HOST = process.env.MEILISEARCH_HOST;
 const MS_KEY  = process.env.MEILISEARCH_ADMIN_KEY;
@@ -596,6 +599,78 @@ async function handleSyncProducts(req, res) {
       res.end(JSON.stringify({ error: err.message }));
     }
   });
+}
+
+// ── WooCommerce REST proxy ────────────────────────────────────────────────────
+// Forwards whitelisted GET requests to ${WC_URL}/wp-json/wc/v3/* with server-side
+// Basic auth. This replaces the old frontend pattern where VITE_WC_CONSUMER_KEY/
+// SECRET were read via import.meta.env and baked into the client bundle — any
+// visitor could extract them and hit WC with full read/write.
+//
+// Whitelist is intentionally narrow: only read-only product/category/brand paths.
+// Sensitive endpoints (/customers, /orders, /reports, /settings) are NOT exposed.
+const WC_PROXY_ALLOWED_PREFIXES = [
+  'products',           // includes /products, /products/{id}, /products/{id}/variations
+  'products/categories',
+  'products/tags',
+  'products/attributes',
+  'brands',
+];
+
+function isWcPathAllowed(pathWithoutQuery) {
+  // Strip leading slash, normalise, and match against the whitelist.
+  const clean = pathWithoutQuery.replace(/^\/+/, '').replace(/\.\./g, '');
+  // Reject path traversal and empty paths.
+  if (!clean || clean.includes('..')) return false;
+  return WC_PROXY_ALLOWED_PREFIXES.some(
+    (prefix) => clean === prefix || clean.startsWith(prefix + '/') || clean.startsWith(prefix + '?')
+  );
+}
+
+async function handleWcProxy(req, res) {
+  if (req.method !== 'GET') {
+    res.writeHead(405, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+  if (!WC_URL || !WC_KEY || !WC_SECRET) {
+    res.writeHead(503, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'WC proxy not configured' }));
+    return;
+  }
+
+  // Extract the path after /api/wc/ plus query string.
+  const urlObj = new URL(req.url, 'http://localhost');
+  const afterPrefix = urlObj.pathname.replace(/^\/api\/wc\/?/, '');
+  if (!isWcPathAllowed(afterPrefix)) {
+    console.warn(`[wc-proxy] blocked path: ${afterPrefix}`);
+    res.writeHead(403, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'Endpoint not allowed' }));
+    return;
+  }
+
+  const target = `${WC_URL}/wp-json/wc/v3/${afterPrefix}${urlObj.search}`;
+  try {
+    const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+    const r = await fetch(target, { headers: { Authorization: auth } });
+    const text = await r.text();
+    // Forward status, content-type, and the two WP pagination headers the frontend relies on.
+    const headers = {
+      'Content-Type': r.headers.get('content-type') || 'application/json',
+      'Cache-Control': 'public, max-age=60',
+      ...securityHeaders(),
+    };
+    const total      = r.headers.get('x-wp-total');
+    const totalPages = r.headers.get('x-wp-totalpages');
+    if (total !== null)      headers['X-WP-Total'] = total;
+    if (totalPages !== null) headers['X-WP-TotalPages'] = totalPages;
+    res.writeHead(r.status, headers);
+    res.end(text);
+  } catch (err) {
+    console.error('[wc-proxy] error:', err.message);
+    res.writeHead(502, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'WC upstream error' }));
+  }
 }
 
 // Check live stock for a list of cart items against the WC REST API. Called immediately
@@ -1807,6 +1882,7 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/sync') { handleSync(req, res); return; }
   if (req.url === '/api/sync-products') { handleSyncProducts(req, res); return; }
   if (req.url === '/api/check-stock') { handleCheckStock(req, res); return; }
+  if (req.url.startsWith('/api/wc/')) { handleWcProxy(req, res); return; }
 
   // Dynamic sitemap
   if (req.url === '/sitemap.xml') { handleSitemap(req, res); return; }
