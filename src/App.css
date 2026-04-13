@@ -5,6 +5,25 @@
   transition: margin-right 0.3s ease;
 }
 
+/* Skip link — hidden until keyboard-focused (WCAG 2.1 A) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 12px 18px;
+  background: var(--color-red, #d94040);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+}
+.skip-link:focus {
+  left: 0;
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+
 @media (min-width: 501px) {
   body.chat-panel-open .app {
     margin-right: 400px;

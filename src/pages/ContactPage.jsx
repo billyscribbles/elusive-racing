@@ -195,6 +195,13 @@ export default function ContactPage() {
     else if (!/\S+@\S+\.\S+/.test(contact.email)) e.email = 'Enter a valid email';
     if (!contact.firstName.trim()) e.firstName  = 'First name is required';
     if (!contact.lastName.trim())  e.lastName   = 'Last name is required';
+    // Phone is optional, but if provided must look like an AU number.
+    if (contact.phone && contact.phone.trim()) {
+      const digits = contact.phone.replace(/[\s\-().]/g, '');
+      if (!/^(\+?61|0)[2-478]\d{8}$/.test(digits)) {
+        e.phone = 'Enter a valid Australian phone number (e.g. 0412 345 678)';
+      }
+    }
     if (fulfillment === 'delivery') {
       if (!shipping.address1.trim()) e.address1 = 'Address is required';
       if (!shipping.city.trim())     e.city     = 'City is required';
@@ -254,7 +261,7 @@ export default function ContactPage() {
       }
       setFreightLoading(true);
       try {
-        const { rates, taxAmount: tax } = await getWCShippingRates(items, {
+        const result = await getWCShippingRates(items, {
           address1: shipping.address1,
           address2: shipping.address2,
           city:     shipping.city,
@@ -262,11 +269,13 @@ export default function ContactPage() {
           postcode: shipping.postcode,
           country:  'AU',
         });
-        if (rates.length === 0) {
+        if (!result.ok) {
+          setFreightError(result.error);
+        } else if (result.rates.length === 0) {
           setFreightError('No shipping rates found for this address. Please call us on 03 9574 1710 for a freight quote.');
         } else {
-          setFreightRates(rates);
-          setTaxAmount(tax);
+          setFreightRates(result.rates);
+          setTaxAmount(result.taxAmount);
         }
       } catch {
         setFreightError('Could not retrieve shipping rates. Please try again or call us on 03 9574 1710.');
@@ -284,7 +293,7 @@ export default function ContactPage() {
       }
       setFreightLoading(true);
       try {
-        const { rates, taxAmount: tax } = await getWCShippingRates(items, {
+        const result = await getWCShippingRates(items, {
           address1: shipping.address1,
           address2: shipping.address2,
           city:     shipping.city,
@@ -292,10 +301,14 @@ export default function ContactPage() {
           postcode: shipping.postcode,
           country:  shipping.country,
         });
-        if (rates.length > 0) {
+        if (!result.ok) {
+          // Shipping calculator unavailable — show the error and also offer manual quote.
+          setFreightError(result.error);
+          setContactRequired(true);
+        } else if (result.rates.length > 0) {
           // Live rates from WooCommerce shipping plugin (e.g. UPS)
-          setFreightRates(rates);
-          setTaxAmount(tax);
+          setFreightRates(result.rates);
+          setTaxAmount(result.taxAmount);
           setRatesAreEstimates(false);
         } else {
           // No WC zone configured for this country — require manual quote

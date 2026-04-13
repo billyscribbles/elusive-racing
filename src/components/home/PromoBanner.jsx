@@ -5,7 +5,7 @@ const DEFAULTS = {
   visible: true,
   title: 'Performance Parts',
   subtitle: '10% off all in stock products',
-  subtext: "Sale ends 06/04/2024. Don't miss out on our best deals of the season!",
+  subtext: "Don't miss out on our best deals of the season!",
   image: '/promo-banner.jpg',
   ctaLabel: 'Shop Sale Now',
   ctaUrl: '/shop?sale=1',

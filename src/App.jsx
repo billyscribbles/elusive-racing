@@ -3,6 +3,7 @@ import { useEffect, useRef, lazy, Suspense } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import AdminRoute from './components/admin/AdminRoute';
 import WholesaleRoute from './components/auth/WholesaleRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import useAuthStore from './store/authStore';
 import useCartStore from './store/cartStore';
 import MainLayout from './layouts/MainLayout';
@@ -51,6 +52,7 @@ const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const WholesalePage = lazy(() => import('./pages/WholesalePage'));
 const WholesaleOrderPage = lazy(() => import('./pages/WholesaleOrderPage'));
 const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
 const AdminProductForm = lazy(() => import('./pages/admin/AdminProductForm'));
@@ -64,6 +66,7 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <CartRepricer />
+      <ErrorBoundary>
       <Suspense fallback={<div style={{minHeight:'100vh',background:'#0a0a0a'}} />}>
       <Routes>
         {/* Admin routes — no site layout */}
@@ -97,9 +100,11 @@ export default function App() {
           <Route path="/checkout/contact" element={<ContactPage />} />
           <Route path="/checkout/payment" element={<PaymentPage />} />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
       </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
     </HelmetProvider>
   );

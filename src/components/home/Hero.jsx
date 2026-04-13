@@ -113,6 +113,12 @@ const FADE_SECONDS = 1.2;
 export default function Hero() {
   const [videoReady, setVideoReady] = useState(false);
   const [isMobile] = useState(() => window.innerWidth <= 900);
+  const [prefersReducedMotion] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false
+  );
+  const shouldPlayVideo = !isMobile && !prefersReducedMotion;
   const [activeIdx, setActiveIdx] = useState(() => Math.floor(Math.random() * HERO_CLIPS.length));
   const videoRefs = [useRef(null), useRef(null)];
 
@@ -147,7 +153,7 @@ export default function Hero() {
       <div className="hero-desktop">
         <div className="hero-video-panel">
           <img src="/hnats1.jpg" alt="" className="hero-poster" fetchpriority="high" width={1280} height={800} />
-          {!isMobile && HERO_CLIPS.map((clip, idx) => {
+          {shouldPlayVideo && HERO_CLIPS.map((clip, idx) => {
             const isActive = idx === activeIdx;
             return (
               <video

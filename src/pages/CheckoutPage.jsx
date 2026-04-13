@@ -24,16 +24,16 @@ function CheckoutLineItem({ item }) {
         <p className="co-line-name">{item.name}</p>
         <div className="co-line-bottom">
           <div className="co-qty">
-            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease quantity">
+            <button onClick={() => updateQuantity(item.id, item.variantId, item.quantity - 1)} aria-label="Decrease quantity">
               <Minus size={12} />
             </button>
             <span>{item.quantity}</span>
-            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase quantity">
+            <button onClick={() => updateQuantity(item.id, item.variantId, item.quantity + 1)} aria-label="Increase quantity">
               <Plus size={12} />
             </button>
           </div>
           <span className="co-line-price">{formatPrice(item.price * item.quantity)}</span>
-          <button className="co-line-remove" onClick={() => removeItem(item.id)} aria-label="Remove">
+          <button className="co-line-remove" onClick={() => removeItem(item.id, item.variantId)} aria-label="Remove">
             <Trash2 size={15} />
           </button>
         </div>
@@ -80,7 +80,7 @@ export default function CheckoutPage() {
                   <button className="co-clear" onClick={clearCart}>Clear cart</button>
                 </div>
                 {items.map((item) => (
-                  <CheckoutLineItem key={item.id} item={item} />
+                  <CheckoutLineItem key={`${item.id}-${item.variantId ?? 'base'}`} item={item} />
                 ))}
               </div>
 

@@ -11,7 +11,7 @@ const useOrderStore = create(
     }),
     {
       name: 'elusive-order',
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

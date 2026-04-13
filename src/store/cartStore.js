@@ -48,16 +48,16 @@ const useCartStore = create(
         });
       },
 
-      removeItem: (id) =>
-        set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+      removeItem: (id, variantId) =>
+        set((s) => ({ items: s.items.filter((i) => !(i.id === id && i.variantId === variantId)) })),
 
-      updateQuantity: (id, quantity) => {
+      updateQuantity: (id, variantId, quantity) => {
         if (quantity < 1) {
-          set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+          set((s) => ({ items: s.items.filter((i) => !(i.id === id && i.variantId === variantId)) }));
         } else {
           set((s) => ({
             items: s.items.map((i) => {
-              if (i.id !== id) return i;
+              if (!(i.id === id && i.variantId === variantId)) return i;
               const max = i.stockQuantity ?? null;
               return { ...i, quantity: max !== null ? Math.min(max, quantity) : quantity };
             }),

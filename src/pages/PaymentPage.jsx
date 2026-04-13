@@ -101,11 +101,11 @@ function MiniOrderSummary({ shippingCost }) {
 }
 
 // ── Build order snapshot for confirmation page ───────────────────────────────
-function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod }) {
+function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod, paymentIntentId = null, needsReconcile = false }) {
   const subtotal     = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shippingCost = fulfillment === 'collect' ? 0 : (freight?.price ?? 0);
   return {
-    orderId:            wcResponse?.order_id ?? wcResponse?.id ?? `ER-${Date.now()}`,
+    orderId:            wcResponse?.order_id ?? wcResponse?.id ?? (paymentIntentId ? `PI-${paymentIntentId.slice(-10)}` : `ER-${Date.now()}`),
     orderDate:          new Date().toISOString(),
     customer:           { ...contact },
     shippingAddress:    fulfillment === 'collect'
@@ -119,7 +119,25 @@ function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment,
     total:              subtotal + shippingCost,
     paymentMethod,
     paymentMethodLabel: paymentMethod === 'stripe_cc' ? 'Credit Card (Stripe)' : 'Direct Bank Transfer',
+    paymentIntentId,
+    needsReconcile,
   };
+}
+
+// Retry wrapper: Stripe has already taken payment — we must NOT silently drop the WC order.
+async function placeOrderWithRetry(payload, { attempts = 3, baseDelayMs = 500 } = {}) {
+  let lastError = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return { wcResponse: await placeOrder(payload), error: null };
+    } catch (err) {
+      lastError = err;
+      if (i < attempts - 1) {
+        await new Promise((r) => setTimeout(r, baseDelayMs * (i + 1)));
+      }
+    }
+  }
+  return { wcResponse: null, error: lastError };
 }
 
 // ── Stripe payment form (inside Elements provider) ────────────────────────────
@@ -135,6 +153,7 @@ function StripePaymentForm({ onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (loading) return; // belt-and-braces: prevent double submission
     if (!stripe || !elements) return;
     setError(null);
     setLoading(true);
@@ -160,14 +179,34 @@ function StripePaymentForm({ onSuccess }) {
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        const wcResponse = await placeOrder({
+        // Payment is taken. From here we must NOT surface an error to the user that
+        // makes them think payment failed — but we do flag orphan orders internally
+        // so the confirmation page can tell them support will follow up.
+        const { wcResponse, error: orderError } = await placeOrderWithRetry({
           items, contact, shipping, fulfillment,
           paymentMethod: 'stripe_cc',
-          paymentData:   [{ key: 'stripe_payment_method', value: paymentIntent.payment_method }],
-        }).catch(() => null); // best-effort — payment already taken
+          paymentData: [
+            { key: 'stripe_payment_method', value: paymentIntent.payment_method },
+            { key: 'stripe_payment_intent', value: paymentIntent.id },
+          ],
+        });
+        if (orderError && !wcResponse) {
+          // eslint-disable-next-line no-console
+          console.error('[orphan-order] Stripe succeeded but WC placeOrder failed after retries', {
+            paymentIntentId: paymentIntent.id,
+            amountCents: paymentIntent.amount,
+            customerEmail: contact.email,
+            error: orderError?.message || String(orderError),
+          });
+        }
         syncProductsToSearch(items.map(i => parseInt(i.id, 10)));
         useOrderStore.getState().setOrder(
-          buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod: 'stripe_cc' })
+          buildOrderSnapshot({
+            wcResponse, items, contact, shipping, fulfillment, freight,
+            paymentMethod: 'stripe_cc',
+            paymentIntentId: paymentIntent.id,
+            needsReconcile: !wcResponse,
+          })
         );
         onSuccess();
         navigate('/order-confirmation');
@@ -205,6 +244,7 @@ function BacsForm({ onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (loading) return; // belt-and-braces: prevent double submission
     setError(null);
     setLoading(true);
     try {

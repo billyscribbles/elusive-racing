@@ -44,7 +44,7 @@ export default function CartIcon() {
               ) : (
                 <ul className="cart-items">
                   {items.map((item) => (
-                    <li key={item.id} className="cart-item">
+                    <li key={`${item.id}-${item.variantId ?? 'base'}`} className="cart-item">
                       <div className="cart-item-image-wrap">
                         {item.image
                           ? <img src={item.image} alt={item.name} className="cart-item-image" />
@@ -56,12 +56,12 @@ export default function CartIcon() {
                         <p className="cart-item-name">{item.name}</p>
                         <div className="cart-item-bottom">
                           <div className="cart-qty">
-                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease">
+                            <button onClick={() => updateQuantity(item.id, item.variantId, item.quantity - 1)} aria-label="Decrease">
                               <Minus size={12} />
                             </button>
                             <span>{item.quantity}</span>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.id, item.variantId, item.quantity + 1)}
                               aria-label="Increase"
                               disabled={item.stockQuantity !== null && item.stockQuantity !== undefined && item.quantity >= item.stockQuantity}
                             >
@@ -69,7 +69,7 @@ export default function CartIcon() {
                             </button>
                           </div>
                           <span className="cart-item-price">{formatPrice(item.price * item.quantity)}</span>
-                          <button className="cart-item-remove" onClick={() => removeItem(item.id)} aria-label="Remove item">
+                          <button className="cart-item-remove" onClick={() => removeItem(item.id, item.variantId)} aria-label="Remove item">
                             <Trash2 size={14} />
                           </button>
                         </div>

@@ -14,6 +14,42 @@
   text-align: center;
   margin-bottom: 32px;
 }
+
+/* ── Reconcile notice (orphan-order warning) ── */
+.oc-reconcile-notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-left: 4px solid #f97316;
+  color: #7c2d12;
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.oc-reconcile-notice svg {
+  flex-shrink: 0;
+  color: #f97316;
+  margin-top: 2px;
+}
+.oc-reconcile-notice strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.oc-reconcile-notice p {
+  margin: 0;
+}
+.oc-reconcile-notice code {
+  background: rgba(0,0,0,0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
 .oc-success-icon {
   color: #22c55e;
   margin-bottom: 12px;

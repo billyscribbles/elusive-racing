@@ -615,15 +615,32 @@ export function getCheckoutUrl() {
 }
 
 // ── Live shipping rates (proxied through our server to avoid CORS) ────────────
-// Returns { rates: [{ id, label, price }], taxAmount: number }
+// Returns { ok, rates, taxAmount, error } — error is a user-facing string when ok=false.
 export async function getWCShippingRates(items, address = {}) {
-  const res = await fetch('/api/shipping-rates', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items, address }),
-  });
-  if (!res.ok) return { rates: [], taxAmount: 0 };
-  return res.json();
+  try {
+    const res = await fetch('/api/shipping-rates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, address }),
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        rates: [],
+        taxAmount: 0,
+        error: `Shipping calculator is temporarily unavailable (HTTP ${res.status}). Please call us on 03 9574 1710 for a freight quote.`,
+      };
+    }
+    const data = await res.json();
+    return { ok: true, rates: data.rates ?? [], taxAmount: data.taxAmount ?? 0 };
+  } catch (err) {
+    return {
+      ok: false,
+      rates: [],
+      taxAmount: 0,
+      error: 'Shipping calculator is temporarily unavailable. Please check your connection or call us on 03 9574 1710.',
+    };
+  }
 }
 
 // Place an order via WooCommerce Store API (no redirect).

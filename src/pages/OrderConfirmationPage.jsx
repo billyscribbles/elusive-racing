@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, ShoppingBag, ArrowRight, Download, CreditCard, Building2, MapPin, Phone, Mail } from 'lucide-react';
+import { CheckCircle, ShoppingBag, ArrowRight, Download, CreditCard, Building2, MapPin, Phone, Mail, AlertTriangle } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
@@ -48,7 +48,7 @@ export default function OrderConfirmationPage() {
     );
   }
 
-  const { customer, shippingAddress, fulfillment, items, subtotal, shippingCost, shippingLabel, total, paymentMethod, paymentMethodLabel, orderId, orderDate } = order;
+  const { customer, shippingAddress, fulfillment, items, subtotal, shippingCost, shippingLabel, total, paymentMethod, paymentMethodLabel, orderId, orderDate, needsReconcile, paymentIntentId } = order;
 
   return (
     <div className="oc-page">
@@ -59,6 +59,20 @@ export default function OrderConfirmationPage() {
           <h1 className="oc-title">Order Confirmed</h1>
           <p className="oc-subtitle">Thank you for your order! A confirmation email will be sent to <strong>{customer.email}</strong></p>
         </div>
+
+        {needsReconcile && (
+          <div className="oc-reconcile-notice" role="alert">
+            <AlertTriangle size={18} />
+            <div>
+              <strong>Payment received — order processing manually</strong>
+              <p>
+                We&apos;ve received your payment successfully, but our order system needs a moment to catch up.
+                Our team has been notified and will confirm your order by email within 15 minutes.
+                {paymentIntentId && <> If you need to reach us, quote reference <code>{paymentIntentId}</code>.</>}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Receipt card */}
         <div className="oc-receipt">
