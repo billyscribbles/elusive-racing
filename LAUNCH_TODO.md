@@ -12,7 +12,7 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
   Built a narrowly-whitelisted WC REST proxy at `/api/wc/*` in `server.js` (`handleWcProxy`). Whitelist: `products`, `products/categories`, `products/tags`, `products/attributes`, `brands` — customers/orders/reports/settings are explicitly NOT exposed. `src/lib/woocommerce.js` now calls `/api/wc/*` same-origin with no credentials in the browser. VITE_WC_CONSUMER_KEY/SECRET reads removed from all frontend code (`VITE_WC_URL` retained since it's just the public hostname). Server reads the creds as `WC_CONSUMER_KEY`/`WC_CONSUMER_SECRET` primarily, with `VITE_WC_CONSUMER_KEY`/`SECRET` kept as a fallback for backwards compat.
   **Verified:** `grep -rE 'ck_[a-f0-9]{30,}|cs_[a-f0-9]{30,}' dist/` → zero matches. Built bundle contains `"/api/wc"` and no `wp-json/wc/v3` references.
   **Still need from you:**
-  1. Assume the current WC key pair is compromised — rotate it in WP admin (WooCommerce → Settings → Advanced → REST API → revoke & regenerate).
+  1. ~~Rotate the WC key pair~~ — **deferred:** site hasn't launched yet, credentials were never actually exposed to the public, so the current pair is fine. If the repo ever becomes public before launch, or you see unexpected WC activity, rotate immediately.
   2. In your prod env, set `WC_CONSUMER_KEY` / `WC_CONSUMER_SECRET` (non-VITE names). You can delete the `VITE_WC_CONSUMER_*` vars from `.env` entirely.
 
 - [x] ✅ **C2. Stripe orphan orders** — DONE
@@ -48,15 +48,16 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [ ] **H3. No redirect map from the old WordPress URLs**
   Inbound SEO equity (old `/product/*`, `/product-category/*`, `/brand/*`) will evaporate on launch day if the new URL scheme differs. Crawl the old site, build a 301 map in `server.js` or hosting config (Netlify `_redirects` / Vercel `vercel.json` / nginx).
 
-- [ ] **H4. Missing `sitemap.xml`**
-  `public/robots.txt` references it but the file doesn't exist. Generate at build time from WC products/categories/brands + static routes. Submit to GSC on launch day.
+- [x] ✅ **H4. Sitemap generator** — DONE
+  `scripts/build-sitemap.mjs` runs as a postbuild step (`"build": "vite build && node scripts/build-sitemap.mjs"`). Queries WC REST for published products (skipping out-of-stock), all categories, and all brands; prepends 8 static routes (home, shop, brands, services, about, contact, terms, wholesale-registration). Writes `dist/sitemap.xml` — **4896 URLs on the current WC store** (4614 products + 172 categories + 116 brands + 8 static). `SITE_URL` env var controls the base; defaults to `https://elusiveracing.com.au`. Fails soft: if WC is unreachable at build time, writes a static-only fallback instead of breaking the build. `public/robots.txt` already references `/sitemap.xml`.
+  **Still need from you:** after DNS is live, submit the sitemap to Google Search Console.
 
 - [ ] **H5. No analytics, no error monitoring**
   Zero GA4, GTM, Sentry, Rollbar, LogRocket.
   **Fix:** GA4 via GTM with enhanced ecommerce events (`view_item`, `add_to_cart`, `begin_checkout`, `add_payment_info`, `purchase`) + `@sentry/react` on frontend + `@sentry/node` on `server.js`.
 
-- [ ] **H6. No cookie / privacy consent banner**
-  Required for AU Privacy Act + GDPR. Use `react-cookie-consent` or similar. Gate analytics (H5) on accept.
+- [x] ✅ **H6. Cookie consent banner** — DONE
+  Installed `react-cookie-consent`. Added `src/lib/consent.js` (central helper with `hasAnalyticsConsent()` for future analytics gating + `elusive:consent-change` custom event) and `src/components/ui/ConsentBanner.jsx` (dark-themed, two-button Accept/Decline, 365-day expiry, links out to Privacy Policy). Lazy-loaded into `MainLayout` so it doesn't bloat the LCP bundle. Once H5 adds GA4/Sentry, gate their init on `hasAnalyticsConsent()`.
 
 - [x] ✅ **H7. HTML sanitisation** — DONE
   Installed `dompurify`. Added `src/lib/sanitizeHtml.js` with a strict allowlist for tags/attrs WC and marked actually emit. Added an `afterSanitizeAttributes` hook that forces `target="_blank" rel="noopener noreferrer"` on every `<a>`. Wired into `ProductPage` (product description) and `ChatWidget` (bot markdown). Safe for renaming: `sanitizeHtml()` is the single choke-point.
@@ -98,7 +99,8 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [x] ✅ **M10. Env var boot validation** — DONE
   `validateProductionConfig()` at top of `server.js` — runs only when `NODE_ENV=production`, collects all missing/bad vars, prints them as a list, then `process.exit(1)`. Covers: Stripe secret key (missing + test key), WC URL + key + secret, ADMIN_JWT_SECRET (missing + default), ADMIN_USERNAME/PASSWORD, ALLOWED_ORIGINS. Meilisearch is intentionally soft-failed because the site works without search.
 - [ ] **M11. Deploy config confirmation** — SPA fallback, immutable cache headers on `/assets/*`, no sourcemaps in prod (`build.sourcemap: false`), Node version pinned, `server.js` supervised (PM2/systemd/Docker).
-- [ ] **M12. Cart version/migration field** for safe future schema changes.
+- [x] ✅ **M12. Cart version/migration field** — DONE
+  `cartStore` persist config now has `version: 1` and a `migrate` function. Future schema changes just bump the version and return `undefined` from `migrate` to drop stale carts instead of crashing on returning visitors.
 
 ---
 

@@ -76,7 +76,16 @@ const useCartStore = create(
 
       clearCart: () => set({ items: [] }),
     }),
-    { name: 'elusive-cart' }
+    {
+      name: 'elusive-cart',
+      version: 1,
+      // Drop persisted cart whenever we bump the schema. Returning `undefined`
+      // is zustand's way of saying "throw out the old state, use defaults".
+      migrate: (persistedState, version) => {
+        if (version < 1) return undefined;
+        return persistedState;
+      },
+    }
   )
 );
 

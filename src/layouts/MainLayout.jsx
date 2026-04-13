@@ -7,6 +7,7 @@ import Footer from '../components/layout/Footer';
 import { getCachedCategories } from '../lib/woocommerce';
 
 const ChatWidget = lazy(() => import('../components/ui/ChatWidget'));
+const ConsentBanner = lazy(() => import('../components/ui/ConsentBanner'));
 
 export default function MainLayout() {
   // Warm category cache immediately so filters and search are instant
@@ -23,6 +24,7 @@ export default function MainLayout() {
       </main>
       <Footer />
       <Suspense fallback={null}><ChatWidget /></Suspense>
+      <Suspense fallback={null}><ConsentBanner /></Suspense>
     </div>
   );
 }
