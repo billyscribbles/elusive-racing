@@ -261,6 +261,16 @@
   color: #888;
 }
 
+.footer-credit-link {
+  color: #bbb;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-credit-link:hover {
+  color: var(--color-red);
+}
+
 .footer-social {
   display: flex;
   gap: 10px;

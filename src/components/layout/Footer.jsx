@@ -197,6 +197,15 @@ export default function Footer() {
         <div className="container footer-bottom-inner">
           <p className="footer-copyright">
             © {new Date().getFullYear()} Elusive Racing Pty Ltd. All rights reserved.
+            {' '}· Site by{' '}
+            <a
+              href="https://onraistudio.com"
+              target="_blank"
+              rel="noopener"
+              className="footer-credit-link"
+            >
+              Onrai Studio
+            </a>
           </p>
           <div className="footer-social">
             <a href="https://www.facebook.com/ElusiveRacin" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Facebook">
