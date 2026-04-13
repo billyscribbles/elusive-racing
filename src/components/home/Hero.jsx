@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect } from 'react';
+import { useState, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gauge, X } from 'lucide-react';
 import { vehicleData } from '../../data/navigation';
@@ -108,11 +108,29 @@ function MobileFinderForm() {
 }
 
 const HERO_CLIPS = ['hero-1', 'hero-2'];
-const pickedClip = HERO_CLIPS[Math.floor(Math.random() * HERO_CLIPS.length)];
+const FADE_SECONDS = 1.2;
 
 export default function Hero() {
   const [videoReady, setVideoReady] = useState(false);
   const [isMobile] = useState(() => window.innerWidth <= 900);
+  const [activeIdx, setActiveIdx] = useState(() => Math.floor(Math.random() * HERO_CLIPS.length));
+  const videoRefs = [useRef(null), useRef(null)];
+
+  function handleTimeUpdate(idx) {
+    if (idx !== activeIdx) return;
+    const el = videoRefs[idx].current;
+    if (!el || !el.duration || Number.isNaN(el.duration)) return;
+    if (el.duration - el.currentTime <= FADE_SECONDS) {
+      const nextIdx = (idx + 1) % HERO_CLIPS.length;
+      const nextEl = videoRefs[nextIdx].current;
+      if (nextEl) {
+        nextEl.currentTime = 0;
+        const p = nextEl.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+      setActiveIdx(nextIdx);
+    }
+  }
 
   useLayoutEffect(() => {
     if (isMobile) {
@@ -129,20 +147,25 @@ export default function Hero() {
       <div className="hero-desktop">
         <div className="hero-video-panel">
           <img src="/hnats1.jpg" alt="" className="hero-poster" fetchpriority="high" width={1280} height={800} />
-          {!isMobile && (
-            <video
-              className={`hero-video ${videoReady ? 'hero-video--ready' : ''}`}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              poster="/hnats1.jpg"
-              onCanPlay={() => setVideoReady(true)}
-            >
-              <source src={`/videos/${pickedClip}.mp4`} type="video/mp4" />
-            </video>
-          )}
+          {!isMobile && HERO_CLIPS.map((clip, idx) => {
+            const isActive = idx === activeIdx;
+            return (
+              <video
+                key={clip}
+                ref={videoRefs[idx]}
+                className={`hero-video ${isActive && videoReady ? 'hero-video--ready' : ''}`}
+                autoPlay={isActive}
+                muted
+                playsInline
+                preload="auto"
+                poster="/hnats1.jpg"
+                onCanPlay={() => { if (isActive) setVideoReady(true); }}
+                onTimeUpdate={() => handleTimeUpdate(idx)}
+              >
+                <source src={`/videos/${clip}.mp4`} type="video/mp4" />
+              </video>
+            );
+          })}
           <div className="hero-overlay" />
           <div className="hero-video-content">
             <span className="hero-tag">Melbourne, Australia</span>
