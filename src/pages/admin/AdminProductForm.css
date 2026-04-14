@@ -342,6 +342,10 @@
 }
 .af-page[data-admin-theme="light"] .af-toggle-label { color: #374151; }
 
+/* Vehicle Fitment */
+.af-fitment-intro { margin: 0 0 16px; }
+.af-fitment-chips { margin-top: 8px; }
+
 /* Responsive */
 @media (max-width: 900px) {
   .af-form-layout { grid-template-columns: 1fr; }

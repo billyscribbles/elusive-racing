@@ -6,6 +6,30 @@ import AdminHeader from "../../components/admin/AdminHeader";
 import RichTextEditor from "../../components/admin/RichTextEditor";
 import "./AdminProductForm.css";
 
+// Attribute names that represent vehicle fitment (match src/lib/woocommerce.js)
+const FITMENT_NAMES = [
+  "vehicle",
+  "vehicles",
+  "fitment",
+  "compatible",
+  "application",
+  "fits",
+  "make",
+  "model",
+  "year",
+];
+
+const FITMENT_SLOTS = ["Make", "Model", "Year"];
+
+function isBrandAttr(a) {
+  return ["brand", "pa_brand"].includes((a.name || "").toLowerCase());
+}
+
+function isFitmentSlotAttr(a) {
+  const n = (a.name || "").toLowerCase();
+  return FITMENT_SLOTS.some((s) => s.toLowerCase() === n);
+}
+
 const EMPTY_FORM = {
   name: "",
   sku: "",
@@ -21,14 +45,38 @@ const EMPTY_FORM = {
   categories: [],
   tags: [],
   images: [],
+  fitment: { Make: [], Model: [], Year: [] },
+  otherAttributes: [],
 };
 
 function formFromProduct(p) {
+  const attributes = p.attributes || [];
   const brand =
     p.brands?.[0]?.name ??
-    p.attributes?.find((a) => ["brand", "pa_brand", "Brand"].includes(a.name))
-      ?.options?.[0] ??
+    attributes.find(isBrandAttr)?.options?.[0] ??
     "";
+
+  const fitment = { Make: [], Model: [], Year: [] };
+  attributes.forEach((a) => {
+    const match = FITMENT_SLOTS.find(
+      (s) => s.toLowerCase() === (a.name || "").toLowerCase(),
+    );
+    if (match) fitment[match] = [...(a.options || [])];
+  });
+
+  // Anything else (variant taxonomies, other fitment taxonomies, etc.) is
+  // preserved verbatim so saving doesn't wipe them.
+  const otherAttributes = attributes
+    .filter((a) => !isBrandAttr(a) && !isFitmentSlotAttr(a))
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      position: a.position,
+      visible: a.visible,
+      variation: a.variation,
+      options: a.options || [],
+    }));
+
   return {
     name: p.name || "",
     sku: p.sku || "",
@@ -48,6 +96,8 @@ function formFromProduct(p) {
       src: img.src,
       alt: img.alt || "",
     })),
+    fitment,
+    otherAttributes,
   };
 }
 
@@ -71,15 +121,21 @@ function buildPayload(form) {
   if (form.manage_stock && form.stock_quantity !== "") {
     payload.stock_quantity = parseInt(form.stock_quantity, 10) || 0;
   }
+
+  const attributes = [...(form.otherAttributes || [])];
   if (form.brand) {
-    payload.attributes = [
-      {
-        name: "Brand",
-        visible: true,
-        options: [form.brand],
-      },
-    ];
+    attributes.push({ name: "Brand", visible: true, options: [form.brand] });
   }
+  FITMENT_SLOTS.forEach((slot) => {
+    const options = (form.fitment?.[slot] || [])
+      .map((v) => String(v).trim())
+      .filter(Boolean);
+    if (options.length) {
+      attributes.push({ name: slot, visible: true, options });
+    }
+  });
+  if (attributes.length) payload.attributes = attributes;
+
   return payload;
 }
 
@@ -212,6 +268,26 @@ export default function AdminProductForm() {
 
   function removeTag(name) {
     setForm((f) => ({ ...f, tags: f.tags.filter((t) => t !== name) }));
+  }
+
+  function addFitmentValue(slot, value) {
+    const v = value.trim();
+    if (!v) return;
+    setForm((f) => {
+      const current = f.fitment[slot] || [];
+      if (current.includes(v)) return f;
+      return { ...f, fitment: { ...f.fitment, [slot]: [...current, v] } };
+    });
+  }
+
+  function removeFitmentValue(slot, value) {
+    setForm((f) => ({
+      ...f,
+      fitment: {
+        ...f.fitment,
+        [slot]: (f.fitment[slot] || []).filter((o) => o !== value),
+      },
+    }));
   }
 
   function toggleTag(name) {
@@ -489,6 +565,31 @@ export default function AdminProductForm() {
                 )}
               </div>
 
+              {/* Vehicle Fitment */}
+              <div className="af-card">
+                <h2 className="af-card-title">Vehicle Fitment</h2>
+                <p className="af-muted af-fitment-intro">
+                  Set which vehicles this product fits. Values show as chips on
+                  the product page.
+                </p>
+                {FITMENT_SLOTS.map((slot) => (
+                  <FitmentField
+                    key={slot}
+                    label={slot}
+                    values={form.fitment[slot] || []}
+                    onAdd={(v) => addFitmentValue(slot, v)}
+                    onRemove={(v) => removeFitmentValue(slot, v)}
+                    placeholder={
+                      slot === "Make"
+                        ? "e.g. Honda, Toyota"
+                        : slot === "Model"
+                          ? "e.g. Civic, S2000"
+                          : "e.g. 2006, 2007-2011"
+                    }
+                  />
+                ))}
+              </div>
+
               {/* Images */}
               <div className="af-card">
                 <h2 className="af-card-title">Product Images</h2>
@@ -697,6 +798,51 @@ export default function AdminProductForm() {
           </div>
         </form>
       </main>
+    </div>
+  );
+}
+
+function FitmentField({ label, values, onAdd, onRemove, placeholder }) {
+  const [input, setInput] = useState("");
+  function commit() {
+    if (!input.trim()) return;
+    input
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .forEach(onAdd);
+    setInput("");
+  }
+  return (
+    <div className="af-field">
+      <label className="af-label">
+        {label} <span className="af-hint">Enter or comma to add</span>
+      </label>
+      <input
+        className="af-input"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        onBlur={commit}
+        placeholder={placeholder}
+      />
+      {values.length > 0 && (
+        <div className="af-tag-chips af-fitment-chips">
+          {values.map((v) => (
+            <span key={v} className="af-tag-chip">
+              {v}
+              <button type="button" onClick={() => onRemove(v)}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
