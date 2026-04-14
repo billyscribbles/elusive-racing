@@ -62,7 +62,7 @@ const resources = [
 const information = [
   { label: 'Terms and Conditions', href: '/terms' },
   { label: 'Privacy Policy', href: '/terms#privacy' },
-  { label: 'Returns Policy', href: '/terms#returns' },
+  { label: 'Returns & Warranty', href: '/returns' },
   { label: 'Shipping Policy', href: '/terms#shipping' },
 ];
 

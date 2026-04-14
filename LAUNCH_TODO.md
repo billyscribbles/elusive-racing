@@ -119,6 +119,8 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [ ] **L6.** Instagram section is static — note as manual refresh or wire IG Basic Display API.
 - [ ] **L7.** Consider TypeScript migration (long-term).
 - [ ] **L8.** Admin audit log (who approved which wholesale signup and when).
+- [x] ⏳ **L9. Returns & Warranty page** — FRONTEND DONE, EMAIL BACKEND PENDING
+  New `/returns` route (`src/pages/ReturnsPage.jsx` + `.css`) with AU consumer-law-compliant policy sections and a client-side-validated request form (name, email, AU phone, order number, request type, part numbers, purchase date, description). Linked from footer (replaces the old `/terms#returns` anchor) and added to `scripts/build-sitemap.mjs`. Submit is stubbed with an inline success card — a `TODO` marks where to wire up the future `/api/returns` email endpoint (requires adding SMTP/Resend to `server.js`, same infra that would benefit a contact form).
 
 ---
 
