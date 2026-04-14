@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useAdminTheme } from '../../lib/adminAuth';
 import AdminHeader from '../../components/admin/AdminHeader';
 import './AdminDeveloper.css';
 
 export default function AdminDeveloper() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('admin-theme') || 'dark');
+  const { theme, toggle: toggleTheme } = useAdminTheme();
   const [syncing, setSyncing] = useState(false);
   const [result, setResult] = useState(null);
-
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('admin-theme', next);
-  }
 
   async function handleSync() {
     setSyncing(true);

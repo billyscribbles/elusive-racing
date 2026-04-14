@@ -28,7 +28,7 @@ function formatDate(iso) {
 function formatMoney(amount, symbol = '$') {
   const n = Number(amount);
   if (Number.isNaN(n)) return `${symbol}0.00`;
-  return `${symbol}${n.toFixed(2)}`;
+  return `${symbol}${n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function statusBadgeClass(status) {
