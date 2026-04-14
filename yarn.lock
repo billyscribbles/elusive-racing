@@ -726,6 +726,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tinymce/tinymce-react@npm:^6.3.0":
+  version: 6.3.0
+  resolution: "@tinymce/tinymce-react@npm:6.3.0"
+  dependencies:
+    prop-types: "npm:^15.6.2"
+  peerDependencies:
+    react: ^19.0.0 || ^18.0.0 || ^17.0.1 || ^16.7.0
+    react-dom: ^19.0.0 || ^18.0.0 || ^17.0.1 || ^16.7.0
+    tinymce: ^8.0.0 || ^7.0.0 || ^6.0.0 || ^5.5.1
+  peerDependenciesMeta:
+    tinymce:
+      optional: true
+  checksum: 10c0/467937194f956ac4981b15b5b5ebf38bf1adacd8472026cbb1de3d6464ec1190f5c7318ce52e1b48df3d282cb100d0c8e06fd74ec10d4f7048633cdc099dd431
+  languageName: node
+  linkType: hard
+
 "@types/babel__core@npm:^7.20.5":
   version: 7.20.5
   resolution: "@types/babel__core@npm:7.20.5"
@@ -1306,6 +1322,7 @@ __metadata:
     "@anthropic-ai/sdk": "npm:^0.80.0"
     "@stripe/react-stripe-js": "npm:^6.0.0"
     "@stripe/stripe-js": "npm:^9.0.0"
+    "@tinymce/tinymce-react": "npm:^6.3.0"
     "@types/react": "npm:^19.2.14"
     "@types/react-dom": "npm:^19.2.3"
     "@vitejs/plugin-react": "npm:^4.3.4"
@@ -1326,6 +1343,7 @@ __metadata:
     react-svg-credit-card-payment-icons: "npm:^5.1.2"
     serve: "npm:^14.2.4"
     stripe: "npm:^21.0.1"
+    tinymce: "npm:^8.4.0"
     typescript: "npm:^5.9.3"
     vite: "npm:^6.0.5"
     vite-plugin-compression: "npm:^0.5.1"
@@ -2242,7 +2260,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.7.2":
+"prop-types@npm:^15.6.2, prop-types@npm:^15.7.2":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -2839,6 +2857,13 @@ __metadata:
     fdir: "npm:^6.5.0"
     picomatch: "npm:^4.0.3"
   checksum: 10c0/869c31490d0d88eedb8305d178d4c75e7463e820df5a9b9d388291daf93e8b1eb5de1dad1c1e139767e4269fe75f3b10d5009b2cc14db96ff98986920a186844
+  languageName: node
+  linkType: hard
+
+"tinymce@npm:^8.4.0":
+  version: 8.4.0
+  resolution: "tinymce@npm:8.4.0"
+  checksum: 10c0/858e7496508edde243f253bb8e1c3c6d2fa80e767ae91e3db80bb20c703ed1e213cc62c897297b613f804eafd175bd2e1e663ad4345c22aa33bf68cc0dceb5b7
   languageName: node
   linkType: hard
 

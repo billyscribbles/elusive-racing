@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { ArrowLeft, Save, Trash2, Upload, X, Image } from "lucide-react";
 import { adminFetch, clearAdminAuth, useAdminTheme } from "../../lib/adminAuth";
 import AdminHeader from "../../components/admin/AdminHeader";
+import RichTextEditor from "../../components/admin/RichTextEditor";
 import "./AdminProductForm.css";
 
 const EMPTY_FORM = {
@@ -34,8 +35,8 @@ function formFromProduct(p) {
     brand,
     regular_price: p.regular_price || "",
     sale_price: p.sale_price || "",
-    description: (p.description || "").replace(/<[^>]+>/g, ""),
-    short_description: (p.short_description || "").replace(/<[^>]+>/g, ""),
+    description: p.description || "",
+    short_description: p.short_description || "",
     manage_stock: p.manage_stock || false,
     stock_quantity: p.stock_quantity != null ? String(p.stock_quantity) : "",
     stock_status: p.stock_status || "instock",
@@ -366,24 +367,26 @@ export default function AdminProductForm() {
                 </div>
                 <div className="af-field">
                   <label className="af-label">Description</label>
-                  <textarea
-                    className="af-textarea"
-                    name="description"
+                  <RichTextEditor
                     value={form.description}
-                    onChange={handleChange}
-                    rows={5}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, description: html }))
+                    }
                     placeholder="Full product description…"
+                    height={360}
+                    theme={theme}
                   />
                 </div>
                 <div className="af-field">
                   <label className="af-label">Short Description</label>
-                  <textarea
-                    className="af-textarea"
-                    name="short_description"
+                  <RichTextEditor
                     value={form.short_description}
-                    onChange={handleChange}
-                    rows={3}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, short_description: html }))
+                    }
                     placeholder="Brief summary shown in listings…"
+                    height={200}
+                    theme={theme}
                   />
                 </div>
               </div>
