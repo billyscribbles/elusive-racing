@@ -42,6 +42,7 @@ const EMPTY_FORM = {
   manage_stock: false,
   stock_quantity: "",
   stock_status: "instock",
+  backorders: "no",
   status: "publish",
   categories: [],
   tags: [],
@@ -89,6 +90,7 @@ function formFromProduct(p) {
     manage_stock: p.manage_stock || false,
     stock_quantity: p.stock_quantity != null ? String(p.stock_quantity) : "",
     stock_status: p.stock_status || "instock",
+    backorders: p.backorders || "no",
     status: p.status || "publish",
     categories: (p.categories || []).map((c) => c.id),
     tags: (p.tags || []).map((t) => t.name),
@@ -112,6 +114,7 @@ function buildPayload(form) {
     short_description: form.short_description,
     manage_stock: form.manage_stock,
     stock_status: form.stock_status,
+    backorders: form.backorders || "no",
     status: form.status,
     categories: form.categories.map((id) => ({ id })),
     tags: form.tags.map((name) => ({ name })),
@@ -777,6 +780,21 @@ export default function AdminProductForm() {
                     <option value="onbackorder">On Backorder</option>
                   </select>
                 </div>
+                {form.stock_status === "outofstock" && (
+                  <div className="af-field">
+                    <label className="af-label">Backorders</label>
+                    <select
+                      className="af-select"
+                      name="backorders"
+                      value={form.backorders}
+                      onChange={handleChange}
+                    >
+                      <option value="no">Do not allow</option>
+                      <option value="notify">Allow, but notify customer</option>
+                      <option value="yes">Allow</option>
+                    </select>
+                  </div>
+                )}
                 <div className="af-field">
                   <label className="af-toggle-label">
                     <input
