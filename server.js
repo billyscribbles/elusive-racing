@@ -1711,6 +1711,56 @@ async function handleWholesaleRegister(req, res) {
   });
 }
 
+function trimOrderDetail(o) {
+  return {
+    id:              o.id,
+    number:          o.number,
+    status:          o.status,
+    currency_symbol: o.currency_symbol || '$',
+    date_created:    o.date_created,
+    date_paid:       o.date_paid,
+    total:           o.total,
+    subtotal:        o.line_items?.reduce((s, li) => s + parseFloat(li.subtotal || 0), 0).toFixed(2),
+    discount_total:  o.discount_total,
+    shipping_total:  o.shipping_total,
+    total_tax:       o.total_tax,
+    payment_method_title: o.payment_method_title || '',
+    shipping_method: o.shipping_lines?.[0]?.method_title || '',
+    customer_note:   o.customer_note || '',
+    customer: {
+      id:         o.customer_id,
+      email:      o.billing?.email || '',
+      first_name: o.billing?.first_name || '',
+      last_name:  o.billing?.last_name || '',
+    },
+    billing:  o.billing  || {},
+    shipping: o.shipping || {},
+    line_items: (o.line_items || []).map(li => ({
+      id:           li.id,
+      name:         li.name,
+      product_id:   li.product_id,
+      sku:          li.sku,
+      quantity:     li.quantity,
+      price:        li.price,
+      total:        li.total,
+      image:        li.image?.src || null,
+    })),
+    refunds: o.refunds || [],
+    tracking: (() => {
+      const meta = o.meta_data?.find(m => m.key === '_wc_shipment_tracking_items');
+      if (meta?.value && Array.isArray(meta.value)) {
+        return meta.value.map(t => ({
+          provider:        t.tracking_provider || t.custom_tracking_provider || '',
+          tracking_number: t.tracking_number || '',
+          tracking_link:   t.custom_tracking_link || '',
+          date_shipped:    t.date_shipped || '',
+        }));
+      }
+      return [];
+    })(),
+  };
+}
+
 async function handleGetOrders(req, res) {
   if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
   const customerId = new URL(req.url, 'http://localhost').searchParams.get('customer');
@@ -1720,59 +1770,102 @@ async function handleGetOrders(req, res) {
     return;
   }
   try {
-    const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
     const ordersRes = await fetch(
       `${WC_URL}/wp-json/wc/v3/orders?customer=${customerId}&per_page=20&orderby=date&order=desc`,
-      { headers: { Authorization: auth } }
+      { headers: { Authorization: wcAuth() } }
     );
     if (!ordersRes.ok) throw new Error('WC orders fetch failed');
     const raw = await ordersRes.json();
-    // Return trimmed order data with line items and payment info
-    const orders = raw.map(o => ({
-      id:              o.id,
-      number:          o.number,
-      status:          o.status,
-      currency_symbol: o.currency_symbol || '$',
-      date_created:    o.date_created,
-      date_paid:       o.date_paid,
-      total:           o.total,
-      subtotal:        o.line_items?.reduce((s, li) => s + parseFloat(li.subtotal || 0), 0).toFixed(2),
-      discount_total:  o.discount_total,
-      shipping_total:  o.shipping_total,
-      total_tax:       o.total_tax,
-      payment_method_title: o.payment_method_title || '',
-      shipping_method: o.shipping_lines?.[0]?.method_title || '',
-      customer_note:   o.customer_note || '',
-      line_items: (o.line_items || []).map(li => ({
-        id:           li.id,
-        name:         li.name,
-        product_id:   li.product_id,
-        sku:          li.sku,
-        quantity:     li.quantity,
-        price:        li.price,
-        total:        li.total,
-        image:        li.image?.src || null,
-      })),
-      refunds: o.refunds || [],
-      tracking: (() => {
-        const meta = o.meta_data?.find(m => m.key === '_wc_shipment_tracking_items');
-        if (meta?.value && Array.isArray(meta.value)) {
-          return meta.value.map(t => ({
-            provider:        t.tracking_provider || t.custom_tracking_provider || '',
-            tracking_number: t.tracking_number || '',
-            tracking_link:   t.custom_tracking_link || '',
-            date_shipped:    t.date_shipped || '',
-          }));
-        }
-        return [];
-      })(),
-    }));
+    const orders = raw.map(trimOrderDetail);
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify(orders));
   } catch (err) {
     console.error('Orders fetch error:', err);
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Failed to fetch orders.' }));
+  }
+}
+
+async function handleAdminListOrders(req, res) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  const url     = new URL(req.url, 'http://localhost');
+  const page    = url.searchParams.get('page')     || '1';
+  const perPage = url.searchParams.get('per_page') || '20';
+  const status  = url.searchParams.get('status')   || 'any';
+  const search  = url.searchParams.get('search')   || '';
+  try {
+    const params = new URLSearchParams({
+      page, per_page: perPage,
+      status,
+      orderby: 'date',
+      order:   'desc',
+    });
+    if (search) params.set('search', search);
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders?${params}`, {
+      headers: { Authorization: wcAuth() },
+    });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    const raw        = await r.json();
+    const total      = parseInt(r.headers.get('X-WP-Total')      || String(raw.length), 10);
+    const totalPages = parseInt(r.headers.get('X-WP-TotalPages') || '1', 10);
+    const orders = raw.map(o => {
+      const metaGet = (keys) => {
+        for (const k of keys) {
+          const m = o.meta_data?.find(x => x.key === k);
+          if (m && m.value) return m.value;
+        }
+        return '';
+      };
+      const invoiceNumber = metaGet([
+        '_wcpdf_invoice_number_formatted',
+        '_wcpdf_formatted_invoice_number',
+        '_wcpdf_invoice_number',
+      ]);
+      const wholesaleMeta = metaGet([
+        '_wwpp_wholesale_role',
+        '_wholesale_role',
+      ]);
+      const orderType = wholesaleMeta ? 'Wholesale' : 'Retail';
+      return {
+        id:              o.id,
+        number:          o.number,
+        invoice_number:  invoiceNumber || '',
+        status:          o.status,
+        currency_symbol: o.currency_symbol || '$',
+        date_created:    o.date_created,
+        total:           o.total,
+        order_type:      orderType,
+        payment_method_title: o.payment_method_title || '',
+        line_items_count: (o.line_items || []).reduce((s, li) => s + (li.quantity || 0), 0),
+        customer: {
+          id:         o.customer_id,
+          email:      o.billing?.email || '',
+          first_name: o.billing?.first_name || '',
+          last_name:  o.billing?.last_name || '',
+        },
+      };
+    });
+    adminJson(res, 200, { orders, total, totalPages });
+  } catch (err) {
+    console.error('[admin] list orders:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch orders.' });
+  }
+}
+
+async function handleAdminGetOrder(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+  try {
+    const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}`, {
+      headers: { Authorization: wcAuth() },
+    });
+    if (!r.ok) throw new Error(`WC ${r.status}`);
+    const raw = await r.json();
+    adminJson(res, 200, trimOrderDetail(raw));
+  } catch (err) {
+    console.error('[admin] get order:', err.message);
+    adminJson(res, 500, { error: 'Failed to fetch order.' });
   }
 }
 
@@ -1911,6 +2004,11 @@ const server = http.createServer((req, res) => {
     const idMatch = req.url.match(/^\/api\/admin\/users\/(\d+)(\?|$)/);
     if (idMatch) { handleAdminGetUser(req, res, idMatch[1]); return; }
     handleAdminListUsers(req, res); return;
+  }
+  if (req.url.startsWith('/api/admin/orders')) {
+    const idMatch = req.url.match(/^\/api\/admin\/orders\/(\d+)(\?|$)/);
+    if (idMatch) { handleAdminGetOrder(req, res, idMatch[1]); return; }
+    handleAdminListOrders(req, res); return;
   }
   if (req.url.startsWith('/api/admin/tags'))       { handleAdminTags(req, res);       return; }
   if (req.url.startsWith('/api/admin/categories')) { handleAdminCategories(req, res); return; }

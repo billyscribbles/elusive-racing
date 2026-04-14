@@ -58,6 +58,7 @@ const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
 const AdminProductForm = lazy(() => import('./pages/admin/AdminProductForm'));
 const AdminPromoBanner = lazy(() => import('./pages/admin/AdminPromoBanner'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
 const AdminDeveloper = lazy(() => import('./pages/admin/AdminDeveloper'));
 
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="/admin/products/:id" element={<AdminRoute><AdminProductForm /></AdminRoute>} />
         <Route path="/admin/promo-banner" element={<AdminRoute><AdminPromoBanner /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
         <Route path="/admin/developer" element={<AdminRoute><AdminDeveloper /></AdminRoute>} />
 
         <Route element={<MainLayout />}>
