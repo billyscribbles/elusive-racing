@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Trash2, Upload, X, Image } from "lucide-react";
 import { adminFetch, clearAdminAuth, useAdminTheme } from "../../lib/adminAuth";
 import AdminHeader from "../../components/admin/AdminHeader";
 import RichTextEditor from "../../components/admin/RichTextEditor";
+import { getBrands } from "../../lib/woocommerce";
 import "./AdminProductForm.css";
 
 // Attribute names that represent vehicle fitment (match src/lib/woocommerce.js)
@@ -154,6 +155,7 @@ export default function AdminProductForm() {
   const [success, setSuccess] = useState("");
   const [imgUploading, setImgUploading] = useState(false);
   const [imgError, setImgError] = useState("");
+  const [brands, setBrands] = useState([]);
   const [allTags, setAllTags] = useState([]);
   const [tagSearch, setTagSearch] = useState("");
   const fileInputRef = useRef(null);
@@ -162,6 +164,9 @@ export default function AdminProductForm() {
   useEffect(() => {
     fetchCategories();
     fetchTags();
+    getBrands()
+      .then((names) => setBrands(names.filter(Boolean).sort()))
+      .catch(() => {});
     if (!isNew) fetchProduct();
   }, [id]);
 
@@ -422,13 +427,22 @@ export default function AdminProductForm() {
                 <div className="af-row">
                   <div className="af-field">
                     <label className="af-label">Brand</label>
-                    <input
-                      className="af-input"
+                    <select
+                      className="af-select"
                       name="brand"
                       value={form.brand}
                       onChange={handleChange}
-                      placeholder="e.g. Skunk2"
-                    />
+                    >
+                      <option value="">— Select brand —</option>
+                      {form.brand && !brands.includes(form.brand) && (
+                        <option value={form.brand}>{form.brand}</option>
+                      )}
+                      {brands.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="af-field">
                     <label className="af-label">SKU</label>
