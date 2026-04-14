@@ -1749,12 +1749,21 @@ function trimOrderDetail(o) {
     tracking: (() => {
       const meta = o.meta_data?.find(m => m.key === '_wc_shipment_tracking_items');
       if (meta?.value && Array.isArray(meta.value)) {
-        return meta.value.map(t => ({
-          provider:        t.tracking_provider || t.custom_tracking_provider || '',
-          tracking_number: t.tracking_number || '',
-          tracking_link:   t.custom_tracking_link || '',
-          date_shipped:    t.date_shipped || '',
-        }));
+        return meta.value.map(t => {
+          // date_shipped is a Unix timestamp string in this plugin's meta
+          let iso = '';
+          if (t.date_shipped) {
+            const ts = parseInt(t.date_shipped, 10);
+            if (!Number.isNaN(ts)) iso = new Date(ts * 1000).toISOString();
+          }
+          return {
+            tracking_id:     t.tracking_id || '',
+            provider:        t.tracking_provider || t.custom_tracking_provider || '',
+            tracking_number: t.tracking_number || '',
+            tracking_link:   t.custom_tracking_link || '',
+            date_shipped:    iso,
+          };
+        });
       }
       return [];
     })(),
@@ -1855,17 +1864,185 @@ async function handleAdminListOrders(req, res) {
 
 async function handleAdminGetOrder(req, res, id) {
   if (!requireAdminAuth(req, res)) return;
-  if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
-  try {
-    const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}`, {
-      headers: { Authorization: wcAuth() },
+  if (req.method === 'GET') {
+    try {
+      const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}`, {
+        headers: { Authorization: wcAuth() },
+      });
+      if (!r.ok) throw new Error(`WC ${r.status}`);
+      const raw = await r.json();
+      adminJson(res, 200, trimOrderDetail(raw));
+    } catch (err) {
+      console.error('[admin] get order:', err.message);
+      adminJson(res, 500, { error: 'Failed to fetch order.' });
+    }
+    return;
+  }
+  if (req.method === 'PUT') {
+    let body = '';
+    req.on('data', c => { body += c.toString(); });
+    req.on('end', async () => {
+      try {
+        const { status } = JSON.parse(body || '{}');
+        if (!status) {
+          adminJson(res, 400, { error: 'Missing status' });
+          return;
+        }
+        const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}`, {
+          method: 'PUT',
+          headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          adminJson(res, r.status, { error: data?.message || `WC ${r.status}` });
+          return;
+        }
+        adminJson(res, 200, trimOrderDetail(data));
+      } catch (err) {
+        console.error('[admin] update order:', err.message);
+        adminJson(res, 500, { error: 'Failed to update order.' });
+      }
     });
-    if (!r.ok) throw new Error(`WC ${r.status}`);
-    const raw = await r.json();
-    adminJson(res, 200, trimOrderDetail(raw));
+    return;
+  }
+  res.writeHead(405); res.end();
+}
+
+async function handleAdminGetOrderNotes(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method === 'GET') {
+    try {
+      const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}/notes?per_page=100`, {
+        headers: { Authorization: wcAuth() },
+      });
+      if (!r.ok) throw new Error(`WC ${r.status}`);
+      const notes = await r.json();
+      adminJson(res, 200, notes.map(n => ({
+        id:            n.id,
+        author:        n.author,
+        date_created:  n.date_created,
+        note:          n.note,
+        customer_note: !!n.customer_note,
+      })));
+    } catch (err) {
+      console.error('[admin] get order notes:', err.message);
+      adminJson(res, 500, { error: 'Failed to fetch notes.' });
+    }
+    return;
+  }
+  if (req.method === 'POST') {
+    let body = '';
+    req.on('data', c => { body += c.toString(); });
+    req.on('end', async () => {
+      try {
+        const { note, customer_note } = JSON.parse(body || '{}');
+        if (!note || !note.trim()) {
+          adminJson(res, 400, { error: 'Note is required.' });
+          return;
+        }
+        const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}/notes`, {
+          method: 'POST',
+          headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: note.trim(), customer_note: !!customer_note }),
+        });
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          adminJson(res, r.status, { error: data?.message || `WC ${r.status}` });
+          return;
+        }
+        adminJson(res, 200, data);
+      } catch (err) {
+        console.error('[admin] add order note:', err.message);
+        adminJson(res, 500, { error: 'Failed to add note.' });
+      }
+    });
+    return;
+  }
+  res.writeHead(405); res.end();
+}
+
+async function readOrderTrackingItems(orderId) {
+  const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${orderId}`, {
+    headers: { Authorization: wcAuth() },
+  });
+  if (!r.ok) throw new Error(`WC ${r.status}`);
+  const order = await r.json();
+  const meta = order.meta_data?.find(m => m.key === '_wc_shipment_tracking_items');
+  const items = Array.isArray(meta?.value) ? meta.value : [];
+  return items;
+}
+
+async function writeOrderTrackingItems(orderId, items) {
+  const r = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${orderId}`, {
+    method: 'PUT',
+    headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      meta_data: [{ key: '_wc_shipment_tracking_items', value: items }],
+    }),
+  });
+  if (!r.ok) {
+    const data = await r.json().catch(() => null);
+    throw new Error(data?.message || `WC ${r.status}`);
+  }
+  return r.json();
+}
+
+async function handleAdminAddTracking(req, res, id) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { tracking_provider, tracking_number, date_shipped, custom_tracking_link } = JSON.parse(body || '{}');
+      if (!tracking_number) {
+        adminJson(res, 400, { error: 'Tracking number is required.' });
+        return;
+      }
+      // date_shipped arrives as 'YYYY-MM-DD' from <input type=date>; plugin stores unix timestamp (string)
+      const tsSeconds = date_shipped
+        ? Math.floor(new Date(date_shipped + 'T00:00:00Z').getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
+
+      const existing = await readOrderTrackingItems(id);
+      const newItem = {
+        tracking_provider: '',
+        custom_tracking_provider: tracking_provider || '',
+        custom_tracking_link:     custom_tracking_link || '',
+        tracking_number,
+        date_shipped: String(tsSeconds),
+        tracking_id:  crypto.randomBytes(16).toString('hex'),
+      };
+      await writeOrderTrackingItems(id, [...existing, newItem]);
+      // Return fresh trimmed detail so the UI re-renders with real data
+      const freshRes = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}`, { headers: { Authorization: wcAuth() } });
+      const fresh = await freshRes.json();
+      adminJson(res, 200, trimOrderDetail(fresh));
+    } catch (err) {
+      console.error('[admin] add tracking:', err.message);
+      adminJson(res, 500, { error: err.message || 'Failed to add tracking.' });
+    }
+  });
+}
+
+async function handleAdminDeleteTracking(req, res, id, trackingId) {
+  if (!requireAdminAuth(req, res)) return;
+  if (req.method !== 'DELETE') { res.writeHead(405); res.end(); return; }
+  try {
+    const existing = await readOrderTrackingItems(id);
+    const filtered = existing.filter(t => t.tracking_id !== trackingId);
+    if (filtered.length === existing.length) {
+      adminJson(res, 404, { error: 'Tracking entry not found.' });
+      return;
+    }
+    await writeOrderTrackingItems(id, filtered);
+    const freshRes = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${id}`, { headers: { Authorization: wcAuth() } });
+    const fresh = await freshRes.json();
+    adminJson(res, 200, trimOrderDetail(fresh));
   } catch (err) {
-    console.error('[admin] get order:', err.message);
-    adminJson(res, 500, { error: 'Failed to fetch order.' });
+    console.error('[admin] delete tracking:', err.message);
+    adminJson(res, 500, { error: err.message || 'Failed to delete tracking.' });
   }
 }
 
@@ -2006,6 +2183,12 @@ const server = http.createServer((req, res) => {
     handleAdminListUsers(req, res); return;
   }
   if (req.url.startsWith('/api/admin/orders')) {
+    const trackDelMatch = req.url.match(/^\/api\/admin\/orders\/(\d+)\/tracking\/([a-f0-9]+)(\?|$)/i);
+    if (trackDelMatch) { handleAdminDeleteTracking(req, res, trackDelMatch[1], trackDelMatch[2]); return; }
+    const trackMatch = req.url.match(/^\/api\/admin\/orders\/(\d+)\/tracking(\?|$)/);
+    if (trackMatch) { handleAdminAddTracking(req, res, trackMatch[1]); return; }
+    const notesMatch = req.url.match(/^\/api\/admin\/orders\/(\d+)\/notes(\?|$)/);
+    if (notesMatch) { handleAdminGetOrderNotes(req, res, notesMatch[1]); return; }
     const idMatch = req.url.match(/^\/api\/admin\/orders\/(\d+)(\?|$)/);
     if (idMatch) { handleAdminGetOrder(req, res, idMatch[1]); return; }
     handleAdminListOrders(req, res); return;
