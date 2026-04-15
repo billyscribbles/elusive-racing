@@ -19,6 +19,37 @@
 - **Never commit or push automatically.** Only commit or push when the user explicitly says to (e.g. "commit", "push", "commit and push"). Do not commit after completing a task unless asked.
 - **Do not bundle a commit at the end of a task.** Complete the task, stop. Wait for the user to review and explicitly request a commit/push.
 
+---
+
+## Changelog
+
+Maintain a `CHANGELOG.md` at the repo root that reads like a product update note for a non-technical stakeholder (imagine the user's boss reading it).
+
+**When to update:**
+- After any change that a user could see or feel — new features, UI changes, fixes to broken behaviour, removed features.
+- Skip: internal refactors, dependency bumps, test-only changes, comment/doc edits, CI tweaks.
+
+**Style rules:**
+- Plain English. No jargon. Ban words: "scaffolding", "edge function", "RPC", "hue", "token", "migration", "hook", "endpoint", "schema", "refactor", "config".
+- One bullet per change. Start with a verb the user understands ("Added", "Fixed", "Made", "Now you can…").
+- Describe **what the user can now see or do**, not how it was built.
+- Under ~25 words per bullet.
+- No dates, no version numbers, no headings, no sections, no grouping.
+- Append new bullets to the **bottom** of the existing list. Never reorder, rewrite, or remove past entries unless explicitly asked.
+
+**Bootstrap:**
+- If `CHANGELOG.md` does not exist yet, create it with just a `# Changelog` title and a blank line — **do not backfill past history**. Only record changes from this point forward.
+
+**Examples of the target voice:**
+- ✅ "Added a light/dark mode toggle in the top-right corner."
+- ✅ "Refreshing the page now keeps you on the page you were on, instead of bouncing you back to the onboarding screen."
+- ✅ "Unlocked emails now stay unlocked for your account — refresh the page and you won't be charged a credit again for the same candidate."
+- ❌ "Refactored auth middleware to use new session handler." (jargon, internal)
+- ❌ "Bumped React to 19.0.1." (invisible to user)
+- ❌ "v1.2.0 — 2026-04-16: Added dark mode." (dates/versions forbidden)
+
+---
+
 ## Project Overview
 
 We are rebuilding the Elusive Racing website (https://elusiveracing.com.au) as a modern,
