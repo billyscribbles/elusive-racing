@@ -62,6 +62,24 @@
 }
 .al-input:focus { border-color: #d94040; }
 
+.al-password-wrap { position: relative; display: flex; }
+.al-password-wrap .al-input { flex: 1; padding-right: 44px; }
+.al-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+.al-password-toggle:hover { color: #f0f0f0; }
+
 .al-error {
   background: rgba(217, 64, 64, 0.1);
   border: 1px solid rgba(217, 64, 64, 0.3);
