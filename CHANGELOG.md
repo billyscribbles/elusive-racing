@@ -1,19 +1,6 @@
 # Changelog
 
-- Restored the admin login screen and linked the admin logo back to the home page.
-- Added an admin users dashboard where you can edit wholesale pricing tiers directly.
-- Swapped in crisper, official social and payment icons in the footer.
-- The homepage hero now plays a randomised background video that fades in smoothly.
-- Multiple hero clips now cross-fade into each other instead of looping a single video.
-- Added an "Onrai Studio" credit link in the footer.
-- Tightened up the checkout, cart, and accessibility with a round of pre-launch fixes.
-- Hardened the site against common security and stock issues before launch.
-- Stopped the promo banner from briefly flashing on screen when the page first loads.
-- Added a cookie consent banner so visitors can choose their tracking preferences.
-- The site can now be installed as an app on phones and tablets.
-- If search is ever unavailable, the shop will automatically fall back to the full catalogue so browsing still works.
 - Added a new admin Orders page with a detail drawer for viewing and updating orders.
-- Admin order totals now show thousands separators and the admin theme stays in sync.
 - Redesigned the admin order drawer so you can edit status, add tracking, and leave notes.
 - Admin product descriptions now use a rich text editor with formatting controls.
 - Admins can now set vehicle fitment (make, model, year) when editing a product.
