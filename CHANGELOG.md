@@ -15,4 +15,4 @@
 - On the wholesale order page, the category filter is now a searchable dropdown too — start typing a category (like "pistons" or "exhaust") to jump straight to it.
 - Added a photo of the Clayton South shop interior alongside the "How We Got Here" timeline on the About page.
 - In the admin Users page, clicking a user now shows their current store credit balance alongside their account details.
-- Used parts are now hidden from shop results by default. Flip the new "Show Used Parts" switch in the Availability filter to include them.
+- Used parts are now hidden from shop results by default. Flip the new "Used Parts Only" switch in the Availability filter to see just the used inventory.
