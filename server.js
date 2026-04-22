@@ -1168,6 +1168,7 @@ function summariseCustomer(c) {
     dateCreated:     c.date_created || '',
     billing:         c.billing  || null,
     shipping:        c.shipping || null,
+    storeCredit:     parseFloat(c?.store_credit?.balances?.[0]?.available_balance ?? 0) || 0,
     wholesaleStatus: wholesaleStatus,
     wholesaleRequestedTier: wwlcRequested || null,
     wholesale: {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronLeft, ChevronRight, X, RefreshCw, Check, XCircle } from 'lucide-react';
 import { adminFetch, clearAdminAuth, useAdminTheme } from '../../lib/adminAuth';
+import { formatPrice } from '../../lib/formatPrice';
 import AdminHeader from '../../components/admin/AdminHeader';
 import './AdminUsers.css';
 
@@ -359,6 +360,14 @@ export default function AdminUsers() {
                     <dt>Username</dt><dd>{detail.username || '—'}</dd>
                     <dt>Registered</dt><dd>{formatDate(detail.dateCreated)}</dd>
                     <dt>Current role</dt><dd>{roleLabel(detail.role, tiers)}</dd>
+                    <dt>Store credit</dt>
+                    <dd>
+                      {detail.storeCredit > 0 ? (
+                        <span className="au-badge au-badge--green">{formatPrice(detail.storeCredit)}</span>
+                      ) : (
+                        <span className="au-text-muted">{formatPrice(detail.storeCredit || 0)}</span>
+                      )}
+                    </dd>
                   </dl>
                 </section>
 
