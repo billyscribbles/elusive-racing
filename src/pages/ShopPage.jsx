@@ -285,6 +285,7 @@ export default function ShopPage() {
   const saleParam = searchParams.get("sale") ?? "";
   const instockParam = searchParams.get("instock") ?? "";
   const backorderParam = searchParams.get("backorder") ?? "";
+  const usedOnlyParam = searchParams.get("usedonly") ?? "";
   const sortParam = searchParams.get("sort") ?? "best-selling";
   const minParam = searchParams.get("min_price") ?? "";
   const maxParam = searchParams.get("max_price") ?? "";
@@ -308,15 +309,19 @@ export default function ShopPage() {
   useEffect(() => {
     setLoading(true);
     setLoadError(null);
+    const effectiveCategories = subParam ? getCategoryDescendantSlugs(subParam) : [];
+    const scopedToUsedParts = effectiveCategories.includes("used-parts");
     queryProducts({
       query: qParam,
       page: pageParam,
       perPage: perPageParam,
       brands: activeBrands,
-      categories: subParam ? getCategoryDescendantSlugs(subParam) : [],
+      categories: effectiveCategories,
       onSale: saleParam === "1",
       inStock: instockParam === "1",
       backorder: backorderParam === "1",
+      hideUsed: !scopedToUsedParts && usedOnlyParam !== "1",
+      usedOnly: !scopedToUsedParts && usedOnlyParam === "1",
       minPrice: minParam ? parseFloat(minParam) : null,
       maxPrice: maxParam ? parseFloat(maxParam) : null,
       sort: sortParam,
@@ -341,6 +346,7 @@ export default function ShopPage() {
     saleParam,
     instockParam,
     backorderParam,
+    usedOnlyParam,
     minParam,
     maxParam,
     sortParam,
@@ -564,6 +570,15 @@ export default function ShopPage() {
           <div
             className={`shop-toggle${backorderParam === "1" ? " active" : ""}`}
             onClick={() => toggleParam("backorder")}
+          >
+            <div className="shop-toggle-thumb" />
+          </div>
+        </label>
+        <label className="shop-filter-toggle-row" style={{ marginTop: "12px" }}>
+          <span>Used Parts Only</span>
+          <div
+            className={`shop-toggle${usedOnlyParam === "1" ? " active" : ""}`}
+            onClick={() => toggleParam("usedonly")}
           >
             <div className="shop-toggle-thumb" />
           </div>

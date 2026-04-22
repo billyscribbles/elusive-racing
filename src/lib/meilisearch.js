@@ -159,6 +159,8 @@ export async function queryProducts({
   onSale    = false,
   inStock   = false,
   backorder = false,
+  hideUsed  = false,
+  usedOnly  = false,
   minPrice  = null,
   maxPrice  = null,
   sort      = '',
@@ -214,6 +216,8 @@ export async function queryProducts({
   if (onSale)    filters.push('onSale = true');
   if (inStock)   filters.push('stockStatus != "onbackorder"');
   if (backorder) filters.push('stockStatus = "onbackorder"');
+  if (hideUsed)  filters.push('NOT categoryHandles = "used-parts"');
+  if (usedOnly)  filters.push('categoryHandles = "used-parts"');
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
 
