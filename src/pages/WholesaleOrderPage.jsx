@@ -82,6 +82,95 @@ export default function WholesaleOrderPage() {
     setBrandOpen(false);
   };
 
+  // Category combobox (searchable dropdown)
+  // Flatten the two-level category tree into a single list with group headers.
+  const flatCategories = [];
+  CATEGORIES.forEach((top) => {
+    flatCategories.push({ type: 'header', topSlug: top.slug, label: top.name });
+    flatCategories.push({
+      type: 'option',
+      slug: top.slug,
+      label: `${top.name} (All)`,
+      searchText: `${top.name} all`,
+      isChild: false,
+    });
+    (top.children ?? []).forEach((mid) => {
+      flatCategories.push({
+        type: 'option',
+        slug: mid.slug,
+        label: mid.name,
+        searchText: `${top.name} ${mid.name}`,
+        isChild: true,
+      });
+    });
+  });
+
+  const labelForCategory = (slug) => {
+    if (!slug) return '';
+    const found = flatCategories.find((i) => i.type === 'option' && i.slug === slug);
+    return found ? found.label : slug;
+  };
+
+  const [categorySearch, setCategorySearch] = useState(labelForCategory(category));
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryHighlight, setCategoryHighlight] = useState(0);
+  const categoryComboRef = useRef(null);
+
+  // Sync input text with the committed category filter
+  useEffect(() => {
+    setCategorySearch(labelForCategory(category));
+  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Close the category dropdown when clicking outside
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const handler = (e) => {
+      if (categoryComboRef.current && !categoryComboRef.current.contains(e.target)) {
+        setCategoryOpen(false);
+        setCategorySearch(labelForCategory(category));
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [categoryOpen, category]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Filter categories by search text. Keep group headers only when at least
+  // one option in that group matches.
+  const visibleCategoryItems = (() => {
+    const q = categorySearch.trim().toLowerCase();
+    // When the search equals the currently-selected label, show the full list
+    // so the user can browse without having to delete text first.
+    const match = q && q !== labelForCategory(category).toLowerCase()
+      ? (item) => item.searchText.toLowerCase().includes(q)
+      : () => true;
+
+    const out = [];
+    let pendingHeader = null;
+    let headerEmitted = false;
+    for (const item of flatCategories) {
+      if (item.type === 'header') {
+        pendingHeader = item;
+        headerEmitted = false;
+      } else if (match(item)) {
+        if (pendingHeader && !headerEmitted) {
+          out.push(pendingHeader);
+          headerEmitted = true;
+        }
+        out.push(item);
+      }
+    }
+    return out;
+  })();
+
+  // Keyboard nav tracks options only (skip headers).
+  const visibleCategoryOptions = visibleCategoryItems.filter((i) => i.type === 'option');
+
+  const commitCategory = (slug) => {
+    setCategory(slug);
+    setCategorySearch(labelForCategory(slug));
+    setCategoryOpen(false);
+  };
+
   // Sticky thead: measure sticky-top height and pass as CSS var
   const stickyTopRef = useRef(null);
   const tableWrapperRef = useRef(null);
@@ -395,10 +484,10 @@ export default function WholesaleOrderPage() {
             />
           </div>
 
-          <div className="wholesale-brand-combo" ref={brandComboRef}>
+          <div className="wholesale-combo" ref={brandComboRef}>
             <input
               type="text"
-              className="wholesale-filter-select wholesale-brand-combo-input"
+              className="wholesale-filter-select wholesale-combo-input"
               placeholder="All Brands"
               value={brandSearch}
               onFocus={(e) => {
@@ -440,7 +529,7 @@ export default function WholesaleOrderPage() {
             {brandSearch && (
               <button
                 type="button"
-                className="wholesale-brand-combo-clear"
+                className="wholesale-combo-clear"
                 onClick={() => commitBrand('')}
                 aria-label="Clear brand filter"
               >
@@ -449,14 +538,14 @@ export default function WholesaleOrderPage() {
             )}
             {brandOpen && (
               <ul
-                className="wholesale-brand-combo-list"
+                className="wholesale-combo-list"
                 id="wholesale-brand-listbox"
                 role="listbox"
               >
                 <li
                   role="option"
                   aria-selected={brand === ''}
-                  className={`wholesale-brand-combo-option ${brand === '' ? 'is-selected' : ''} ${brandHighlight === 0 ? 'is-highlight' : ''}`}
+                  className={`wholesale-combo-option ${brand === '' ? 'is-selected' : ''} ${brandHighlight === 0 ? 'is-highlight' : ''}`}
                   onMouseDown={(e) => { e.preventDefault(); commitBrand(''); }}
                   onMouseEnter={() => setBrandHighlight(0)}
                 >
@@ -467,7 +556,7 @@ export default function WholesaleOrderPage() {
                     key={b}
                     role="option"
                     aria-selected={brand === b}
-                    className={`wholesale-brand-combo-option ${brand === b ? 'is-selected' : ''} ${brandHighlight === i + 1 ? 'is-highlight' : ''}`}
+                    className={`wholesale-combo-option ${brand === b ? 'is-selected' : ''} ${brandHighlight === i + 1 ? 'is-highlight' : ''}`}
                     onMouseDown={(e) => { e.preventDefault(); commitBrand(b); }}
                     onMouseEnter={() => setBrandHighlight(i + 1)}
                   >
@@ -475,27 +564,115 @@ export default function WholesaleOrderPage() {
                   </li>
                 ))}
                 {filteredBrands.length === 0 && (
-                  <li className="wholesale-brand-combo-empty">No brands match</li>
+                  <li className="wholesale-combo-empty">No brands match</li>
                 )}
               </ul>
             )}
           </div>
 
-          <select
-            className="wholesale-filter-select wholesale-filter-select--category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="">All Categories</option>
-            {CATEGORIES.map((top) => (
-              <optgroup key={top.slug} label={top.name}>
-                <option value={top.slug}>{top.name} (All)</option>
-                {(top.children ?? []).map((mid) => (
-                  <option key={mid.slug} value={mid.slug}>{mid.name}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <div className="wholesale-combo" ref={categoryComboRef}>
+            <input
+              type="text"
+              className="wholesale-filter-select wholesale-combo-input"
+              placeholder="All Categories"
+              value={categorySearch}
+              onFocus={(e) => {
+                setCategoryOpen(true);
+                setCategoryHighlight(0);
+                e.target.select();
+              }}
+              onChange={(e) => {
+                setCategorySearch(e.target.value);
+                setCategoryOpen(true);
+                setCategoryHighlight(0);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setCategoryOpen(true);
+                  setCategoryHighlight((h) => Math.min(h + 1, visibleCategoryOptions.length));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setCategoryHighlight((h) => Math.max(h - 1, 0));
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (categoryHighlight === 0) {
+                    commitCategory('');
+                  } else {
+                    const pick = visibleCategoryOptions[categoryHighlight - 1];
+                    if (pick) commitCategory(pick.slug);
+                  }
+                } else if (e.key === 'Escape') {
+                  setCategoryOpen(false);
+                  setCategorySearch(labelForCategory(category));
+                }
+              }}
+              role="combobox"
+              aria-expanded={categoryOpen}
+              aria-autocomplete="list"
+              aria-controls="wholesale-category-listbox"
+            />
+            {categorySearch && (
+              <button
+                type="button"
+                className="wholesale-combo-clear"
+                onClick={() => commitCategory('')}
+                aria-label="Clear category filter"
+              >
+                ×
+              </button>
+            )}
+            {categoryOpen && (
+              <ul
+                className="wholesale-combo-list"
+                id="wholesale-category-listbox"
+                role="listbox"
+              >
+                <li
+                  role="option"
+                  aria-selected={category === ''}
+                  className={`wholesale-combo-option ${category === '' ? 'is-selected' : ''} ${categoryHighlight === 0 ? 'is-highlight' : ''}`}
+                  onMouseDown={(e) => { e.preventDefault(); commitCategory(''); }}
+                  onMouseEnter={() => setCategoryHighlight(0)}
+                >
+                  All Categories
+                </li>
+                {(() => {
+                  let optIndex = 0;
+                  return visibleCategoryItems.map((item) => {
+                    if (item.type === 'header') {
+                      return (
+                        <li
+                          key={`h-${item.topSlug}`}
+                          className="wholesale-combo-group-header"
+                          aria-hidden="true"
+                        >
+                          {item.label}
+                        </li>
+                      );
+                    }
+                    const thisIndex = optIndex + 1;
+                    optIndex += 1;
+                    return (
+                      <li
+                        key={item.slug}
+                        role="option"
+                        aria-selected={category === item.slug}
+                        className={`wholesale-combo-option ${item.isChild ? 'is-child' : ''} ${category === item.slug ? 'is-selected' : ''} ${categoryHighlight === thisIndex ? 'is-highlight' : ''}`}
+                        onMouseDown={(e) => { e.preventDefault(); commitCategory(item.slug); }}
+                        onMouseEnter={() => setCategoryHighlight(thisIndex)}
+                      >
+                        {item.label}
+                      </li>
+                    );
+                  });
+                })()}
+                {visibleCategoryOptions.length === 0 && (
+                  <li className="wholesale-combo-empty">No categories match</li>
+                )}
+              </ul>
+            )}
+          </div>
 
           <label className={`wholesale-stock-toggle ${inStockOnly ? 'active' : ''}`}>
             <input
