@@ -16,3 +16,4 @@
 - Added a photo of the Clayton South shop interior alongside the "How We Got Here" timeline on the About page.
 - In the admin Users page, clicking a user now shows their current store credit balance alongside their account details.
 - Used parts are now hidden from shop results by default. Flip the new "Used Parts Only" switch in the Availability filter to see just the used inventory.
+- Fixed clicking links like "Returns & Warranty" in the footer so the new page always opens at the top instead of sometimes landing near the bottom.
