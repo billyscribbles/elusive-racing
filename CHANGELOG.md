@@ -8,3 +8,4 @@
 - Admins can now mark out-of-stock products as available on backorder.
 - Added a Returns & Warranty page with a request form for customers.
 - The admin login now has a show/hide toggle on the password field.
+- Added a "Forgot password?" flow — enter your email and you'll get a link to reset your password without leaving the site.

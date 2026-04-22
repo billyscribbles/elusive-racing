@@ -139,6 +139,37 @@ function clearAdminLoginAttempts(ip) {
   adminLoginAttempts.delete(ip);
 }
 
+// ── Rate limiter for password-reset endpoints ────────────────────────────────
+// Same shape as the admin limiter; keyed by client IP. Protects both
+// /api/auth/lost-password and /api/auth/reset-password from brute-force / spam.
+const PW_RESET_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 };
+const pwResetAttempts = new Map(); // ip → { count, firstAt }
+
+function checkPwResetRate(ip) {
+  const now = Date.now();
+  const entry = pwResetAttempts.get(ip);
+  if (!entry) return { allowed: true };
+  if (now - entry.firstAt > PW_RESET_LIMIT.windowMs) {
+    pwResetAttempts.delete(ip);
+    return { allowed: true };
+  }
+  if (entry.count >= PW_RESET_LIMIT.maxAttempts) {
+    const retryAfterMs = PW_RESET_LIMIT.windowMs - (now - entry.firstAt);
+    return { allowed: false, retryAfterSec: Math.ceil(retryAfterMs / 1000) };
+  }
+  return { allowed: true };
+}
+
+function recordPwResetAttempt(ip) {
+  const now = Date.now();
+  const entry = pwResetAttempts.get(ip);
+  if (!entry || now - entry.firstAt > PW_RESET_LIMIT.windowMs) {
+    pwResetAttempts.set(ip, { count: 1, firstAt: now });
+  } else {
+    entry.count += 1;
+  }
+}
+
 const BRAND_TERMS = [
   'skunk2', 'k-tuned', 'ktuned', 'hondata', 'exedy', 'bc racing', 'hks', 'arp', 'acl',
   'spoon', 'mugen', 'bosch', 'ngk', 'mishimoto', 'cusco', 'project mu', 'tein', 'whiteline',
@@ -1711,6 +1742,114 @@ async function handleWholesaleRegister(req, res) {
   });
 }
 
+// Request a password-reset email. Always returns a generic 200 to avoid
+// leaking which emails are registered (email enumeration defence).
+async function handleLostPassword(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  const ip = getClientIp(req);
+  const gate = checkPwResetRate(ip);
+  if (!gate.allowed) {
+    res.writeHead(429, {
+      'Content-Type': 'application/json',
+      'Retry-After': String(gate.retryAfterSec),
+      'Access-Control-Allow-Origin': corsOrigin(req),
+      'Vary': 'Origin',
+    });
+    res.end(JSON.stringify({ error: `Too many attempts. Try again in ${Math.ceil(gate.retryAfterSec / 60)} minute(s).` }));
+    return;
+  }
+  recordPwResetAttempt(ip);
+
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    const genericOk = () => {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
+      res.end(JSON.stringify({ ok: true, message: "If an account with that email exists, we've sent a password reset link." }));
+    };
+
+    try {
+      const { email } = JSON.parse(body || '{}');
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        // Still return the generic success — don't hint at validation either.
+        return genericOk();
+      }
+
+      // Fire at WP but don't gate the response on it. WP plugin also returns 200
+      // regardless of whether the email matched a user.
+      try {
+        await fetch(`${WC_URL}/wp-json/elusive/v1/lost-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+      } catch (err) {
+        console.error('[lost-password] WP call failed:', err?.message || err);
+      }
+
+      genericOk();
+    } catch (err) {
+      console.error('[lost-password] error:', err);
+      genericOk();
+    }
+  });
+}
+
+// Consume a reset key + login from the email and set a new password.
+async function handleResetPassword(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  const ip = getClientIp(req);
+  const gate = checkPwResetRate(ip);
+  if (!gate.allowed) {
+    res.writeHead(429, {
+      'Content-Type': 'application/json',
+      'Retry-After': String(gate.retryAfterSec),
+      'Access-Control-Allow-Origin': corsOrigin(req),
+      'Vary': 'Origin',
+    });
+    res.end(JSON.stringify({ error: `Too many attempts. Try again in ${Math.ceil(gate.retryAfterSec / 60)} minute(s).` }));
+    return;
+  }
+  recordPwResetAttempt(ip);
+
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { key, login, password } = JSON.parse(body || '{}');
+
+      if (!key || !login || !password) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
+        res.end(JSON.stringify({ error: 'Reset key, login and new password are all required.' }));
+        return;
+      }
+      if (typeof password !== 'string' || password.length < 8) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
+        res.end(JSON.stringify({ error: 'Password must be at least 8 characters.' }));
+        return;
+      }
+
+      const wpRes = await fetch(`${WC_URL}/wp-json/elusive/v1/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, login, password }),
+      });
+
+      const data = await wpRes.json().catch(() => ({}));
+      res.writeHead(wpRes.status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
+      if (wpRes.ok) {
+        res.end(JSON.stringify({ ok: true }));
+      } else {
+        res.end(JSON.stringify({ error: data.message || 'Could not reset password. Please request a new link.' }));
+      }
+    } catch (err) {
+      console.error('[reset-password] error:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
+      res.end(JSON.stringify({ error: 'Could not reset password. Please try again.' }));
+    }
+  });
+}
+
 function trimOrderDetail(o) {
   return {
     id:              o.id,
@@ -2226,6 +2365,8 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/auth/login')    { handleAuthLogin(req, res);    return; }
   if (req.url === '/api/auth/register') { handleAuthRegister(req, res); return; }
   if (req.url === '/api/auth/wholesale-register') { handleWholesaleRegister(req, res); return; }
+  if (req.url === '/api/auth/lost-password')  { handleLostPassword(req, res);  return; }
+  if (req.url === '/api/auth/reset-password') { handleResetPassword(req, res); return; }
   if (req.url.startsWith('/api/account/orders')) { handleGetOrders(req, res); return; }
 
   // Stripe PaymentIntent creation

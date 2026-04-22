@@ -145,13 +145,9 @@ export default function LoginPage() {
               <input type="checkbox" name="remember" checked={form.remember} onChange={handleChange} />
               Remember me
             </label>
-            <a
-              href={`${import.meta.env.VITE_WC_URL}/my-account/lost-password`}
-              target="_blank" rel="noopener noreferrer"
-              className="account-forgot"
-            >
+            <Link to="/my-account/lost-password" className="account-forgot">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button type="submit" className="account-submit" disabled={status === 'submitting'}>

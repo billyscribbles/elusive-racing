@@ -48,6 +48,8 @@ const TermsPage = lazy(() => import('./pages/TermsPage'));
 const ReturnsPage = lazy(() => import('./pages/ReturnsPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const AccountDashboard = lazy(() => import('./pages/AccountDashboard'));
 const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const WholesalePage = lazy(() => import('./pages/WholesalePage'));
@@ -96,6 +98,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/my-account" element={<LoginPage />} />
           <Route path="/my-account/register" element={<RegisterPage />} />
+          <Route path="/my-account/lost-password" element={<ForgotPasswordPage />} />
+          <Route path="/my-account/reset-password" element={<ResetPasswordPage />} />
           <Route path="/my-account/dashboard" element={<AccountDashboard />} />
           <Route path="/my-account/orders" element={<TrackOrderPage />} />
           <Route path="/wholesale-registration" element={<WholesalePage />} />
