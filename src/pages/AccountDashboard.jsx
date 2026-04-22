@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag, Settings } from 'lucide-react';
+import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { clearAdminAuth } from '../lib/adminAuth';
 import WholesaleOrderPage from './WholesaleOrderPage';
@@ -39,9 +39,8 @@ function formatAddress(addr) {
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
-  const { user, logout, isLoggedIn, isWholesale, isAdmin, userTypeLabel } = useAuthStore();
+  const { user, logout, isLoggedIn, isWholesale, userTypeLabel } = useAuthStore();
   const wholesale = isLoggedIn() && isWholesale();
-  const admin = isLoggedIn() && isAdmin();
   const roleLabel = userTypeLabel();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -125,20 +124,8 @@ export default function AccountDashboard() {
           </div>
         )}
 
-        {/* Admin Quick Link */}
-        {admin && (
-          <Link to="/admin/products" className="dash-admin-link">
-            <Settings size={18} />
-            <div>
-              <strong>Admin Panel</strong>
-              <span>Manage products, promo banners, and developer tools</span>
-            </div>
-            <ChevronRight size={18} />
-          </Link>
-        )}
-
-        {/* Wholesale / Admin Catalogue Tabs */}
-        {(wholesale || admin) && (
+        {/* Wholesale Catalogue Tabs */}
+        {wholesale && (
           <div className="dash-tabs">
             <button
               className={`dash-tab${activeTab === 'overview' ? ' dash-tab--active' : ''}`}
@@ -331,7 +318,7 @@ export default function AccountDashboard() {
       </div>
 
       {/* Wholesale Catalogue Tab — rendered outside .container for full width */}
-      {(wholesale || admin) && activeTab === 'catalogue' && (
+      {wholesale && activeTab === 'catalogue' && (
         <WholesaleOrderPage />
       )}
     </div>

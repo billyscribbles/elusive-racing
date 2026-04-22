@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useCheckoutStore from '../store/checkoutStore';
-import { saveAdminAuth } from '../lib/adminAuth';
 import './AccountPage.css';
 
 export default function LoginPage() {
@@ -13,7 +12,6 @@ export default function LoginPage() {
   const setContact = useCheckoutStore(s => s.setContact);
   const setShipping = useCheckoutStore(s => s.setShipping);
 
-  const [loginMode, setLoginMode]     = useState('customer'); // 'customer' | 'admin'
   const [form, setForm]               = useState({ email: '', password: '', remember: false });
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus]           = useState('idle'); // idle | submitting | error
@@ -35,63 +33,42 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      if (loginMode === 'admin') {
-        // Admin login flow
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: form.email, password: form.password }),
-        });
-        const data = await res.json();
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, password: form.password }),
+      });
+      const data = await res.json();
 
-        if (!res.ok) {
-          setStatus('error');
-          setErrorMsg(data.error || 'Invalid username or password.');
-          return;
-        }
-
-        saveAdminAuth(data.token, data.username || form.email);
-        login({ user: { email: form.email, firstName: form.email, lastName: '', role: 'administrator' }, token: data.token });
-        navigate('/my-account/dashboard');
-      } else {
-        // Customer / wholesale login flow
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: form.email, password: form.password }),
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          setStatus('error');
-          setErrorMsg(data.error || 'Invalid email or password.');
-          return;
-        }
-
-        login(data);
-
-        // Pre-fill checkout contact + shipping from saved WC address
-        if (data.user) {
-          setContact({
-            email:     data.user.email,
-            firstName: data.user.firstName,
-            lastName:  data.user.lastName,
-          });
-          const s = data.user.shipping;
-          if (s?.address_1) {
-            setShipping({
-              address1: s.address_1,
-              address2: s.address_2 || '',
-              city:     s.city,
-              state:    s.state,
-              postcode: s.postcode,
-              country:  s.country || 'AU',
-            });
-          }
-        }
-
-        navigate('/my-account/dashboard');
+      if (!res.ok) {
+        setStatus('error');
+        setErrorMsg(data.error || 'Invalid email or password.');
+        return;
       }
+
+      login(data);
+
+      // Pre-fill checkout contact + shipping from saved WC address
+      if (data.user) {
+        setContact({
+          email:     data.user.email,
+          firstName: data.user.firstName,
+          lastName:  data.user.lastName,
+        });
+        const s = data.user.shipping;
+        if (s?.address_1) {
+          setShipping({
+            address1: s.address_1,
+            address2: s.address_2 || '',
+            city:     s.city,
+            state:    s.state,
+            postcode: s.postcode,
+            country:  s.country || 'AU',
+          });
+        }
+      }
+
+      navigate('/my-account/dashboard');
     } catch {
       setStatus('error');
       setErrorMsg('Something went wrong. Please try again.');
@@ -103,7 +80,7 @@ export default function LoginPage() {
       <div className="account-card">
         <h1 className="account-title">Sign In</h1>
         <p className="account-subtitle">
-          {loginMode === 'admin' ? 'Admin portal access' : 'Welcome back — sign in to your account'}
+          Welcome back — sign in to your account
         </p>
 
         <form className="account-form" onSubmit={handleSubmit} noValidate>
@@ -115,12 +92,12 @@ export default function LoginPage() {
           )}
 
           <div className="account-field">
-            <label htmlFor="email">{loginMode === 'admin' ? 'Username' : 'Email Address'} <span>*</span></label>
+            <label htmlFor="email">Email Address <span>*</span></label>
             <input
-              id="email" type={loginMode === 'admin' ? 'text' : 'email'} name="email"
+              id="email" type="email" name="email"
               value={form.email} onChange={handleChange}
-              placeholder={loginMode === 'admin' ? 'admin' : 'you@example.com'}
-              required autoComplete={loginMode === 'admin' ? 'username' : 'email'}
+              placeholder="you@example.com"
+              required autoComplete="email"
             />
           </div>
 
@@ -159,15 +136,6 @@ export default function LoginPage() {
         <p className="account-switch">
           Don&apos;t have an account?{' '}
           <Link to="/my-account/register">Create one</Link>
-        </p>
-        <p className="account-switch account-switch--admin">
-          <button
-            type="button"
-            className="account-admin-toggle"
-            onClick={() => { setLoginMode(m => m === 'admin' ? 'customer' : 'admin'); setErrorMsg(''); setStatus('idle'); }}
-          >
-            {loginMode === 'admin' ? 'Back to customer login' : 'Admin login'}
-          </button>
         </p>
       </div>
     </div>

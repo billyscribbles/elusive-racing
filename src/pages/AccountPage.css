@@ -210,18 +210,6 @@
 
 .account-switch a:hover { opacity: 0.8; }
 
-.account-switch--admin { margin-top: 12px; }
-.account-admin-toggle {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.15s;
-}
-.account-admin-toggle:hover { color: #999; }
-
 /* Error / success banners */
 .account-error {
   display: flex;
@@ -449,27 +437,6 @@
 .dash-role-badge--customer { background: #e8e8e8; color: #666; }
 .dash-role-badge--wholesale { background: #d94040; color: #fff; }
 .dash-role-badge--admin { background: #1a1a1a; color: #fff; }
-
-/* Admin Quick Link */
-.dash-admin-link {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  text-decoration: none;
-  color: #fff;
-  transition: border-color 0.2s, background 0.2s;
-}
-.dash-admin-link:hover { border-color: #d94040; background: #222; }
-.dash-admin-link > svg:first-child { color: #d94040; flex-shrink: 0; }
-.dash-admin-link > div { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.dash-admin-link strong { font-size: 15px; font-weight: 700; }
-.dash-admin-link span { font-size: 13px; color: #888; }
-.dash-admin-link > svg:last-child { color: #666; flex-shrink: 0; }
 
 /* Dashboard Tabs */
 .dash-tabs {
