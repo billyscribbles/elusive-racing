@@ -1,0 +1,273 @@
+.co-extras {
+  background: #fff;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.co-extras-header {
+  margin-bottom: 16px;
+}
+
+.co-extras-title {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-dark);
+  margin: 0;
+}
+
+.co-extras-sub {
+  font-family: var(--font-body, inherit);
+  font-size: 12px;
+  color: var(--color-mid);
+  margin: 4px 0 0;
+}
+
+.co-extras-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.co-extras-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  transition: border-color 0.15s, transform 0.15s;
+  height: 100%;
+}
+
+.co-extras-card:hover {
+  border-color: var(--color-dark);
+  transform: translateY(-1px);
+}
+
+.co-extras-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.co-extras-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
+}
+
+.co-extras-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.co-extras-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--color-border-light);
+}
+
+/* info grows to fill — keeps Add button pinned to the bottom regardless of
+   whether the name wraps 1 or 2 lines, or whether the card has a size picker. */
+.co-extras-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.co-extras-brand {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--color-red);
+}
+
+.co-extras-name {
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-dark);
+  line-height: 1.3;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Reserve two lines of height so 1-line and 2-line names align identically. */
+  min-height: calc(1.3em * 2);
+}
+
+.co-extras-pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.co-extras-price {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-dark);
+}
+
+.co-extras-compare {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  color: var(--color-light);
+  text-decoration: line-through;
+}
+
+/* Size chips row — always a single line, chips share width equally */
+.co-extras-sizes {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.co-extras-size {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 5px 2px;
+  background: #fff;
+  border: 1px solid var(--color-border-light);
+  border-radius: 4px;
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--color-dark);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.co-extras-size:hover:not(:disabled) {
+  border-color: var(--color-dark);
+}
+
+.co-extras-size--active {
+  background: var(--color-dark);
+  border-color: var(--color-dark);
+  color: #fff;
+}
+
+.co-extras-size--oos {
+  color: var(--color-light);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.co-extras-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--color-red);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-height: 36px;
+  margin-top: auto;
+}
+
+.co-extras-add:hover:not(:disabled) {
+  background: #c03333;
+}
+
+.co-extras-add:disabled {
+  cursor: default;
+  background: #888;
+}
+
+.co-extras-add--added,
+.co-extras-add--added:hover {
+  background: #2a8a3e;
+}
+
+/* Skeleton shimmer — light variant for the white/bg checkout surface */
+.co-extras-shimmer {
+  background: linear-gradient(90deg, #e8e8e8 25%, #f4f4f4 50%, #e8e8e8 75%);
+  background-size: 200% 100%;
+  animation: co-extras-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.co-extras-card--skeleton {
+  pointer-events: none;
+}
+
+@keyframes co-extras-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Tablet / mobile: horizontal scroll strip so all 4 cards stay on one row */
+@media (max-width: 900px) {
+  .co-extras {
+    padding: 16px;
+  }
+  .co-extras-row {
+    display: flex;
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    margin: 0 -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .co-extras-card {
+    flex: 0 0 170px;
+    scroll-snap-align: start;
+  }
+}
+
+/* Small phones: tighten padding/type while keeping tap targets */
+@media (max-width: 480px) {
+  .co-extras-card {
+    flex: 0 0 150px;
+    padding: 8px;
+  }
+  .co-extras-name {
+    font-size: 12px;
+  }
+  .co-extras-add {
+    min-height: 40px;
+    font-size: 11px;
+  }
+  .co-extras-size {
+    font-size: 9px;
+    padding: 5px 1px;
+    letter-spacing: 0.2px;
+  }
+}

@@ -3,6 +3,7 @@ import { ShoppingBag, Trash2, Minus, Plus, ArrowLeft, Wrench, Lock, ShieldCheck,
 
 const BOOKING_URL = 'https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
+import CheckoutExtras from '../components/checkout/CheckoutExtras';
 import useCartStore from '../store/cartStore';
 import { formatPrice } from '../lib/formatPrice';
 import './CheckoutPage.css';
@@ -98,6 +99,8 @@ export default function CheckoutPage() {
                   </button>
                 </div>
               </div>
+
+              <CheckoutExtras />
 
               {/* Booking iframe modal */}
               {bookingOpen && (
