@@ -77,6 +77,14 @@ Pre-production punch list from the April 2026 audit. Fix all 🔴 Critical and �
 - [ ] **H12. Build-time secret scan**
   Add a pre-deploy gate: `npm run build && grep -RE 'ck_[a-f0-9]{40}|cs_[a-f0-9]{40}|sk_live|sk_test' dist/` must return zero lines.
 
+- [ ] **H13. Set `elusive_frontend_url` WP option before DNS flip**
+  The Elusive Auth plugin's password-reset email filter falls back to `site_url()` if this option is unset, which would point reset links at the WP domain instead of the React frontend. Set it to the final public URL — currently staging on Railway at `https://elusive-racing-production-d535.up.railway.app`, update to `https://elusiveracing.com.au` at DNS flip.
+  **Set via any of:**
+  - WP-CLI: `wp option update elusive_frontend_url https://<frontend-url>`
+  - Options Editor plugin (wp-admin → Plugins → Add New → search "Options Editor")
+  - SQL: `INSERT INTO wp_options (option_name, option_value, autoload) VALUES ('elusive_frontend_url', 'https://<frontend-url>', 'yes') ON DUPLICATE KEY UPDATE option_value = VALUES(option_value);`
+  **Verify:** trigger a test reset and confirm the link in the email starts with the expected host.
+
 ---
 
 ## 🟡 Medium — fix before or shortly after launch
