@@ -5,7 +5,7 @@ import useAuthStore from '../store/authStore';
 import useCartStore from '../store/cartStore';
 import { getWholesalePrice } from '../hooks/useWholesalePrice';
 import { CATEGORIES, getCategoryDescendantSlugs } from '../data/categories';
-import { queryWholesaleProducts } from '../lib/meilisearch';
+import { queryWholesaleProducts, getAllBrands } from '../lib/meilisearch';
 import { getProductVariants } from '../lib/woocommerce';
 import { formatPrice } from '../lib/formatPrice';
 import './WholesaleOrderPage.css';
@@ -48,6 +48,40 @@ export default function WholesaleOrderPage() {
   const [allBrands, setAllBrands] = useState([]);
   const brandsLoaded = useRef(false);
 
+  // Brand combobox (searchable dropdown)
+  const [brandSearch, setBrandSearch] = useState('');
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [brandHighlight, setBrandHighlight] = useState(0);
+  const brandComboRef = useRef(null);
+
+  // Keep input text synced with the committed brand filter
+  useEffect(() => {
+    setBrandSearch(brand);
+  }, [brand]);
+
+  // Close the brand dropdown when clicking outside
+  useEffect(() => {
+    if (!brandOpen) return;
+    const handler = (e) => {
+      if (brandComboRef.current && !brandComboRef.current.contains(e.target)) {
+        setBrandOpen(false);
+        setBrandSearch(brand);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [brandOpen, brand]);
+
+  const filteredBrands = allBrands.filter((b) =>
+    b.toLowerCase().includes(brandSearch.toLowerCase())
+  );
+
+  const commitBrand = (value) => {
+    setBrand(value);
+    setBrandSearch(value);
+    setBrandOpen(false);
+  };
+
   // Sticky thead: measure sticky-top height and pass as CSS var
   const stickyTopRef = useRef(null);
   const tableWrapperRef = useRef(null);
@@ -72,12 +106,11 @@ export default function WholesaleOrderPage() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Load brand list on first mount (empty query, no filters, large batch)
+  // Load the full brand list on first mount (paginated across the whole index)
   useEffect(() => {
     if (brandsLoaded.current) return;
     brandsLoaded.current = true;
-    queryWholesaleProducts({ perPage: 1000 }).then((res) => {
-      const brands = [...new Set(res.hits.map((h) => h.vendor).filter(Boolean))].sort();
+    getAllBrands().then((brands) => {
       setAllBrands(brands);
     }).catch(() => {});
   }, []);
@@ -362,16 +395,91 @@ export default function WholesaleOrderPage() {
             />
           </div>
 
-          <select
-            className="wholesale-filter-select"
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-          >
-            <option value="">All Brands</option>
-            {allBrands.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+          <div className="wholesale-brand-combo" ref={brandComboRef}>
+            <input
+              type="text"
+              className="wholesale-filter-select wholesale-brand-combo-input"
+              placeholder="All Brands"
+              value={brandSearch}
+              onFocus={(e) => {
+                setBrandOpen(true);
+                setBrandHighlight(0);
+                e.target.select();
+              }}
+              onChange={(e) => {
+                setBrandSearch(e.target.value);
+                setBrandOpen(true);
+                setBrandHighlight(0);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setBrandOpen(true);
+                  setBrandHighlight((h) => Math.min(h + 1, filteredBrands.length));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setBrandHighlight((h) => Math.max(h - 1, 0));
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (brandHighlight === 0) {
+                    commitBrand('');
+                  } else {
+                    const pick = filteredBrands[brandHighlight - 1];
+                    if (pick) commitBrand(pick);
+                  }
+                } else if (e.key === 'Escape') {
+                  setBrandOpen(false);
+                  setBrandSearch(brand);
+                }
+              }}
+              role="combobox"
+              aria-expanded={brandOpen}
+              aria-autocomplete="list"
+              aria-controls="wholesale-brand-listbox"
+            />
+            {brandSearch && (
+              <button
+                type="button"
+                className="wholesale-brand-combo-clear"
+                onClick={() => commitBrand('')}
+                aria-label="Clear brand filter"
+              >
+                ×
+              </button>
+            )}
+            {brandOpen && (
+              <ul
+                className="wholesale-brand-combo-list"
+                id="wholesale-brand-listbox"
+                role="listbox"
+              >
+                <li
+                  role="option"
+                  aria-selected={brand === ''}
+                  className={`wholesale-brand-combo-option ${brand === '' ? 'is-selected' : ''} ${brandHighlight === 0 ? 'is-highlight' : ''}`}
+                  onMouseDown={(e) => { e.preventDefault(); commitBrand(''); }}
+                  onMouseEnter={() => setBrandHighlight(0)}
+                >
+                  All Brands
+                </li>
+                {filteredBrands.map((b, i) => (
+                  <li
+                    key={b}
+                    role="option"
+                    aria-selected={brand === b}
+                    className={`wholesale-brand-combo-option ${brand === b ? 'is-selected' : ''} ${brandHighlight === i + 1 ? 'is-highlight' : ''}`}
+                    onMouseDown={(e) => { e.preventDefault(); commitBrand(b); }}
+                    onMouseEnter={() => setBrandHighlight(i + 1)}
+                  >
+                    {b}
+                  </li>
+                ))}
+                {filteredBrands.length === 0 && (
+                  <li className="wholesale-brand-combo-empty">No brands match</li>
+                )}
+              </ul>
+            )}
+          </div>
 
           <select
             className="wholesale-filter-select wholesale-filter-select--category"

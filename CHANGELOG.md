@@ -10,3 +10,5 @@
 - The admin login now has a show/hide toggle on the password field.
 - Added a "Forgot password?" flow — enter your email and you'll get a link to reset your password without leaving the site.
 - Removed the hidden admin login link from the customer sign-in page. Admins now sign in only at /admin.
+- On the checkout page you'll now see a small "Add to your order" row with a handful of our merch — tap Add to drop one in without leaving the page.
+- On the wholesale order page, the brand filter is now a searchable dropdown — start typing a brand name to narrow the list instead of scrolling through all of them.

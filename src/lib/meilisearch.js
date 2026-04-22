@@ -268,6 +268,33 @@ export async function queryProducts({
  * Wholesale-tuned product query — larger page size, includes stock + wholesale price fields.
  * Defaults to alphabetical sort for catalog browsing.
  */
+// Fetch the full set of distinct vendors/brands across the index by paginating
+// through products and retrieving only the `vendor` field. A single search call
+// can miss brands whose products don't appear in the first page of hits, so we
+// loop until the index is exhausted.
+export async function getAllBrands() {
+  if (!HOST || !SEARCH_KEY) return [];
+  try {
+    const index = (await getClient()).index(INDEX_NAME);
+    const brands = new Set();
+    const pageSize = 1000;
+    const maxPages = 20; // safety cap: up to 20,000 products
+    for (let page = 0; page < maxPages; page++) {
+      const res = await index.search('', {
+        offset: page * pageSize,
+        limit: pageSize,
+        attributesToRetrieve: ['vendor'],
+      });
+      res.hits.forEach((h) => { if (h.vendor) brands.add(h.vendor); });
+      if (res.hits.length < pageSize) break;
+    }
+    return [...brands].sort((a, b) => a.localeCompare(b));
+  } catch (err) {
+    console.warn('[meilisearch] getAllBrands failed:', err?.message);
+    return [];
+  }
+}
+
 export async function queryWholesaleProducts({
   query      = '',
   page       = 1,

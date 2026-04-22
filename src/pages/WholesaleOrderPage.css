@@ -124,6 +124,88 @@
   min-width: 200px;
 }
 
+/* Searchable brand combobox */
+.wholesale-brand-combo {
+  position: relative;
+  min-width: 200px;
+}
+
+.wholesale-brand-combo-input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 36px;
+  cursor: text;
+  background-image: none;
+}
+
+.wholesale-brand-combo-clear {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: #eee;
+  color: #555;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wholesale-brand-combo-clear:hover {
+  background: #ddd;
+  color: #111;
+}
+
+.wholesale-brand-combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+}
+
+.wholesale-brand-combo-option {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wholesale-brand-combo-option.is-highlight {
+  background: #f5f5f5;
+}
+
+.wholesale-brand-combo-option.is-selected {
+  color: #d94040;
+  font-weight: 600;
+}
+
+.wholesale-brand-combo-empty {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
 .wholesale-filter-select--category optgroup {
   font-weight: 700;
   font-size: 13px;
@@ -710,6 +792,11 @@
   }
 
   .wholesale-filter-select {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .wholesale-brand-combo {
     min-width: unset;
     width: 100%;
   }
