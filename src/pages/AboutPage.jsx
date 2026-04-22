@@ -106,19 +106,29 @@ export default function AboutPage() {
 
       {/* Story timeline */}
       <section className="ap-story">
-        <div className="container">
-          <span className="ap-section-label">The Journey</span>
-          <h2 className="ap-section-title">How We Got Here</h2>
-          <div className="ap-timeline">
-            {milestones.map((m) => (
-              <div key={m.year} className="ap-timeline-item">
-                <div className="ap-timeline-marker" />
-                <div className="ap-timeline-body">
-                  <h3 className="ap-timeline-year">{m.year}</h3>
-                  <p className="ap-timeline-text">{m.text}</p>
+        <div className="container ap-story-inner">
+          <div className="ap-story-main">
+            <span className="ap-section-label">The Journey</span>
+            <h2 className="ap-section-title">How We Got Here</h2>
+            <div className="ap-timeline">
+              {milestones.map((m) => (
+                <div key={m.year} className="ap-timeline-item">
+                  <div className="ap-timeline-marker" />
+                  <div className="ap-timeline-body">
+                    <h3 className="ap-timeline-year">{m.year}</h3>
+                    <p className="ap-timeline-text">{m.text}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+          <div className="ap-story-img-wrap">
+            <img
+              src="/store-interior.jpg"
+              alt="Inside the Elusive Racing shop in Clayton South"
+              className="ap-story-img"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>

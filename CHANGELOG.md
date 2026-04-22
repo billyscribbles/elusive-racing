@@ -13,3 +13,4 @@
 - On the checkout page you'll now see a small "Add to your order" row with a handful of our merch — tap Add to drop one in without leaving the page.
 - On the wholesale order page, the brand filter is now a searchable dropdown — start typing a brand name to narrow the list instead of scrolling through all of them.
 - On the wholesale order page, the category filter is now a searchable dropdown too — start typing a category (like "pistons" or "exhaust") to jump straight to it.
+- Added a photo of the Clayton South shop interior alongside the "How We Got Here" timeline on the About page.
