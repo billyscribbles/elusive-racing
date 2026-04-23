@@ -184,6 +184,35 @@
 .pp-paypal-wrap { margin-top: 18px; }
 .pp-paypal-wrap .pp-error { margin-top: 12px; }
 
+/* Afterpay redirect-flow button */
+.pp-afterpay-wrap { margin-top: 18px; }
+.pp-afterpay-blurb {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--color-mid);
+  line-height: 1.5;
+}
+.pp-afterpay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #B2FCE4;
+  color: #000;
+  border: 1px solid #9af0d0;
+  border-radius: 6px;
+  font-family: var(--font-primary);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.pp-afterpay-btn:hover:not(:disabled) { background: #9ff4d5; }
+.pp-afterpay-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.pp-afterpay-wrap .pp-error { margin-top: 12px; }
+
 /* Stripe loading/error states */
 .pp-stripe-loading {
   display: flex;
@@ -544,6 +573,19 @@
   .pp-summary-col { position: static; }
 }
 
+/* Stack payment tabs vertically below 768px — with 4 tabs (Stripe, PayPal,
+   Afterpay, BACS) the horizontal layout gets cramped on tablets and phones. */
+@media (max-width: 768px) {
+  .pp-method-tabs { flex-direction: column; }
+  .pp-method-tab {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    justify-content: flex-start;
+    padding: 12px 14px;
+  }
+  .pp-method-tab:last-child { border-bottom: none; }
+}
+
 @media (max-width: 480px) {
   .pp-title { font-size: 22px; }
   .pp-row-2 { grid-template-columns: 1fr; }
@@ -562,14 +604,4 @@
 
   /* Bank key column narrower on small screens */
   .pp-bank-key { min-width: 80px; }
-
-  /* Stack the 3 payment tabs vertically on small phones so long labels fit */
-  .pp-method-tabs { flex-direction: column; }
-  .pp-method-tab {
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-    justify-content: flex-start;
-    padding: 12px 14px;
-  }
-  .pp-method-tab:last-child { border-bottom: none; }
 }

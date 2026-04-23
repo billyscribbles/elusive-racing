@@ -3,17 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import { placeOrder, capturePayPalOrder, syncProductsToSearch, checkStock } from '../lib/woocommerce';
+import { placeOrder, capturePayPalOrder, createAfterpayCheckout, syncProductsToSearch, checkStock } from '../lib/woocommerce';
 import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Building2, Wallet } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
+import AfterpayLogo from '../components/ui/AfterpayLogo';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
 import { formatPrice } from '../lib/formatPrice';
 import bacsConfig from '../../data/bacs-config.json';
+import afterpayConfig from '../../data/afterpay-config.json';
 import './PaymentPage.css';
 
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
+const PAYPAL_CLIENT_ID    = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
+const AFTERPAY_ENABLED    = import.meta.env.VITE_AFTERPAY_ENABLED === '1';
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
@@ -111,6 +114,7 @@ function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment,
   const paymentMethodLabel =
     paymentMethod === 'stripe_cc' ? 'Credit Card (Stripe)' :
     paymentMethod === 'paypal'    ? 'PayPal' :
+    paymentMethod === 'afterpay'  ? 'Afterpay' :
     'Direct Bank Transfer';
   return {
     orderId:            wcResponse?.order_id ?? wcResponse?.id ?? wcResponse?.wcOrderId ?? (paymentIntentId ? `PI-${paymentIntentId.slice(-10)}` : `ER-${Date.now()}`),
@@ -421,13 +425,99 @@ function PayPalForm({ totalCents }) {
   );
 }
 
+// ── Afterpay form ─────────────────────────────────────────────────────────────
+// Redirect flow: we call our server to create a hosted checkout, stash the
+// token in persistent checkout state (so the return page can capture against
+// it), then hard-redirect the browser to Afterpay. Afterpay bounces the user
+// back to /checkout/afterpay-return where the capture + WC order creation
+// happens. See AfterpayReturnPage.jsx for the other half.
+function AfterpayForm({ totalCents }) {
+  const { items } = useCartStore();
+  const { contact, shipping, fulfillment, freight, setAfterpayOrderToken } = useCheckoutStore();
+  const [error, setError] = useState(null);
+  const [busy,  setBusy]  = useState(false);
+
+  const minCents = afterpayConfig.minCents ?? 100;
+  const maxCents = afterpayConfig.maxCents ?? 200000;
+  const outOfRange = totalCents < minCents || totalCents > maxCents;
+
+  async function handleClick() {
+    if (busy) return;
+    setError(null);
+    setBusy(true);
+    try {
+      // Stock recheck before we even ask Afterpay to create the checkout.
+      const stockResult = await checkStock(items);
+      if (!stockResult.ok && stockResult.issues?.length) {
+        const lines = stockResult.issues.map((i) => {
+          if (i.reason === 'out_of_stock') return `• ${i.name}: out of stock`;
+          if (i.reason === 'insufficient_stock') return `• ${i.name}: only ${i.available} in stock (you have ${i.requested})`;
+          if (i.reason === 'not_found') return `• ${i.name}: no longer available`;
+          return `• ${i.name}: unavailable`;
+        }).join('\n');
+        setError(`Some items in your cart are no longer available:\n${lines}\n\nPlease adjust your cart and try again.`);
+        setBusy(false);
+        return;
+      }
+
+      const { orderToken, redirectCheckoutUrl } = await createAfterpayCheckout({
+        amountCents: totalCents,
+        items, contact, shipping, fulfillment, freight,
+      });
+      if (!orderToken || !redirectCheckoutUrl) {
+        setError('Could not start Afterpay payment. Please try another method.');
+        setBusy(false);
+        return;
+      }
+      setAfterpayOrderToken(orderToken);
+      window.location.href = redirectCheckoutUrl;
+    } catch (err) {
+      if (err?.status === 409 && err.issues?.length) {
+        const lines = err.issues.map((i) => {
+          if (i.reason === 'out_of_stock') return `• ${i.name}: out of stock`;
+          if (i.reason === 'insufficient_stock') return `• ${i.name}: only ${i.available} in stock (you have ${i.requested})`;
+          if (i.reason === 'not_found') return `• ${i.name}: no longer available`;
+          return `• ${i.name}: unavailable`;
+        }).join('\n');
+        setError(`Some items in your cart are no longer available:\n${lines}\n\nPlease adjust your cart and try again.`);
+      } else {
+        setError(err?.message || 'Could not start Afterpay payment. Please try another method.');
+      }
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="pp-afterpay-wrap">
+      <p className="pp-afterpay-blurb">
+        Buy now, pay in 4 interest-free instalments. You'll be redirected to Afterpay to complete your order.
+      </p>
+      {outOfRange && (
+        <div className="pp-error">
+          <AlertCircle size={15} /> Afterpay is available for orders between {formatPrice(minCents / 100)} and {formatPrice(maxCents / 100)}.
+        </div>
+      )}
+      <button
+        type="button"
+        className="pp-afterpay-btn"
+        onClick={handleClick}
+        disabled={busy || outOfRange || totalCents <= 0}
+      >
+        <AfterpayLogo width={56} height={26} />
+        <span>{busy ? 'Redirecting…' : 'Pay with Afterpay'}</span>
+      </button>
+      {error && <div className="pp-error"><AlertCircle size={15} /> {error}</div>}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function PaymentPage() {
   const { items }    = useCartStore();
   const { contact, freight, fulfillment } = useCheckoutStore();
   const navigate     = useNavigate();
 
-  const [method,       setMethod]       = useState('stripe'); // 'stripe' | 'bacs' | 'paypal'
+  const [method,       setMethod]       = useState('stripe'); // 'stripe' | 'bacs' | 'paypal' | 'afterpay'
   const [clientSecret, setClientSecret] = useState(null);
   const [piError,      setPiError]      = useState(null);
 
@@ -533,6 +623,15 @@ export default function PaymentPage() {
                 >
                   <Wallet size={15} /> PayPal
                 </button>
+                {AFTERPAY_ENABLED && (
+                  <button
+                    type="button"
+                    className={`pp-method-tab${method === 'afterpay' ? ' active' : ''}`}
+                    onClick={() => setMethod('afterpay')}
+                  >
+                    <AfterpayLogo width={40} height={20} /> Afterpay
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`pp-method-tab${method === 'bacs' ? ' active' : ''}`}
@@ -562,6 +661,9 @@ export default function PaymentPage() {
 
               {/* PayPal — Smart Buttons (server-side create + capture) */}
               {method === 'paypal' && <PayPalForm totalCents={totalCents} />}
+
+              {/* Afterpay — redirect flow (browser leaves, returns to /checkout/afterpay-return) */}
+              {method === 'afterpay' && AFTERPAY_ENABLED && <AfterpayForm totalCents={totalCents} />}
 
               {/* Direct bank transfer */}
               {method === 'bacs' && <BacsForm onSuccess={() => {}} />}

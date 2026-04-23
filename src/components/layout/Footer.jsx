@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Truck, Phone, Mail, MapPin, Clock } from 'lucide-react';
+import AfterpayLogo from '../ui/AfterpayLogo';
 import './Footer.css';
 
 const BrandIcon = ({ src, size = 18 }) => (
@@ -167,10 +168,7 @@ export default function Footer() {
               <Suspense fallback={null}><PaymentIcons /></Suspense>
               {/* Afterpay — not in library, custom SVG */}
               <span className="payment-chip">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 38" width="52" height="33" role="img" aria-label="Afterpay">
-                  <rect width="60" height="38" rx="5" fill="#B2FCE4"/>
-                  <text x="30" y="24" textAnchor="middle" fill="#000" fontFamily="Arial,sans-serif" fontWeight="800" fontSize="11">afterpay</text>
-                </svg>
+                <AfterpayLogo />
               </span>
               {/* Apple Pay */}
               <span className="payment-chip payment-chip--apple">

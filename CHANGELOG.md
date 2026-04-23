@@ -21,3 +21,4 @@
 - When editing a product in the admin, the Make, Model and Year fields are now searchable dropdowns — pick from the existing list instead of typing free text, and selecting a Make narrows the Model choices to that brand's models.
 - Made the cart drawer fit comfortably on small phones — it used to cover almost the entire screen with no space left to tap outside to close.
 - Added PayPal as a payment option at checkout alongside card and bank transfer.
+- Added Afterpay as a payment option at checkout — buy now, pay in four interest-free instalments.

@@ -763,6 +763,49 @@ export async function capturePayPalOrder({ paypalOrderId, items, contact, shippi
   return data; // { wcOrderId, captureId }
 }
 
+// Afterpay — create a hosted checkout. Returns { orderToken, redirectCheckoutUrl }
+// on success. The UI sends `origin: window.location.origin` so the redirect
+// returns to the same host the user is on (works in dev + prod).
+export async function createAfterpayCheckout({ amountCents, items, contact, shipping, fulfillment, freight }) {
+  const r = await fetch('/api/afterpay/create-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      amountCents, items, contact, shipping, fulfillment, freight,
+      origin: typeof window !== 'undefined' ? window.location.origin : '',
+    }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const err = new Error(data?.message || data?.error || `Afterpay checkout failed (${r.status})`);
+    err.status = r.status;
+    err.issues = data?.issues || null;
+    err.code   = data?.error  || null;
+    throw err;
+  }
+  return data; // { orderToken, redirectCheckoutUrl, expires }
+}
+
+// Afterpay — capture + create WC order. Mirrors capturePayPalOrder's error
+// contract: thrown error carries paymentId on orphan cases so the UI can tell
+// the user exactly which ID to quote to support.
+export async function captureAfterpayPayment({ orderToken, items, contact, shipping, fulfillment, freight }) {
+  const r = await fetch('/api/afterpay/capture-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderToken, items, contact, shipping, fulfillment, freight }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const err = new Error(data?.message || data?.error || `Afterpay capture failed (${r.status})`);
+    err.status = r.status;
+    err.paymentId = data?.paymentId || null;
+    err.issues = data?.issues || null;
+    throw err;
+  }
+  return data; // { wcOrderId, paymentId }
+}
+
 // Tell the server to re-sync ordered product stock to Meilisearch (fire-and-forget).
 export function syncProductsToSearch(productIds) {
   if (!productIds?.length) return;

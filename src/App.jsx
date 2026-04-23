@@ -44,6 +44,7 @@ const ShopPage = lazy(() => import('./pages/ShopPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const AfterpayReturnPage = lazy(() => import('./pages/AfterpayReturnPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const BrandsPage = lazy(() => import('./pages/BrandsPage'));
 const BookingPage = lazy(() => import('./pages/BookingPage'));
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/checkout"         element={<CheckoutPage />} />
           <Route path="/checkout/contact" element={<ContactPage />} />
           <Route path="/checkout/payment" element={<PaymentPage />} />
+          <Route path="/checkout/afterpay-return" element={<AfterpayReturnPage />} />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

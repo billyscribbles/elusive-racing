@@ -35,6 +35,18 @@ const PAYPAL_BASE      = PAYPAL_ENV === 'live'
   ? 'https://api-m.paypal.com'
   : 'https://api-m.sandbox.paypal.com';
 
+// ── Afterpay config ──────────────────────────────────────────────────────────
+// AFTERPAY_ENV=sandbox|live. Uses the AU region global base URLs. Credentials
+// are merchant ID + secret, used as HTTP Basic auth on every API call. While
+// keys are not yet set, all /api/afterpay/* routes return 500 and the frontend
+// tab is hidden (gated by VITE_AFTERPAY_ENABLED).
+const AFTERPAY_ENV         = (process.env.AFTERPAY_ENV || 'sandbox').toLowerCase();
+const AFTERPAY_MERCHANT_ID = process.env.AFTERPAY_MERCHANT_ID || '';
+const AFTERPAY_SECRET      = process.env.AFTERPAY_SECRET      || '';
+const AFTERPAY_BASE        = AFTERPAY_ENV === 'live'
+  ? 'https://global-api.afterpay.com'
+  : 'https://global-api-sandbox.afterpay.com';
+
 // Prefer non-VITE names; fall back to legacy VITE_ names for backwards compat.
 // Frontend now reaches WC REST only via /api/wc/* — the consumer key/secret must
 // NEVER be exposed as a VITE_ var because Vite bakes those into the client bundle.
@@ -84,6 +96,14 @@ const IS_PROD = process.env.NODE_ENV === 'production';
   if (!PAYPAL_SECRET)    errors.push('PAYPAL_SECRET is not set');
   if (PAYPAL_ENV !== 'live') {
     errors.push(`PAYPAL_ENV is '${PAYPAL_ENV}' in production — must be 'live'`);
+  }
+  // Afterpay — warn-only until keys are handed over. Boot still succeeds so the
+  // rest of the site works; the /api/afterpay/* handlers will 500 if called.
+  // Once keys are in place, move these checks into `errors` to hard-fail.
+  if (!AFTERPAY_MERCHANT_ID) console.warn('[BOOT] AFTERPAY_MERCHANT_ID is not set — Afterpay checkout will be unavailable');
+  if (!AFTERPAY_SECRET)      console.warn('[BOOT] AFTERPAY_SECRET is not set — Afterpay checkout will be unavailable');
+  if (AFTERPAY_MERCHANT_ID && AFTERPAY_ENV !== 'live') {
+    console.warn(`[BOOT] AFTERPAY_ENV is '${AFTERPAY_ENV}' in production — must be 'live' before going live`);
   }
   if (errors.length) {
     console.error('\n[BOOT] Refusing to start — production config errors:');
@@ -2586,6 +2606,269 @@ async function handleCapturePayPalOrder(req, res) {
   });
 }
 
+// ── Afterpay ──────────────────────────────────────────────────────────────────
+// Redirect flow. Frontend calls /api/afterpay/create-checkout → we create an
+// Afterpay checkout, return `{ redirectCheckoutUrl, orderToken }`. Browser
+// redirects to Afterpay; on success Afterpay bounces back to
+// /checkout/afterpay-return?status=SUCCESS&orderToken=... which then calls
+// /api/afterpay/capture-payment to take the money and create the WC order.
+//
+// Auth is HTTP Basic: base64(merchantId:secret). Orders are quoted in AUD.
+function afterpayAuth() {
+  return 'Basic ' + Buffer.from(`${AFTERPAY_MERCHANT_ID}:${AFTERPAY_SECRET}`).toString('base64');
+}
+
+async function handleCreateAfterpayCheckout(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  if (!AFTERPAY_MERCHANT_ID || !AFTERPAY_SECRET) {
+    res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ error: 'Afterpay not configured' }));
+    return;
+  }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { amountCents, items, contact, shipping, fulfillment, freight, origin } = JSON.parse(body || '{}');
+      if (!Array.isArray(items) || items.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'items[] required' }));
+        return;
+      }
+
+      // 1. Stock recheck — cheap; saves a failed capture if stock has moved.
+      const stock = await checkStockInline(items);
+      if (!stock.ok) {
+        res.writeHead(409, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'stock_changed', issues: stock.issues }));
+        return;
+      }
+
+      // 2. Build Afterpay request body.
+      const cents = Math.max(1, Math.round(Number(amountCents) || 0));
+      const totalValue = (cents / 100).toFixed(2);
+      const shippingAmt = fulfillment === 'collect' ? 0 : Number(freight?.price ?? 0);
+
+      const consumer = {
+        email:      contact?.email || '',
+        givenNames: contact?.firstName || '',
+        surname:    contact?.lastName  || '',
+        phoneNumber: contact?.phone || undefined,
+      };
+
+      const addr = fulfillment === 'delivery' ? {
+        name:        `${contact?.firstName || ''} ${contact?.lastName || ''}`.trim(),
+        line1:       shipping?.address1 || '',
+        line2:       shipping?.address2 || '',
+        area1:       shipping?.city     || '',
+        region:      shipping?.state    || '',
+        postcode:    shipping?.postcode || '',
+        countryCode: 'AU',
+        phoneNumber: contact?.phone || undefined,
+      } : {
+        name:        `${contact?.firstName || ''} ${contact?.lastName || ''}`.trim(),
+        line1:       '1/32 Graham Rd',
+        area1:       'Clayton South',
+        region:      'VIC',
+        postcode:    '3169',
+        countryCode: 'AU',
+      };
+
+      const apItems = items.slice(0, 100).map((it) => ({
+        name:     (it.name || '').slice(0, 255),
+        sku:      (it.sku || '').toString().slice(0, 128),
+        quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+        price:    { amount: Number(it.price || 0).toFixed(2), currency: 'AUD' },
+      }));
+
+      // Trust the origin from the request (falls back to Referer) so the
+      // redirect returns to the same host the user is on (localhost in dev,
+      // elusiveracing.com.au in prod).
+      const baseOrigin = (origin && /^https?:\/\//.test(origin) ? origin : '') || (() => {
+        try { return new URL(req.headers.referer).origin; } catch { return ''; }
+      })();
+      const returnBase = `${baseOrigin || ''}/checkout/afterpay-return`;
+
+      const apBody = {
+        amount:              { amount: totalValue, currency: 'AUD' },
+        consumer,
+        billing:             addr,
+        shipping:            addr,
+        items:               apItems,
+        merchant: {
+          redirectConfirmUrl: `${returnBase}?status=SUCCESS`,
+          redirectCancelUrl:  `${returnBase}?status=CANCELLED`,
+        },
+        merchantReference:   `ER-${Date.now()}`,
+        taxAmount:           { amount: '0.00', currency: 'AUD' }, // AU prices already include GST
+        shippingAmount:      { amount: shippingAmt.toFixed(2), currency: 'AUD' },
+      };
+
+      const r = await fetch(`${AFTERPAY_BASE}/v2/checkouts`, {
+        method: 'POST',
+        headers: { Authorization: afterpayAuth(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(apBody),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.token) {
+        console.error('[afterpay] create-checkout failed:', r.status, data);
+        res.writeHead(r.status || 500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({
+          error:   data?.errorCode || data?.message || 'Afterpay checkout creation failed',
+          message: data?.message   || null,
+        }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({
+        orderToken:          data.token,
+        redirectCheckoutUrl: data.redirectCheckoutUrl,
+        expires:             data.expires || null,
+      }));
+    } catch (err) {
+      console.error('[afterpay] create-checkout error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+async function handleCaptureAfterpayPayment(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  if (!AFTERPAY_MERCHANT_ID || !AFTERPAY_SECRET) {
+    res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ error: 'Afterpay not configured' }));
+    return;
+  }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    let paymentId = null;
+    try {
+      const { orderToken, items, contact, shipping, fulfillment, freight } = JSON.parse(body || '{}');
+      if (!orderToken || !Array.isArray(items) || items.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'orderToken and items[] are required' }));
+        return;
+      }
+
+      // 1. Stock recheck.
+      const stock = await checkStockInline(items);
+      if (!stock.ok) {
+        res.writeHead(409, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'stock_changed', issues: stock.issues }));
+        return;
+      }
+
+      // 2. Capture Afterpay payment.
+      const capRes = await fetch(`${AFTERPAY_BASE}/v2/payments/capture`, {
+        method: 'POST',
+        headers: { Authorization: afterpayAuth(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: orderToken }),
+      });
+      const capData = await capRes.json().catch(() => ({}));
+      if (!capRes.ok || capData.status !== 'APPROVED') {
+        console.error('[afterpay] capture failed:', capRes.status, capData);
+        res.writeHead(capRes.status || 500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: capData?.errorCode || capData?.message || 'Afterpay capture failed' }));
+        return;
+      }
+      paymentId = capData.id || null;
+
+      // 3. Build addresses.
+      const addr = fulfillment === 'delivery' ? {
+        address_1: shipping?.address1 || '',
+        address_2: shipping?.address2 || '',
+        city:      shipping?.city     || '',
+        state:     shipping?.state    || '',
+        postcode:  shipping?.postcode || '',
+        country:   'AU',
+      } : {
+        address_1: '1/32 Graham Rd',
+        address_2: '',
+        city:      'Clayton South',
+        state:     'VIC',
+        postcode:  '3169',
+        country:   'AU',
+      };
+      const billing = {
+        first_name: contact?.firstName || '',
+        last_name:  contact?.lastName  || '',
+        email:      contact?.email     || '',
+        phone:      contact?.phone     || '',
+        ...addr,
+      };
+      const ship = {
+        first_name: contact?.firstName || '',
+        last_name:  contact?.lastName  || '',
+        ...addr,
+      };
+
+      // 4. Build line items and shipping line.
+      const line_items = items.map((item) => {
+        const productId = parseInt(item.id, 10);
+        const variationId = item.variantId && item.variantId !== item.id
+          ? parseInt(item.variantId, 10)
+          : null;
+        const li = { product_id: productId, quantity: Math.max(1, parseInt(item.quantity, 10) || 1) };
+        if (variationId) li.variation_id = variationId;
+        return li;
+      });
+
+      const shippingTotal = fulfillment === 'collect' ? 0 : Number(freight?.price ?? 0);
+      const shippingLabel = fulfillment === 'collect' ? 'Click & Collect' : (freight?.label || 'Shipping');
+      const shipping_lines = fulfillment === 'collect' ? [] : [{
+        method_id:    'flat_rate',
+        method_title: shippingLabel,
+        total:        shippingTotal.toFixed(2),
+      }];
+
+      // 5. Create a paid Woo order.
+      const wcRes = await fetch(`${WC_URL}/wp-json/wc/v3/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body: JSON.stringify({
+          payment_method:       'afterpay',
+          payment_method_title: 'Afterpay',
+          set_paid:             true,
+          status:               'processing',
+          billing,
+          shipping: ship,
+          line_items,
+          shipping_lines,
+          meta_data: [
+            { key: '_afterpay_order_token', value: orderToken },
+            { key: '_afterpay_payment_id',  value: paymentId || '' },
+            { key: '_afterpay_env',         value: AFTERPAY_ENV },
+          ],
+        }),
+      });
+      const wcData = await wcRes.json();
+      if (!wcRes.ok || !wcData.id) {
+        console.error('[afterpay][ORPHAN] Capture succeeded but WC order creation failed', {
+          orderToken, paymentId, status: wcRes.status, body: wcData,
+        });
+        res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({
+          error:   'order_create_failed',
+          orderToken,
+          paymentId,
+          message: 'Payment was captured but we could not create your order. Please contact support with the payment ID.',
+        }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ wcOrderId: wcData.id, paymentId }));
+    } catch (err) {
+      console.error('[afterpay] capture-payment error:', err.message, paymentId ? `(paymentId=${paymentId})` : '');
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: err.message, paymentId }));
+    }
+  });
+}
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
@@ -2750,6 +3033,8 @@ const server = http.createServer((req, res) => {
   // PayPal order creation + capture
   if (req.url === '/api/paypal/create-order')  { handleCreatePayPalOrder(req, res);  return; }
   if (req.url === '/api/paypal/capture-order') { handleCapturePayPalOrder(req, res); return; }
+  if (req.url === '/api/afterpay/create-checkout') { handleCreateAfterpayCheckout(req, res); return; }
+  if (req.url === '/api/afterpay/capture-payment') { handleCaptureAfterpayPayment(req, res); return; }
 
   // CORS preflight
   if (req.method === 'OPTIONS') {
