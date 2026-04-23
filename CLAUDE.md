@@ -21,6 +21,27 @@
 
 ---
 
+## WordPress Plugin Updates
+
+Plugins live in `wp-plugin/<plugin-name>/` and are deployed to production WooCommerce by uploading a zip through WP admin.
+
+**Whenever PHP inside `wp-plugin/` changes, always do this:**
+
+1. **Bump the plugin version** in the `Plugin Name` header comment (e.g. `Version: 1.2.0`). Never ship a PHP change without a version bump — WP admin's "Replace current with uploaded" flow uses it to show the user what they're overwriting.
+2. **Syntax-check locally** with `/opt/homebrew/bin/php -l <file>.php`. Refuse to package a zip if this fails.
+3. **Unit-test any new crypto or token logic** in a standalone PHP script before packaging — stub out WP functions (`wp_salt`, `WP_REST_Response`, etc.), feed known inputs, assert the expected outputs. Delete the test file after.
+4. **Rebuild the zip** at `wp-plugin/<plugin-name>.zip`, preserving the `<plugin-name>/` top-level directory inside:
+   ```bash
+   cd wp-plugin && rm -f <plugin-name>.zip && zip -r <plugin-name>.zip <plugin-name>/ -x "*.DS_Store"
+   ```
+5. **Install via WP admin, not SFTP/file editor.** Plugins → Add New → Upload Plugin → pick the zip → WP detects the existing install and offers **"Replace current with uploaded"** — this is an atomic swap with no deactivation gap.
+6. **Smoke-test on production** before anything on the Node side is restarted. Run `curl` against each existing plugin route to confirm none regressed, then test any newly-added routes.
+7. **Rollback plan** is always: rebuild the zip from the previous git SHA and re-upload via the same Replace flow.
+
+Never instruct the user to edit plugin files via WP's built-in file editor or SFTP for a change we authored — always hand them the zip and the Replace flow.
+
+---
+
 ## Changelog
 
 Maintain a `CHANGELOG.md` at the repo root that reads like a product update note for a non-technical stakeholder (imagine the user's boss reading it).
