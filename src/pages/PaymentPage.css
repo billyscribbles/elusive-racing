@@ -180,6 +180,10 @@
 .pp-method-tab:hover { background: #f0f0f0; color: var(--color-dark); }
 .pp-method-tab.active { background: var(--color-dark); color: #fff; }
 
+/* PayPal Smart Buttons container */
+.pp-paypal-wrap { margin-top: 18px; }
+.pp-paypal-wrap .pp-error { margin-top: 12px; }
+
 /* Stripe loading/error states */
 .pp-stripe-loading {
   display: flex;
@@ -558,4 +562,14 @@
 
   /* Bank key column narrower on small screens */
   .pp-bank-key { min-width: 80px; }
+
+  /* Stack the 3 payment tabs vertically on small phones so long labels fit */
+  .pp-method-tabs { flex-direction: column; }
+  .pp-method-tab {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    justify-content: flex-start;
+    padding: 12px 14px;
+  }
+  .pp-method-tab:last-child { border-bottom: none; }
 }

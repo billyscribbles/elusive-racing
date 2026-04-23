@@ -510,6 +510,38 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@paypal/paypal-js@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@paypal/paypal-js@npm:9.6.0"
+  dependencies:
+    promise-polyfill: "npm:^8.3.0"
+  checksum: 10c0/f7f771c6abb595400627e50a6fe41a252c7aac451d06e0fba85b7ee01d288888dc5b043888ebb660e8c49b8ea3e761d3ff19f7931c21ace03f4ccd7a6a35ee8d
+  languageName: node
+  linkType: hard
+
+"@paypal/react-paypal-js@npm:^9.1.1":
+  version: 9.1.1
+  resolution: "@paypal/react-paypal-js@npm:9.1.1"
+  dependencies:
+    "@paypal/paypal-js": "npm:^9.6.0"
+    "@paypal/sdk-constants": "npm:^1.0.122"
+    server-only: "npm:^0.0.1"
+  peerDependencies:
+    react: ^16.8.0 || ^17 || ^18 || ^19
+    react-dom: ^16.8.0 || ^17 || ^18 || ^19
+  checksum: 10c0/9281d6044dec9252e862ba9fe29036adaba85c5f499412c30d26b1a884d856d0dc023c1db900a0c0291df46d35be80ee909e0d1b4bbbc38b1a08c92d82b9e1cc
+  languageName: node
+  linkType: hard
+
+"@paypal/sdk-constants@npm:^1.0.122":
+  version: 1.0.157
+  resolution: "@paypal/sdk-constants@npm:1.0.157"
+  dependencies:
+    hi-base32: "npm:^0.5.0"
+  checksum: 10c0/a7a8a15ec7ef0f08d08ad09bf4df8765b178cdc6e7f32e48ceee0bbf9faa98f627e134ea03e6d6b10b3f3412809b93ee52434c18d75e5520283a6faacee7eb79
+  languageName: node
+  linkType: hard
+
 "@remix-run/router@npm:1.23.2":
   version: 1.23.2
   resolution: "@remix-run/router@npm:1.23.2"
@@ -1320,6 +1352,7 @@ __metadata:
   resolution: "elusive-racing@workspace:."
   dependencies:
     "@anthropic-ai/sdk": "npm:^0.80.0"
+    "@paypal/react-paypal-js": "npm:^9.1.1"
     "@stripe/react-stripe-js": "npm:^6.0.0"
     "@stripe/stripe-js": "npm:^9.0.0"
     "@tinymce/tinymce-react": "npm:^6.3.0"
@@ -1618,6 +1651,13 @@ __metadata:
   version: 4.0.0
   resolution: "has-flag@npm:4.0.0"
   checksum: 10c0/2e789c61b7888d66993e14e8331449e525ef42aac53c627cc53d1c3334e768bcb6abdc4f5f0de1478a25beec6f0bd62c7549058b7ac53e924040d4f301f02fd1
+  languageName: node
+  linkType: hard
+
+"hi-base32@npm:^0.5.0":
+  version: 0.5.1
+  resolution: "hi-base32@npm:0.5.1"
+  checksum: 10c0/45adb99249b04108fd689cb344f4b625b49d0518327117c34c403dbaf4723aaefb2a1bde6d7a0288ff0f835970d0f844a3ae103534dc237c99b8552a0e689177
   languageName: node
   linkType: hard
 
@@ -2260,6 +2300,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"promise-polyfill@npm:^8.3.0":
+  version: 8.3.0
+  resolution: "promise-polyfill@npm:8.3.0"
+  checksum: 10c0/97141f07a31a6be135ec9ed53700a3423a771cabec0ba5e08fcb2bf8cfda855479ff70e444fceb938f560be42b450cd032c14f4a940ed2ad1e5b4dcb78368dce
+  languageName: node
+  linkType: hard
+
 "prop-types@npm:^15.6.2, prop-types@npm:^15.7.2":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
@@ -2636,6 +2683,13 @@ __metadata:
   bin:
     serve: build/main.js
   checksum: 10c0/7e1668e0d187719dbe4f3de967012ce2263c967f6135d9c630f803b0f173334e1442ab326fcc4c8e6cd4e293d8bd8c773aebab2746ecaa0fb1ab29a36079763b
+  languageName: node
+  linkType: hard
+
+"server-only@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "server-only@npm:0.0.1"
+  checksum: 10c0/4704f0ef85da0be981af6d4ed8e739d39bcfd265b9c246a684060acda5642d0fdc6daffc2308e71e2682c5f508090978802eae0a77623c9b90a49f9ae68048d6
   languageName: node
   linkType: hard
 

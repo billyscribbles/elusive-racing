@@ -12,7 +12,7 @@ import { Meilisearch } from 'meilisearch';
 try {
   const envFile = fs.readFileSync(new URL('.env', import.meta.url), 'utf8');
   for (const line of envFile.split('\n')) {
-    const match = line.match(/^([^#=\s]+)\s*=\s*(.*)$/);
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
     if (match && process.env[match[1]] === undefined) process.env[match[1]] = match[2].trim();
   }
 } catch { /* .env is optional */ }
@@ -23,6 +23,17 @@ const PORT = process.env.PORT || 8080;
 
 const anthropic   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripeClient = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+
+// ── PayPal config ────────────────────────────────────────────────────────────
+// PAYPAL_ENV=sandbox|live. The REST base and the frontend SDK's `client-id` must
+// agree — the frontend reads its own VITE_PAYPAL_CLIENT_ID, so keep both in sync
+// when flipping environments.
+const PAYPAL_ENV       = (process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
+const PAYPAL_SECRET    = process.env.PAYPAL_SECRET    || '';
+const PAYPAL_BASE      = PAYPAL_ENV === 'live'
+  ? 'https://api-m.paypal.com'
+  : 'https://api-m.sandbox.paypal.com';
 
 // Prefer non-VITE names; fall back to legacy VITE_ names for backwards compat.
 // Frontend now reaches WC REST only via /api/wc/* — the consumer key/secret must
@@ -68,6 +79,11 @@ const IS_PROD = process.env.NODE_ENV === 'production';
   }
   if (ALLOWED_ORIGINS.length === 0) {
     errors.push('ALLOWED_ORIGINS is not set — refuse to start with wildcard CORS in production');
+  }
+  if (!PAYPAL_CLIENT_ID) errors.push('PAYPAL_CLIENT_ID is not set');
+  if (!PAYPAL_SECRET)    errors.push('PAYPAL_SECRET is not set');
+  if (PAYPAL_ENV !== 'live') {
+    errors.push(`PAYPAL_ENV is '${PAYPAL_ENV}' in production — must be 'live'`);
   }
   if (errors.length) {
     console.error('\n[BOOT] Refusing to start — production config errors:');
@@ -2321,6 +2337,255 @@ async function handleCreatePaymentIntent(req, res) {
   });
 }
 
+// ── PayPal ────────────────────────────────────────────────────────────────────
+// OAuth token is cached in-process until ~60 s before expiry. PayPal tokens last
+// ~9 h so this is effectively free after the first request per dyno.
+let _ppTokenCache = { token: null, expiresAt: 0 };
+async function getPayPalAccessToken() {
+  const now = Date.now();
+  if (_ppTokenCache.token && now < _ppTokenCache.expiresAt - 60_000) {
+    return _ppTokenCache.token;
+  }
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
+    throw new Error('PayPal credentials not configured');
+  }
+  const basic = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString('base64');
+  const r = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basic}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(`PayPal OAuth failed: ${r.status} ${text.slice(0, 200)}`);
+  }
+  const data = await r.json();
+  _ppTokenCache = {
+    token: data.access_token,
+    expiresAt: now + (data.expires_in || 3600) * 1000,
+  };
+  return data.access_token;
+}
+
+async function handleCreatePayPalOrder(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'PayPal not configured' }));
+    return;
+  }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { amountCents } = JSON.parse(body || '{}');
+      const cents = Math.max(1, Math.round(Number(amountCents) || 0));
+      const value = (cents / 100).toFixed(2);
+      const token = await getPayPalAccessToken();
+      const r = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intent: 'CAPTURE',
+          purchase_units: [{
+            amount: { currency_code: 'AUD', value },
+          }],
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok || !data.id) {
+        console.error('[paypal] create-order failed:', r.status, data);
+        res.writeHead(r.status || 500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: data?.message || 'PayPal order creation failed' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ paypalOrderId: data.id }));
+    } catch (err) {
+      console.error('[paypal] create-order error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+// Re-check stock against Woo. Shares logic with handleCheckStock but callable inline.
+// Returns { ok: bool, issues: [...] }.
+async function checkStockInline(items) {
+  if (!Array.isArray(items) || items.length === 0) return { ok: true, issues: [] };
+  const issues = [];
+  for (const item of items.slice(0, 100)) {
+    const id = parseInt(item.id, 10);
+    const requested = Math.max(1, parseInt(item.quantity, 10) || 1);
+    if (!id) continue;
+    try {
+      const r = await fetch(
+        `${WC_URL}/wp-json/wc/v3/products/${id}?_fields=id,name,stock_status,stock_quantity,manage_stock`,
+        { headers: { Authorization: wcAuth() } }
+      );
+      if (!r.ok) {
+        issues.push({ id, name: item.name || `Product ${id}`, requested, available: 0, reason: 'not_found' });
+        continue;
+      }
+      const p = await r.json();
+      if (p.stock_status === 'outofstock') {
+        issues.push({ id, name: p.name, requested, available: 0, reason: 'out_of_stock' });
+      } else if (p.manage_stock && typeof p.stock_quantity === 'number' && p.stock_quantity < requested) {
+        issues.push({ id, name: p.name, requested, available: p.stock_quantity, reason: 'insufficient_stock' });
+      }
+    } catch (err) {
+      // Fail open on transient errors — Woo will reject the order if truly out of stock.
+      console.error(`[paypal:stock] product ${id} lookup failed:`, err.message);
+    }
+  }
+  return { ok: issues.length === 0, issues };
+}
+
+async function handleCapturePayPalOrder(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'PayPal not configured' }));
+    return;
+  }
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    let captureId = null;
+    try {
+      const { paypalOrderId, items, contact, shipping, fulfillment, freight } = JSON.parse(body || '{}');
+      if (!paypalOrderId || !Array.isArray(items) || items.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'paypalOrderId and items[] are required' }));
+        return;
+      }
+
+      // 1. Stock recheck — refuse to capture if anything's out of stock.
+      const stock = await checkStockInline(items);
+      if (!stock.ok) {
+        res.writeHead(409, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'stock_changed', issues: stock.issues }));
+        return;
+      }
+
+      // 2. Capture the PayPal order.
+      const token = await getPayPalAccessToken();
+      const capRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const capData = await capRes.json();
+      if (!capRes.ok || capData.status !== 'COMPLETED') {
+        console.error('[paypal] capture failed:', capRes.status, capData);
+        res.writeHead(capRes.status || 500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: capData?.message || 'PayPal capture failed' }));
+        return;
+      }
+      captureId = capData?.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
+
+      // 3. Build addresses (same shape as the Stripe/BACS path via Store API).
+      const addr = fulfillment === 'delivery' ? {
+        address_1: shipping?.address1 || '',
+        address_2: shipping?.address2 || '',
+        city:      shipping?.city     || '',
+        state:     shipping?.state    || '',
+        postcode:  shipping?.postcode || '',
+        country:   'AU',
+      } : {
+        address_1: '1/32 Graham Rd',
+        address_2: '',
+        city:      'Clayton South',
+        state:     'VIC',
+        postcode:  '3169',
+        country:   'AU',
+      };
+      const billing = {
+        first_name: contact?.firstName || '',
+        last_name:  contact?.lastName  || '',
+        email:      contact?.email     || '',
+        phone:      contact?.phone     || '',
+        ...addr,
+      };
+      const ship = {
+        first_name: contact?.firstName || '',
+        last_name:  contact?.lastName  || '',
+        ...addr,
+      };
+
+      // 4. Build line items and shipping line.
+      const line_items = items.map((item) => {
+        const productId = parseInt(item.id, 10);
+        const variationId = item.variantId && item.variantId !== item.id
+          ? parseInt(item.variantId, 10)
+          : null;
+        const li = { product_id: productId, quantity: Math.max(1, parseInt(item.quantity, 10) || 1) };
+        if (variationId) li.variation_id = variationId;
+        return li;
+      });
+
+      const shippingTotal = fulfillment === 'collect' ? 0 : Number(freight?.price ?? 0);
+      const shippingLabel = fulfillment === 'collect' ? 'Click & Collect' : (freight?.label || 'Shipping');
+      const shipping_lines = fulfillment === 'collect' ? [] : [{
+        method_id:    'flat_rate',
+        method_title: shippingLabel,
+        total:        shippingTotal.toFixed(2),
+      }];
+
+      // 5. Create a paid Woo order via REST v3 admin.
+      const wcRes = await fetch(`${WC_URL}/wp-json/wc/v3/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body: JSON.stringify({
+          payment_method:       'paypal',
+          payment_method_title: 'PayPal',
+          set_paid:             true,
+          status:               'processing',
+          billing,
+          shipping: ship,
+          line_items,
+          shipping_lines,
+          meta_data: [
+            { key: '_paypal_order_id',   value: paypalOrderId },
+            { key: '_paypal_capture_id', value: captureId || '' },
+            { key: '_paypal_env',        value: PAYPAL_ENV },
+          ],
+        }),
+      });
+      const wcData = await wcRes.json();
+      if (!wcRes.ok || !wcData.id) {
+        // Payment has already been captured — this is a reconciliation case.
+        console.error('[paypal][ORPHAN] Capture succeeded but WC order creation failed', {
+          paypalOrderId, captureId, status: wcRes.status, body: wcData,
+        });
+        res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({
+          error: 'order_create_failed',
+          paypalOrderId,
+          captureId,
+          message: 'Payment was captured but we could not create your order. Please contact support with the capture ID.',
+        }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ wcOrderId: wcData.id, captureId }));
+    } catch (err) {
+      console.error('[paypal] capture-order error:', err.message, captureId ? `(captureId=${captureId})` : '');
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: err.message, captureId }));
+    }
+  });
+}
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
@@ -2481,6 +2746,10 @@ const server = http.createServer((req, res) => {
     handleCreatePaymentIntent(req, res);
     return;
   }
+
+  // PayPal order creation + capture
+  if (req.url === '/api/paypal/create-order')  { handleCreatePayPalOrder(req, res);  return; }
+  if (req.url === '/api/paypal/capture-order') { handleCapturePayPalOrder(req, res); return; }
 
   // CORS preflight
   if (req.method === 'OPTIONS') {

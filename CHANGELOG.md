@@ -20,3 +20,4 @@
 - On your account page, click "Edit details" to update your name, phone and saved addresses without leaving the site. Tick "Same as billing address" to skip filling out shipping.
 - When editing a product in the admin, the Make, Model and Year fields are now searchable dropdowns — pick from the existing list instead of typing free text, and selecting a Make narrows the Model choices to that brand's models.
 - Made the cart drawer fit comfortably on small phones — it used to cover almost the entire screen with no space left to tap outside to close.
+- Added PayPal as a payment option at checkout alongside card and bank transfer.

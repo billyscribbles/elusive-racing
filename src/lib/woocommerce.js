@@ -741,6 +741,28 @@ export async function placeOrder({ items, contact, shipping, fulfillment, paymen
   return result;
 }
 
+// Ask the server to capture a PayPal order and create the corresponding WC order.
+// Returns { wcOrderId, captureId } on success; throws with structured context on
+// failure. The server handles the capture + WC create atomically — if the PayPal
+// capture succeeds but WC fails, the server logs [paypal][ORPHAN] and returns a
+// 502 with the capture ID so the user can be told to contact support.
+export async function capturePayPalOrder({ paypalOrderId, items, contact, shipping, fulfillment, freight }) {
+  const r = await fetch('/api/paypal/capture-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paypalOrderId, items, contact, shipping, fulfillment, freight }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const err = new Error(data?.message || data?.error || `PayPal capture failed (${r.status})`);
+    err.status = r.status;
+    err.captureId = data?.captureId || null;
+    err.issues = data?.issues || null;
+    throw err;
+  }
+  return data; // { wcOrderId, captureId }
+}
+
 // Tell the server to re-sync ordered product stock to Meilisearch (fire-and-forget).
 export function syncProductsToSearch(productIds) {
   if (!productIds?.length) return;

@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { placeOrder, syncProductsToSearch, checkStock } from '../lib/woocommerce';
-import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Building2 } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { placeOrder, capturePayPalOrder, syncProductsToSearch, checkStock } from '../lib/woocommerce';
+import { ArrowLeft, Lock, ShieldCheck, Truck, Store, AlertCircle, CreditCard, Building2, Wallet } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
@@ -11,6 +12,8 @@ import useOrderStore from '../store/orderStore';
 import { formatPrice } from '../lib/formatPrice';
 import bacsConfig from '../../data/bacs-config.json';
 import './PaymentPage.css';
+
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
@@ -105,8 +108,12 @@ function MiniOrderSummary({ shippingCost }) {
 function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod, paymentIntentId = null, needsReconcile = false }) {
   const subtotal     = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shippingCost = fulfillment === 'collect' ? 0 : (freight?.price ?? 0);
+  const paymentMethodLabel =
+    paymentMethod === 'stripe_cc' ? 'Credit Card (Stripe)' :
+    paymentMethod === 'paypal'    ? 'PayPal' :
+    'Direct Bank Transfer';
   return {
-    orderId:            wcResponse?.order_id ?? wcResponse?.id ?? (paymentIntentId ? `PI-${paymentIntentId.slice(-10)}` : `ER-${Date.now()}`),
+    orderId:            wcResponse?.order_id ?? wcResponse?.id ?? wcResponse?.wcOrderId ?? (paymentIntentId ? `PI-${paymentIntentId.slice(-10)}` : `ER-${Date.now()}`),
     orderDate:          new Date().toISOString(),
     customer:           { ...contact },
     shippingAddress:    fulfillment === 'collect'
@@ -119,7 +126,7 @@ function buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment,
     shippingLabel:      fulfillment === 'collect' ? 'Click & Collect' : (freight?.label ?? 'Shipping'),
     total:              subtotal + shippingCost,
     paymentMethod,
-    paymentMethodLabel: paymentMethod === 'stripe_cc' ? 'Credit Card (Stripe)' : 'Direct Bank Transfer',
+    paymentMethodLabel,
     paymentIntentId,
     needsReconcile,
   };
@@ -307,13 +314,120 @@ function BacsForm({ onSuccess }) {
   );
 }
 
+// ── PayPal form ───────────────────────────────────────────────────────────────
+// Renders PayPal Smart Buttons. `createOrder` hits our server to create the
+// PayPal order for the current cart total; `onApprove` asks the server to
+// capture and to create the Woo order. We only ever send `totalCents` to
+// /create-order — shipping + line items are authoritative server-side when we
+// create the Woo order in /capture-order.
+function PayPalForm({ totalCents }) {
+  const navigate = useNavigate();
+  const { items } = useCartStore();
+  const { contact, shipping, fulfillment, freight } = useCheckoutStore();
+  const [error, setError] = useState(null);
+  const [busy,  setBusy]  = useState(false);
+
+  if (!PAYPAL_CLIENT_ID) {
+    return (
+      <div className="pp-pi-error">
+        <AlertCircle size={15} /> PayPal is not configured. Please try another payment method.
+      </div>
+    );
+  }
+
+  async function handleApprove(data) {
+    setBusy(true);
+    setError(null);
+    try {
+      // Pre-capture stock recheck happens server-side, but we also do a lightweight
+      // one here to surface the error before the user hits "Approve". That check
+      // already ran when the buttons were clicked, so we rely on the server now.
+      const result = await capturePayPalOrder({
+        paypalOrderId: data.orderID,
+        items, contact, shipping, fulfillment, freight,
+      });
+      syncProductsToSearch(items.map(i => parseInt(i.id, 10)));
+      useOrderStore.getState().setOrder(
+        buildOrderSnapshot({
+          wcResponse: { id: result.wcOrderId },
+          items, contact, shipping, fulfillment, freight,
+          paymentMethod: 'paypal',
+          paymentIntentId: result.captureId,
+          needsReconcile: false,
+        })
+      );
+      navigate('/order-confirmation');
+    } catch (err) {
+      if (err?.status === 409 && err.issues?.length) {
+        const lines = err.issues.map((i) => {
+          if (i.reason === 'out_of_stock') return `• ${i.name}: out of stock`;
+          if (i.reason === 'insufficient_stock') return `• ${i.name}: only ${i.available} in stock (you have ${i.requested})`;
+          if (i.reason === 'not_found') return `• ${i.name}: no longer available`;
+          return `• ${i.name}: unavailable`;
+        }).join('\n');
+        setError(`Some items in your cart are no longer available:\n${lines}\n\nPlease adjust your cart and try again.`);
+      } else if (err?.captureId) {
+        // Orphan: money captured, Woo order not created. Tell the user to contact support.
+        setError(`Your payment was received but we couldn't finalise the order. Please contact us quoting reference ${err.captureId}.`);
+      } else {
+        setError(err?.message || 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="pp-paypal-wrap">
+      <PayPalScriptProvider options={{ 'client-id': PAYPAL_CLIENT_ID, currency: 'AUD', intent: 'capture' }}>
+        <PayPalButtons
+          style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' }}
+          disabled={busy || totalCents <= 0}
+          createOrder={async () => {
+            // Stock recheck before we even ask PayPal to open the popup.
+            const stockResult = await checkStock(items);
+            if (!stockResult.ok && stockResult.issues?.length) {
+              const lines = stockResult.issues.map((i) => {
+                if (i.reason === 'out_of_stock') return `• ${i.name}: out of stock`;
+                if (i.reason === 'insufficient_stock') return `• ${i.name}: only ${i.available} in stock (you have ${i.requested})`;
+                if (i.reason === 'not_found') return `• ${i.name}: no longer available`;
+                return `• ${i.name}: unavailable`;
+              }).join('\n');
+              setError(`Some items in your cart are no longer available:\n${lines}\n\nPlease adjust your cart and try again.`);
+              throw new Error('stock_changed');
+            }
+            const r = await fetch('/api/paypal/create-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ amountCents: totalCents }),
+            });
+            const d = await r.json();
+            if (!r.ok || !d.paypalOrderId) {
+              setError(d?.error || 'Could not start PayPal payment.');
+              throw new Error('create_order_failed');
+            }
+            return d.paypalOrderId;
+          }}
+          onApprove={handleApprove}
+          onCancel={() => { /* user closed the popup — leave error null, let them retry */ }}
+          onError={(err) => {
+            console.error('[paypal] button error:', err);
+            setError('PayPal could not complete your payment. Please try again.');
+          }}
+        />
+      </PayPalScriptProvider>
+      {error && <div className="pp-error"><AlertCircle size={15} /> {error}</div>}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function PaymentPage() {
   const { items }    = useCartStore();
   const { contact, freight, fulfillment } = useCheckoutStore();
   const navigate     = useNavigate();
 
-  const [method,       setMethod]       = useState('stripe'); // 'stripe' | 'bacs'
+  const [method,       setMethod]       = useState('stripe'); // 'stripe' | 'bacs' | 'paypal'
   const [clientSecret, setClientSecret] = useState(null);
   const [piError,      setPiError]      = useState(null);
 
@@ -414,6 +528,13 @@ export default function PaymentPage() {
                 </button>
                 <button
                   type="button"
+                  className={`pp-method-tab${method === 'paypal' ? ' active' : ''}`}
+                  onClick={() => setMethod('paypal')}
+                >
+                  <Wallet size={15} /> PayPal
+                </button>
+                <button
+                  type="button"
                   className={`pp-method-tab${method === 'bacs' ? ' active' : ''}`}
                   onClick={() => setMethod('bacs')}
                 >
@@ -438,6 +559,9 @@ export default function PaymentPage() {
                   </Elements>
                 )
               )}
+
+              {/* PayPal — Smart Buttons (server-side create + capture) */}
+              {method === 'paypal' && <PayPalForm totalCents={totalCents} />}
 
               {/* Direct bank transfer */}
               {method === 'bacs' && <BacsForm onSuccess={() => {}} />}
