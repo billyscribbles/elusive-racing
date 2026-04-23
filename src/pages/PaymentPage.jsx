@@ -9,6 +9,7 @@ import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
 import { formatPrice } from '../lib/formatPrice';
+import bacsConfig from '../../data/bacs-config.json';
 import './PaymentPage.css';
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
@@ -285,11 +286,11 @@ function BacsForm({ onSuccess }) {
         </p>
         <div className="pp-bank-fields">
           {[
-            ['Bank',         'Commonwealth Bank of Australia'],
-            ['Account Name', 'Elusive Racing Pty Ltd'],
-            ['BSB',          '063-000'],
-            ['Account No.',  '1234 5678'],
-            ['Reference',    'Your order number (provided after placing order)'],
+            ['Bank',         bacsConfig.bank],
+            ['Account Name', bacsConfig.accountName],
+            ['BSB',          bacsConfig.bsb],
+            ['Account No.',  bacsConfig.accountNumber],
+            ['Reference',    bacsConfig.reference],
           ].map(([k, v]) => (
             <div key={k} className="pp-bank-row">
               <span className="pp-bank-key">{k}</span>

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatPrice } from './formatPrice';
+import bacsConfig from '../../data/bacs-config.json';
 
 function formatAddress(addr) {
   if (!addr) return '';
@@ -160,9 +161,9 @@ export function generateReceiptPdf(order) {
     doc.setTextColor(100);
     doc.text('Bank Transfer Details:', margin, y);
     y += 5;
-    doc.text('Commonwealth Bank of Australia', margin, y); y += 4;
-    doc.text('Account Name: Elusive Racing Pty Ltd', margin, y); y += 4;
-    doc.text('BSB: 063-000  |  Account: 1234 5678', margin, y); y += 4;
+    doc.text(bacsConfig.bank, margin, y); y += 4;
+    doc.text(`Account Name: ${bacsConfig.accountName}`, margin, y); y += 4;
+    doc.text(`BSB: ${bacsConfig.bsb}  |  Account: ${bacsConfig.accountNumber}`, margin, y); y += 4;
     doc.text(`Reference: #${order.orderId}`, margin, y);
     y += 10;
   }

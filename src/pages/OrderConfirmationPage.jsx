@@ -6,6 +6,7 @@ import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
 import { generateReceiptPdf } from '../lib/generateReceiptPdf';
 import { formatPrice } from '../lib/formatPrice';
+import bacsConfig from '../../data/bacs-config.json';
 import './OrderConfirmationPage.css';
 
 function formatAddress(addr) {
@@ -175,8 +176,8 @@ export default function OrderConfirmationPage() {
           {paymentMethod === 'bacs' && (
             <div className="oc-bacs-note">
               <p>Please transfer <strong>{formatPrice(total)} AUD</strong> to:</p>
-              <p><strong>Commonwealth Bank of Australia</strong></p>
-              <p>Account Name: Elusive Racing Pty Ltd &middot; BSB: 063-000 &middot; Account: 1234 5678</p>
+              <p><strong>{bacsConfig.bank}</strong></p>
+              <p>Account Name: {bacsConfig.accountName} &middot; BSB: {bacsConfig.bsb} &middot; Account: {bacsConfig.accountNumber}</p>
               <p>Reference: <strong>#{orderId}</strong></p>
             </div>
           )}

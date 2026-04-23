@@ -416,3 +416,10 @@
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Cart drawer: shrink to fit small phones (420px etc) so the drawer
+   doesn't eat the entire viewport and the close affordance on the left
+   backdrop stays tappable. */
+@media (max-width: 480px) {
+  .cart-drawer { width: 100%; max-width: calc(100vw - 32px); }
+}

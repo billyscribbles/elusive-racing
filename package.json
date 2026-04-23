@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -n meili,server,vite -c magenta,cyan,green \"./bin/meilisearch --master-key=masterKey --no-analytics\" \"node server.js\" \"vite\"",
     "dev:all": "concurrently -n server,vite,search -c cyan,green,magenta \"node server.js\" \"vite\" \"node search-server/server.js\"",
-    "build": "vite build && node scripts/build-sitemap.mjs",
+    "build": "vite build && node scripts/build-sitemap.mjs && node scripts/scan-secrets.mjs",
     "preview": "vite preview",
     "start": "node server.js",
     "server": "lsof -ti :8080 | xargs kill -9 2>/dev/null; yarn node server.js",
