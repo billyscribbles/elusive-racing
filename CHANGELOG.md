@@ -18,3 +18,4 @@
 - Used parts are now hidden from shop results by default. Flip the new "Used Parts Only" switch in the Availability filter to see just the used inventory.
 - Fixed clicking links like "Returns & Warranty" in the footer so the new page always opens at the top instead of sometimes landing near the bottom.
 - On your account page, click "Edit details" to update your name, phone and saved addresses without leaving the site. Tick "Same as billing address" to skip filling out shipping.
+- When editing a product in the admin, the Make, Model and Year fields are now searchable dropdowns — pick from the existing list instead of typing free text, and selecting a Make narrows the Model choices to that brand's models.

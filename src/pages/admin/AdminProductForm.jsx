@@ -5,6 +5,7 @@ import { adminFetch, clearAdminAuth, useAdminTheme } from "../../lib/adminAuth";
 import AdminHeader from "../../components/admin/AdminHeader";
 import RichTextEditor from "../../components/admin/RichTextEditor";
 import { getBrands } from "../../lib/woocommerce";
+import { vehicleData } from "../../data/navigation";
 import "./AdminProductForm.css";
 
 // Attribute names that represent vehicle fitment (match src/lib/woocommerce.js)
@@ -371,6 +372,24 @@ export default function AdminProductForm() {
     tagSearchLower &&
     !allTags.some((t) => t.name.toLowerCase() === tagSearchLower);
 
+  // Fitment options — sourced from src/data/navigation.js so the admin picks
+  // from the same list the customer-facing vehicle finder uses. Model options
+  // cascade from selected Makes; if no Make is selected, all models are shown.
+  const selectedMakes = form.fitment.Make || [];
+  const modelOptions = (() => {
+    const fromMakes = selectedMakes.length
+      ? selectedMakes.flatMap(
+          (m) => vehicleData.models[String(m).toUpperCase()] || [],
+        )
+      : Object.values(vehicleData.models).flat();
+    return Array.from(new Set(fromMakes));
+  })();
+  const fitmentOptions = {
+    Make: vehicleData.makes,
+    Model: modelOptions,
+    Year: vehicleData.years,
+  };
+
   // Build hierarchical category tree for display
   const topCats = categories.filter((c) => c.parent === 0);
   const childMap = categories.reduce((acc, c) => {
@@ -594,15 +613,9 @@ export default function AdminProductForm() {
                     key={slot}
                     label={slot}
                     values={form.fitment[slot] || []}
+                    options={fitmentOptions[slot]}
                     onAdd={(v) => addFitmentValue(slot, v)}
                     onRemove={(v) => removeFitmentValue(slot, v)}
-                    placeholder={
-                      slot === "Make"
-                        ? "e.g. Honda, Toyota"
-                        : slot === "Model"
-                          ? "e.g. Civic, S2000"
-                          : "e.g. 2006, 2007-2011"
-                    }
                   />
                 ))}
               </div>
@@ -834,35 +847,55 @@ export default function AdminProductForm() {
   );
 }
 
-function FitmentField({ label, values, onAdd, onRemove, placeholder }) {
-  const [input, setInput] = useState("");
-  function commit() {
-    if (!input.trim()) return;
-    input
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .forEach(onAdd);
-    setInput("");
-  }
+function FitmentField({ label, values, options, onAdd, onRemove }) {
+  const [search, setSearch] = useState("");
+  const [focused, setFocused] = useState(false);
+
+  const selected = new Set(values.map((v) => String(v).toLowerCase()));
+  const searchLower = search.trim().toLowerCase();
+  const dropItems = options
+    .filter((o) => !selected.has(String(o).toLowerCase()))
+    .filter((o) => !searchLower || String(o).toLowerCase().includes(searchLower))
+    .slice(0, 12);
+
   return (
     <div className="af-field">
       <label className="af-label">
-        {label} <span className="af-hint">Enter or comma to add</span>
+        {label} <span className="af-hint">Select from list</span>
       </label>
-      <input
-        className="af-input"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            commit();
-          }
-        }}
-        onBlur={commit}
-        placeholder={placeholder}
-      />
+      <div className="af-tag-search-wrap">
+        <input
+          className="af-input"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={`Search ${label.toLowerCase()}…`}
+          autoComplete="off"
+        />
+        {focused && (
+          <div className="af-tag-dropdown">
+            {dropItems.length > 0 ? (
+              dropItems.map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  className="af-tag-drop-item"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onAdd(o);
+                    setSearch("");
+                  }}
+                >
+                  {o}
+                </button>
+              ))
+            ) : (
+              <div className="af-tag-drop-empty">No matches</div>
+            )}
+          </div>
+        )}
+      </div>
       {values.length > 0 && (
         <div className="af-tag-chips af-fitment-chips">
           {values.map((v) => (

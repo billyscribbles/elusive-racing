@@ -285,6 +285,13 @@
 }
 .af-tag-drop-item--new { color: #d94040; }
 .af-tag-drop-item--new:hover { background: rgba(217,64,64,0.08); }
+.af-tag-drop-empty {
+  color: #666;
+  font-size: 0.88rem;
+  font-style: italic;
+  padding: 10px 14px;
+}
+.af-page[data-admin-theme="light"] .af-tag-drop-empty { color: #9ca3af; }
 
 .af-tag-chips {
   display: flex;
