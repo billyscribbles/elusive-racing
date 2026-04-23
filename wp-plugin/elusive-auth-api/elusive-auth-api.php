@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Elusive Racing Auth API
  * Description: Lightweight REST API endpoints for headless customer authentication and password reset.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Elusive Racing
  */
 
@@ -12,6 +12,12 @@ add_action('rest_api_init', function () {
     register_rest_route('elusive/v1', '/login', [
         'methods'             => 'POST',
         'callback'            => 'elusive_auth_login',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('elusive/v1', '/verify', [
+        'methods'             => 'POST',
+        'callback'            => 'elusive_auth_verify',
         'permission_callback' => '__return_true',
     ]);
 
@@ -58,6 +64,65 @@ function elusive_auth_login(WP_REST_Request $request) {
         'user_id'           => $user->ID,
         'user_email'        => $user->user_email,
         'user_display_name' => $user->display_name,
+    ], 200);
+}
+
+// Validate a token issued by /elusive/v1/login and return the matching user.
+// Inverse of the token construction in elusive_auth_login(): base64-decode,
+// split on "|", and HMAC-verify against wp_salt('auth').
+function elusive_auth_verify(WP_REST_Request $request) {
+    $token = (string) $request->get_param('token');
+    if ($token === '') {
+        $auth = (string) $request->get_header('authorization');
+        if ($auth !== '' && stripos($auth, 'Bearer ') === 0) {
+            $token = trim(substr($auth, 7));
+        }
+    }
+    if ($token === '') {
+        return new WP_REST_Response([
+            'code'    => 'missing_token',
+            'message' => 'Token is required.',
+        ], 400);
+    }
+
+    $decoded = base64_decode($token, true);
+    if ($decoded === false) {
+        return new WP_REST_Response([
+            'code'    => 'invalid_token',
+            'message' => 'Invalid token.',
+        ], 401);
+    }
+
+    $parts = explode('|', $decoded);
+    if (count($parts) !== 3) {
+        return new WP_REST_Response([
+            'code'    => 'invalid_token',
+            'message' => 'Invalid token.',
+        ], 401);
+    }
+
+    list($user_id, $timestamp, $signature) = $parts;
+    $payload  = $user_id . '|' . $timestamp;
+    $expected = hash_hmac('sha256', $payload, wp_salt('auth'));
+
+    if (!hash_equals($expected, (string) $signature)) {
+        return new WP_REST_Response([
+            'code'    => 'invalid_token',
+            'message' => 'Invalid token.',
+        ], 401);
+    }
+
+    $user = get_userdata((int) $user_id);
+    if (!$user) {
+        return new WP_REST_Response([
+            'code'    => 'invalid_token',
+            'message' => 'User not found.',
+        ], 401);
+    }
+
+    return new WP_REST_Response([
+        'user_id'    => (int) $user->ID,
+        'user_email' => $user->user_email,
     ], 200);
 }
 

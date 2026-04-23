@@ -1,11 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag } from 'lucide-react';
+import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag, Pencil, X } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { clearAdminAuth } from '../lib/adminAuth';
 import WholesaleOrderPage from './WholesaleOrderPage';
 import { formatPrice } from '../lib/formatPrice';
+import { updateAccountProfile } from '../lib/woocommerce';
 import './AccountPage.css';
+
+const EMPTY_ADDRESS = {
+  first_name: '', last_name: '', company: '',
+  address_1: '', address_2: '', city: '', state: '', postcode: '', country: 'AU',
+};
+
+const ADDRESS_COMPARE_KEYS = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country'];
+
+function shippingMatchesBilling(shipping, billing) {
+  if (!shipping || !billing) return false;
+  const blank = ADDRESS_COMPARE_KEYS.every(k => !(shipping[k] || '').trim());
+  if (blank) return true;
+  return ADDRESS_COMPARE_KEYS.every(k => (shipping[k] || '') === (billing[k] || ''));
+}
 
 const STATUS_LABEL = {
   pending:    'Pending',
@@ -49,6 +64,58 @@ export default function AccountDashboard() {
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [expanded, setExpanded] = useState(null); // order ID of expanded row
+
+  // Edit modal state — one button, one form covering name/phone/billing/shipping
+  const [editOpen, setEditOpen] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [savedMsg, setSavedMsg] = useState('');
+
+  function openEdit() {
+    setSaveError(''); setSavedMsg('');
+    const billing  = { ...EMPTY_ADDRESS, ...(user?.billing  || {}) };
+    const shipping = { ...EMPTY_ADDRESS, ...(user?.shipping || {}) };
+    setDraft({
+      first_name: user?.firstName || '',
+      last_name:  user?.lastName  || '',
+      phone:      user?.phone     || user?.billing?.phone || '',
+      billing,
+      shipping,
+      sameAsBilling: shippingMatchesBilling(shipping, billing),
+    });
+    setEditOpen(true);
+  }
+
+  function cancelEdit() {
+    setEditOpen(false); setDraft(null); setSaveError('');
+  }
+
+  async function handleSave() {
+    if (!user?.token) return;
+    setSaving(true); setSaveError('');
+    try {
+      const billing  = { ...(user.billing || {}), ...draft.billing, phone: draft.phone };
+      const shipping = draft.sameAsBilling
+        ? ADDRESS_COMPARE_KEYS.reduce((acc, k) => ({ ...acc, [k]: draft.billing[k] || '' }), {})
+        : draft.shipping;
+      const payload = {
+        first_name: draft.first_name,
+        last_name:  draft.last_name,
+        billing,
+        shipping,
+      };
+      const updated = await updateAccountProfile(payload, user.token);
+      useAuthStore.getState().updateUser(updated);
+      setEditOpen(false); setDraft(null);
+      setSavedMsg('Saved.');
+      setTimeout(() => setSavedMsg(''), 3000);
+    } catch (err) {
+      setSaveError(err.message || 'Could not save changes.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/my-account', { replace: true }); return; }
@@ -110,10 +177,17 @@ export default function AccountDashboard() {
               </div>
             </div>
           </div>
-          <button className="dash-logout" onClick={handleLogout}>
-            <LogOut size={15} /> Sign Out
-          </button>
+          <div className="dash-header-actions">
+            <button className="dash-logout" onClick={openEdit}>
+              <Pencil size={14} /> Edit details
+            </button>
+            <button className="dash-logout" onClick={handleLogout}>
+              <LogOut size={15} /> Sign Out
+            </button>
+          </div>
         </div>
+
+        {savedMsg && <div className="dash-form-toast">{savedMsg}</div>}
 
         {/* Store Credit */}
         {user?.storeCredit > 0 && (
@@ -304,14 +378,6 @@ export default function AccountDashboard() {
                 }
               </div>
             </div>
-
-            <a
-              href={`${import.meta.env.VITE_WC_URL}/my-account/edit-address`}
-              target="_blank" rel="noopener noreferrer"
-              className="dash-edit-link"
-            >
-              Edit addresses <ChevronRight size={14} />
-            </a>
           </div>
 
         </div>}
@@ -321,6 +387,135 @@ export default function AccountDashboard() {
       {wholesale && activeTab === 'catalogue' && (
         <WholesaleOrderPage />
       )}
+
+      {editOpen && draft && (
+        <EditModal
+          draft={draft}
+          setDraft={setDraft}
+          saving={saving}
+          saveError={saveError}
+          onSave={handleSave}
+          onCancel={cancelEdit}
+        />
+      )}
+    </div>
+  );
+}
+
+const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
+
+function AddressFields({ address, onChange }) {
+  const update = (patch) => onChange({ ...address, ...patch });
+  return (
+    <>
+      <div className="dash-form-row">
+        <label>
+          <span>First name</span>
+          <input className="dash-form-input" value={address.first_name || ''} onChange={e => update({ first_name: e.target.value })} />
+        </label>
+        <label>
+          <span>Last name</span>
+          <input className="dash-form-input" value={address.last_name || ''} onChange={e => update({ last_name: e.target.value })} />
+        </label>
+      </div>
+      <label>
+        <span>Company (optional)</span>
+        <input className="dash-form-input" value={address.company || ''} onChange={e => update({ company: e.target.value })} />
+      </label>
+      <label>
+        <span>Street address</span>
+        <input className="dash-form-input" value={address.address_1 || ''} onChange={e => update({ address_1: e.target.value })} />
+      </label>
+      <label>
+        <span>Apartment, suite, etc. (optional)</span>
+        <input className="dash-form-input" value={address.address_2 || ''} onChange={e => update({ address_2: e.target.value })} />
+      </label>
+      <div className="dash-form-row">
+        <label>
+          <span>Suburb</span>
+          <input className="dash-form-input" value={address.city || ''} onChange={e => update({ city: e.target.value })} />
+        </label>
+        <label>
+          <span>State</span>
+          <select className="dash-form-input" value={address.state || ''} onChange={e => update({ state: e.target.value })}>
+            <option value="">Select…</option>
+            {AU_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="dash-form-row">
+        <label>
+          <span>Postcode</span>
+          <input className="dash-form-input" value={address.postcode || ''} onChange={e => update({ postcode: e.target.value })} />
+        </label>
+        <label>
+          <span>Country</span>
+          <input className="dash-form-input" value={address.country || 'AU'} onChange={e => update({ country: e.target.value })} />
+        </label>
+      </div>
+    </>
+  );
+}
+
+function EditModal({ draft, setDraft, saving, saveError, onSave, onCancel }) {
+  const update = (patch) => setDraft({ ...draft, ...patch });
+
+  return (
+    <div className="dash-modal-backdrop" onClick={onCancel} role="dialog" aria-modal="true" aria-label="Edit details">
+      <div className="dash-modal" onClick={e => e.stopPropagation()}>
+        <div className="dash-modal-head">
+          <h2>Edit details</h2>
+          <button className="dash-modal-close" onClick={onCancel} aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="dash-modal-body">
+          {/* Profile */}
+          <h3 className="dash-form-section-title">Your details</h3>
+          <div className="dash-form-row">
+            <label>
+              <span>First name</span>
+              <input className="dash-form-input" value={draft.first_name} onChange={e => update({ first_name: e.target.value })} />
+            </label>
+            <label>
+              <span>Last name</span>
+              <input className="dash-form-input" value={draft.last_name} onChange={e => update({ last_name: e.target.value })} />
+            </label>
+          </div>
+          <label>
+            <span>Phone</span>
+            <input type="tel" className="dash-form-input" value={draft.phone} onChange={e => update({ phone: e.target.value })} />
+          </label>
+
+          {/* Billing */}
+          <h3 className="dash-form-section-title">Billing address</h3>
+          <AddressFields address={draft.billing} onChange={billing => update({ billing })} />
+
+          {/* Shipping */}
+          <h3 className="dash-form-section-title">Shipping address</h3>
+          <label className="dash-form-checkbox">
+            <input
+              type="checkbox"
+              checked={draft.sameAsBilling}
+              onChange={e => update({ sameAsBilling: e.target.checked })}
+            />
+            <span>Same as billing address</span>
+          </label>
+          {!draft.sameAsBilling && (
+            <AddressFields address={draft.shipping} onChange={shipping => update({ shipping })} />
+          )}
+
+          {saveError && <p className="dash-form-notice dash-form-notice--error">{saveError}</p>}
+        </div>
+
+        <div className="dash-modal-actions">
+          <button className="dash-form-btn" onClick={onCancel} disabled={saving}>Cancel</button>
+          <button className="dash-form-btn dash-form-btn--primary" onClick={onSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

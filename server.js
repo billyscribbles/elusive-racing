@@ -1851,6 +1851,111 @@ async function handleResetPassword(req, res) {
   });
 }
 
+// Update a signed-in customer's own profile (name, email, phone, addresses).
+// Auth: the user's login token is verified via /elusive/v1/verify (the Elusive
+// Auth plugin's HMAC check) to resolve the authenticated user ID. The client
+// never supplies the customer ID, so this route cannot be used to edit another
+// user's record.
+async function handleUpdateAccountProfile(req, res) {
+  if (req.method !== 'PUT') { res.writeHead(405); res.end(); return; }
+
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.toLowerCase().startsWith('bearer ')) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not signed in.' }));
+    return;
+  }
+
+  try {
+    // 1. Resolve authenticated user by verifying the Elusive token against WP.
+    const token = authHeader.slice(7).trim();
+    const verifyRes = await fetch(`${WC_URL}/wp-json/elusive/v1/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    if (!verifyRes.ok) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Session expired. Please sign in again.' }));
+      return;
+    }
+    const me = await verifyRes.json();
+    const userId = me?.user_id;
+    if (!userId) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Could not identify your account.' }));
+      return;
+    }
+
+    // 2. Whitelist the request body. Anything not listed is dropped, so the
+    // client can never escalate role, change password, inject meta, etc.
+    const raw = await readBody(req);
+    const ADDRESS_KEYS = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country'];
+    const BILLING_KEYS = [...ADDRESS_KEYS, 'email', 'phone'];
+    const pick = (obj, keys) => {
+      const out = {};
+      if (!obj || typeof obj !== 'object') return out;
+      for (const k of keys) if (typeof obj[k] === 'string') out[k] = obj[k].trim();
+      return out;
+    };
+
+    const payload = {};
+    if (typeof raw.first_name === 'string') payload.first_name = raw.first_name.trim();
+    if (typeof raw.last_name  === 'string') payload.last_name  = raw.last_name.trim();
+    if (typeof raw.email      === 'string') payload.email      = raw.email.trim();
+    if (raw.billing  && typeof raw.billing  === 'object') payload.billing  = pick(raw.billing,  BILLING_KEYS);
+    if (raw.shipping && typeof raw.shipping === 'object') payload.shipping = pick(raw.shipping, ADDRESS_KEYS);
+
+    if (payload.email && (!payload.email.includes('@') || payload.email.length > 254)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Please enter a valid email address.' }));
+      return;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No fields to update.' }));
+      return;
+    }
+
+    // 3. Write to WooCommerce with server credentials.
+    const wcRes = await fetch(`${WC_URL}/wp-json/wc/v3/customers/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify(payload),
+    });
+    const customer = await wcRes.json().catch(() => ({}));
+
+    if (!wcRes.ok) {
+      if (customer?.code === 'registration-error-email-exists') {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'That email is already in use.' }));
+        return;
+      }
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: customer?.message || 'Could not save changes. Please try again.' }));
+      return;
+    }
+
+    // 4. Return a user shape matching the login handler so the client can
+    // hand it straight to authStore.updateUser().
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      id:        customer.id,
+      email:     customer.email,
+      firstName: customer.first_name || '',
+      lastName:  customer.last_name  || '',
+      phone:     customer.billing?.phone || '',
+      billing:   customer.billing  ?? null,
+      shipping:  customer.shipping ?? null,
+    }));
+  } catch (err) {
+    console.error('[account/profile] error:', err);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Could not save changes. Please try again.' }));
+  }
+}
+
 function trimOrderDetail(o) {
   return {
     id:              o.id,
@@ -2368,7 +2473,8 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/auth/wholesale-register') { handleWholesaleRegister(req, res); return; }
   if (req.url === '/api/auth/lost-password')  { handleLostPassword(req, res);  return; }
   if (req.url === '/api/auth/reset-password') { handleResetPassword(req, res); return; }
-  if (req.url.startsWith('/api/account/orders')) { handleGetOrders(req, res); return; }
+  if (req.url.startsWith('/api/account/orders'))  { handleGetOrders(req, res); return; }
+  if (req.url === '/api/account/profile')         { handleUpdateAccountProfile(req, res); return; }
 
   // Stripe PaymentIntent creation
   if (req.url === '/api/create-payment-intent') {

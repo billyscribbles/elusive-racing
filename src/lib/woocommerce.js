@@ -816,3 +816,19 @@ export async function syncToWooCommerceCheckout(items, contact, shipping, fulfil
 
   return getCheckoutUrl();
 }
+
+// Update the signed-in customer's own profile. Server derives the customer ID
+// from the bearer token — never pass an ID from the client.
+export async function updateAccountProfile(fields, token) {
+  const res = await fetch('/api/account/profile', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not save changes.');
+  return data;
+}
