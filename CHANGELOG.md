@@ -32,3 +32,5 @@
 - Out-of-stock products now clearly show "Sold Out" on shop and homepage cards and on the product page, and the Add to Cart button is replaced with a disabled "Sold Out" pill so customers can't try to buy them.
 - Fixed the "Available Now" filter on the shop page — it used to still include sold-out items; it now only shows products you can actually buy right now.
 - Tidied the Inventory section on the admin add and edit product pages — tick "Track stock quantity" to set a quantity and choose how backorders behave; leave it unticked to manually mark a product as In Stock, Out of Stock, or On Backorder.
+- Bank transfer details on the checkout payment page, order confirmation page, and emailed receipt now show the real Elusive Racing account instead of placeholder numbers.
+- If your phone or computer is set to reduce animations, the site now respects that across every page — spinners, slide-ins, and pulsing buttons stay still.
