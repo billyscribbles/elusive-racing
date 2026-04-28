@@ -26,14 +26,16 @@ import "tinymce/plugins/wordcount";
 
 import contentCss from "tinymce/skins/content/default/content.css?inline";
 import skinCss from "tinymce/skins/ui/oxide/content.css?inline";
-import darkSkinCss from "tinymce/skins/ui/oxide-dark/content.css?inline";
 
 export default function RichTextEditor({
   value,
   onChange,
   placeholder,
   height = 320,
-  theme = "light",
+  // theme prop is accepted for API compatibility but intentionally ignored —
+  // the editor is always rendered in the light skin so the typing surface
+  // stays readable regardless of the surrounding admin theme.
+  theme: _theme,
 }) {
   return (
     <Editor
@@ -41,17 +43,19 @@ export default function RichTextEditor({
       onEditorChange={(content) => onChange(content)}
       init={{
         license_key: "gpl",
+        base_url: "/tinymce",
+        suffix: ".min",
         height,
         menubar: false,
         placeholder,
         branding: false,
         promotion: false,
-        skin: theme === "dark" ? "oxide-dark" : "oxide",
-        content_css: theme === "dark" ? "dark" : "default",
+        skin: "oxide",
+        content_css: "default",
         content_style: [
           contentCss,
-          theme === "dark" ? darkSkinCss : skinCss,
-          "body{font-family:Inter,system-ui,sans-serif;font-size:14px;}",
+          skinCss,
+          "body{font-family:Inter,system-ui,sans-serif;font-size:14px;background:#fff;color:#111;}",
         ].join("\n"),
         plugins: [
           "advlist",

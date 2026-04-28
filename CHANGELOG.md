@@ -25,3 +25,4 @@
 - Fixed the product description editor on the admin add and edit product pages — the editor box was loading empty.
 - Fixed the tag list on the admin add and edit product pages — tags now load instead of showing an error.
 - Added a search box to the Categories list on the admin add and edit product pages — start typing to jump straight to a category instead of scrolling through the full list.
+- The product description editor on the admin add and edit product pages now always shows a white background and toolbar, even when the rest of the admin is in dark mode.

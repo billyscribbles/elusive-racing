@@ -1148,7 +1148,7 @@ async function handleAdminTags(req, res) {
   if (!requireAdminAuth(req, res)) return;
   try {
     const r = await fetch(
-      `${WC_URL}/wp-json/wc/v3/tags?per_page=100&orderby=count&order=desc`,
+      `${WC_URL}/wp-json/wc/v3/products/tags?per_page=100&orderby=count&order=desc`,
       { headers: { Authorization: wcAuth() } }
     );
     if (!r.ok) throw new Error(`WC ${r.status}`);
@@ -2888,7 +2888,15 @@ const MIME_TYPES = {
   '.webp': 'image/webp',
   '.webm': 'video/webm',
   '.mp4':  'video/mp4',
+  '.map':  'application/json; charset=utf-8',
 };
+
+// URLs ending in a known static-asset extension must never fall through to the
+// SPA index.html — otherwise the browser receives HTML where it expected JS/CSS
+// and rejects on MIME, masking the missing file as a silent client-side failure.
+const STATIC_ASSET_EXTS = new Set(
+  Object.keys(MIME_TYPES).filter((e) => e !== '.html')
+);
 
 // ── Sitemap ───────────────────────────────────────────────────────────────────
 
@@ -3091,6 +3099,15 @@ const server = http.createServer((req, res) => {
         fs.createReadStream(filePath).pipe(res);
       }
     } else {
+      // Static-asset URLs that miss should 404, not fall through to index.html.
+      // Otherwise, browsers receive HTML where they expected JS/CSS/etc. and reject it
+      // on MIME grounds — masking real "missing asset" bugs as silent client failures.
+      const ext = path.extname(urlPath).toLowerCase();
+      if (STATIC_ASSET_EXTS.has(ext)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain', ...securityHeaders() });
+        res.end('Not found');
+        return;
+      }
       // SPA fallback — serve index.html for all non-file requests
       const index = path.join(DIST, 'index.html');
       const headers = {
