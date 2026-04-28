@@ -460,7 +460,7 @@ When a question is too complex, requires exact fitment confirmation, or the cust
 // ── Meilisearch product sync ──────────────────────────────────────────────────
 
 const WC_SYNC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,variations,total_sales,average_rating,meta_data';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,variations,total_sales,average_rating,meta_data,vehicle_fitment';
 
 const FITMENT_ATTR_NAMES = ['make', 'model', 'year', 'vehicle', 'vehicles', 'fitment', 'compatible', 'application', 'fits'];
 
@@ -473,6 +473,30 @@ function extractFitmentTags(p) {
     }
   });
   return Array.from(tags);
+}
+
+// Pull Make/Model/Submodel slug arrays from `vehicle_fitment`, which the
+// elusive-auth-api plugin injects into every WC product response. Each term
+// carries an `ancestors[]` chain root-first; combined with the term itself it
+// gives [make, model, submodel?] at depths 0/1/2+.
+function extractVehicleSlugs(p) {
+  const makes = new Set();
+  const models = new Set();
+  const subs = new Set();
+  for (const term of p.vehicle_fitment ?? []) {
+    if (!term?.slug) continue;
+    const chain = [...(term.ancestors ?? []), term];
+    if (chain[0]?.slug) makes.add(chain[0].slug);
+    if (chain[1]?.slug) models.add(chain[1].slug);
+    for (let i = 2; i < chain.length; i++) {
+      if (chain[i]?.slug) subs.add(chain[i].slug);
+    }
+  }
+  return {
+    makes:     Array.from(makes),
+    models:    Array.from(models),
+    submodels: Array.from(subs),
+  };
 }
 
 function decodeHtml(str) {
@@ -530,6 +554,7 @@ function normaliseMsProduct(p) {
   );
   const price        = parseFloat(p.price || p.regular_price || '0');
   const regularPrice = parseFloat(p.regular_price || p.price || '0');
+  const vehicleSlugs = extractVehicleSlugs(p);
   return {
     id:              String(p.id),
     title:           decodeHtml(p.name),
@@ -551,6 +576,9 @@ function normaliseMsProduct(p) {
     categories:      (p.categories ?? []).map(c => decodeHtml(c.name)),
     categoryHandles: (p.categories ?? []).map(c => c.slug),
     fitmentTags:     extractFitmentTags(p),
+    vehicleMakeSlugs:     vehicleSlugs.makes,
+    vehicleModelSlugs:    vehicleSlugs.models,
+    vehicleSubmodelSlugs: vehicleSlugs.submodels,
     dateCreated:     p.date_created || '',
     totalSales:      parseInt(p.total_sales || '0', 10),
     averageRating:   parseFloat(p.average_rating || '0'),
@@ -573,7 +601,7 @@ async function runMsSync() {
 
     await index.updateSettings({
       searchableAttributes: ['title', 'vendor', 'sku', 'tags', 'fitmentTags', 'categories', 'description'],
-      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price', 'fitmentTags', 'handle'],
+      filterableAttributes: ['vendor', 'categories', 'categoryHandles', 'onSale', 'stockStatus', 'price', 'fitmentTags', 'handle', 'vehicleMakeSlugs', 'vehicleModelSlugs', 'vehicleSubmodelSlugs'],
       sortableAttributes:   ['price', 'regularPrice', 'dateCreated', 'totalSales', 'averageRating', 'title'],
       pagination:           { maxTotalHits: 10000 },
     });
