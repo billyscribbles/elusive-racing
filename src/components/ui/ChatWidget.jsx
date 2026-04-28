@@ -44,7 +44,9 @@ function hasHistory() {
 }
 
 export default function ChatWidget() {
-  const { make, model, year } = useVehicleStore();
+  const make     = useVehicleStore((s) => s.make);
+  const model    = useVehicleStore((s) => s.model);
+  const submodel = useVehicleStore((s) => s.submodel);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(hasHistory);
   const [messages, setMessages] = useState(loadMessages);
@@ -124,7 +126,7 @@ export default function ChatWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: history,
-          vehicle: make ? { make, model, year } : null,
+          vehicle: make ? { make: make.name, model: model?.name ?? '', submodel: submodel?.name ?? '' } : null,
         }),
       });
 

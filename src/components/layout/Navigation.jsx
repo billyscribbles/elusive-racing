@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
-import { navItems, featuredBrands, vehicleData } from '../../data/navigation';
+import { navItems, featuredBrands } from '../../data/navigation';
 import CartIcon from '../ui/CartIcon';
 import useAuthStore from '../../store/authStore';
-import useVehicleStore from '../../store/vehicleStore';
+import useVehicleSelector from '../../hooks/useVehicleSelector';
 import './Navigation.css';
 
 function MobileAuthLink() {
@@ -207,16 +207,18 @@ export default function Navigation() {
   const { isLoggedIn, isWholesale } = useAuthStore();
   const loggedIn = isLoggedIn();
   const wholesale = loggedIn && isWholesale();
-  const { make: vMake, model: vModel, year: vYear, setVehicle, clearVehicle } = useVehicleStore();
-  const vModels = vMake ? (vehicleData.models[vMake] || []) : [];
+  const {
+    make: vMake, model: vModel, submodel: vSubmodel,
+    makes, models, submodels,
+    loadingMakes, loadingModels, loadingSubmodels,
+    onMakeChange, onModelChange, onSubmodelChange,
+    clearVehicle, buildSearchUrl,
+  } = useVehicleSelector();
 
   const handleVehicleSubmit = () => {
-    if (!vMake) return;
-    const params = new URLSearchParams();
-    params.set('make', vMake);
-    if (vModel) params.set('model', vModel);
-    if (vYear) params.set('year', vYear);
-    navigate(`/search?${params.toString()}`);
+    const url = buildSearchUrl();
+    if (!url) return;
+    navigate(url);
     setVehicleOpen(false);
   };
   const navRef = useRef(null);
@@ -296,7 +298,7 @@ export default function Navigation() {
               className={`mobile-vehicle-btn ${vehicleOpen ? 'mobile-vehicle-btn--active' : ''} ${vMake ? 'mobile-vehicle-btn--saved' : ''}`}
               onClick={() => setVehicleOpen(!vehicleOpen)}
             >
-              {vMake ? [vMake, vModel, vYear].filter(Boolean).join(' ') : 'Select Your Vehicle'}
+              {vMake ? [vMake.name, vModel?.name, vSubmodel?.name].filter(Boolean).join(' ') : 'Select Your Vehicle'}
               <ChevronDown size={13} strokeWidth={2.5} className="mobile-vehicle-chevron" />
             </button>
             <div className="mobile-bar-cart">
@@ -311,29 +313,30 @@ export default function Navigation() {
             <div className="container mobile-vehicle-grid">
               <select
                 className="mobile-vehicle-select"
-                value={vMake}
-                onChange={e => setVehicle(e.target.value, '', '')}
+                value={vMake?.id ?? ''}
+                onChange={onMakeChange}
+                disabled={loadingMakes}
               >
-                <option value="">Select Make</option>
-                {vehicleData.makes.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="">{loadingMakes ? 'Loading…' : 'Select Make'}</option>
+                {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
               <select
                 className="mobile-vehicle-select"
-                value={vModel}
-                onChange={e => setVehicle(vMake, e.target.value, '')}
-                disabled={!vMake}
+                value={vModel?.id ?? ''}
+                onChange={onModelChange}
+                disabled={!vMake || loadingModels}
               >
-                <option value="">Select Model</option>
-                {vModels.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="">{loadingModels ? 'Loading…' : 'Select Model'}</option>
+                {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
               <select
                 className="mobile-vehicle-select mobile-vehicle-select--full"
-                value={vYear}
-                onChange={e => setVehicle(vMake, vModel, e.target.value)}
-                disabled={!vModel}
+                value={vSubmodel?.id ?? ''}
+                onChange={onSubmodelChange}
+                disabled={!vModel || loadingSubmodels}
               >
-                <option value="">Year / Submodel</option>
-                {vehicleData.years.map(y => <option key={y} value={y}>{y}</option>)}
+                <option value="">{loadingSubmodels ? 'Loading…' : 'Submodel'}</option>
+                {submodels.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
               {vMake && (
                 <button

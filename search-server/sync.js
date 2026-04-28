@@ -32,9 +32,11 @@ const INDEX_NAME = 'products';
 const PER_PAGE   = 100;
 const PAGE_DELAY = 150; // ms between pages — be gentle to WC server
 
-// Fields we need from WC (reduces response payload size)
+// Fields we need from WC (reduces response payload size).
+// `vehicle_fitment` is injected by the elusive-auth-api plugin's filter on
+// woocommerce_rest_prepare_product_object — see wp-plugin/elusive-auth-api.
 const WC_FIELDS =
-  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating,meta_data';
+  'id,name,slug,price,regular_price,on_sale,stock_status,stock_quantity,images,categories,brands,attributes,tags,sku,short_description,date_created,total_sales,average_rating,meta_data,vehicle_fitment';
 
 // ── Meilisearch index settings ────────────────────────────────────────────────
 
@@ -56,6 +58,9 @@ const INDEX_SETTINGS = {
     'stockStatus',
     'price',
     'fitmentTags',
+    'vehicleMakeSlugs',
+    'vehicleModelSlugs',
+    'vehicleSubmodelSlugs',
   ],
   sortableAttributes: [
     'price',
@@ -95,6 +100,36 @@ function stripHtml(str) {
 }
 
 const FITMENT_ATTR_NAMES = ['make', 'model', 'year', 'vehicle', 'vehicles', 'fitment', 'compatible', 'application', 'fits', 'application'];
+
+/**
+ * Extract Make/Model/Submodel slug arrays from the `vehicle_fitment` field
+ * injected by the elusive-auth-api plugin. Each assigned term carries an
+ * `ancestors[]` array root-first, so the full hierarchy chain is
+ * `[...term.ancestors, term]`. Slug at chain depth N maps to:
+ *   0 → make, 1 → model, 2+ → submodel.
+ *
+ * Returns three deduped string arrays. Products typically have one chain
+ * (single make/model/submodel) but can have several (multi-fit parts).
+ */
+function extractVehicleSlugs(p) {
+  const makes = new Set();
+  const models = new Set();
+  const subs = new Set();
+  for (const term of p.vehicle_fitment ?? []) {
+    if (!term?.slug) continue;
+    const chain = [...(term.ancestors ?? []), term];
+    if (chain[0]?.slug) makes.add(chain[0].slug);
+    if (chain[1]?.slug) models.add(chain[1].slug);
+    for (let i = 2; i < chain.length; i++) {
+      if (chain[i]?.slug) subs.add(chain[i].slug);
+    }
+  }
+  return {
+    makes:     Array.from(makes),
+    models:    Array.from(models),
+    submodels: Array.from(subs),
+  };
+}
 
 /** Extract vehicle fitment terms from WC attributes + tags, normalised to lowercase */
 function extractFitmentTags(p) {
@@ -145,6 +180,7 @@ function extractWsPrices(metaData) {
 function normalizeProduct(p) {
   const price        = parseFloat(p.price || p.regular_price || '0');
   const regularPrice = parseFloat(p.regular_price || p.price || '0');
+  const vehicleSlugs = extractVehicleSlugs(p);
 
   return {
     id:            String(p.id),
@@ -164,6 +200,9 @@ function normalizeProduct(p) {
     categories:    (p.categories ?? []).map(c => decodeHtml(c.name)),
     categoryHandles: (p.categories ?? []).map(c => c.slug),
     fitmentTags:   extractFitmentTags(p),
+    vehicleMakeSlugs:     vehicleSlugs.makes,
+    vehicleModelSlugs:    vehicleSlugs.models,
+    vehicleSubmodelSlugs: vehicleSlugs.submodels,
     wholesalePrice:  parseFloat((p.meta_data ?? []).find(m => m.key === 'wholesale_customer_wholesale_price')?.value || '0') || null,
     wholesalePrices: extractWsPrices(p.meta_data),
     dateCreated:   p.date_created || '',

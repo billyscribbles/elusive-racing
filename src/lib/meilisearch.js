@@ -164,18 +164,19 @@ export async function queryProducts({
   minPrice  = null,
   maxPrice  = null,
   sort      = '',
-  make      = '',
-  model     = '',
-  year      = '',
+  vehicleMakeSlug     = '',
+  vehicleModelSlug    = '',
+  vehicleSubmodelSlug = '',
 } = {}) {
-  // Fallback to WC REST when Meilisearch is unavailable. Categories filtering
-  // by handle isn't trivially convertible to WC's id-based filter so the
-  // fallback drops category filters — better than returning zero results.
+  // Fallback to WC REST when Meilisearch is unavailable. The WC REST API
+  // doesn't filter by our `vehicle_fitment` taxonomy, so the fallback only
+  // applies the text query + brands/category — vehicle filtering silently
+  // degrades. This is better than returning zero results.
   async function wcFallback() {
     try {
       const { getProducts } = await import('./woocommerce.js');
       const res = await getProducts({
-        query:      [ [make, model].filter(Boolean).join(' '), query ].filter(Boolean).join(' '),
+        query,
         count:      perPage,
         page,
         brandNames: brands,
@@ -203,11 +204,7 @@ export async function queryProducts({
 
   const index = (await getClient()).index(INDEX_NAME);
 
-  // Vehicle terms are appended to the text query so Meilisearch searches
-  // make/model across title, tags, and description. Year is omitted because
-  // it rarely appears in product text and makes the query too narrow.
-  const vehicleTerms = [make, model].filter(Boolean).join(' ');
-  const effectiveQuery = [vehicleTerms, query].filter(Boolean).join(' ');
+  const effectiveQuery = query;
 
   // Build filter array
   const filters = [];
@@ -220,6 +217,12 @@ export async function queryProducts({
   if (usedOnly)  filters.push('categoryHandles = "used-parts"');
   if (minPrice != null)  filters.push(`price >= ${minPrice}`);
   if (maxPrice != null)  filters.push(`price <= ${maxPrice}`);
+
+  // Vehicle filtering — apply the deepest selected slug. Submodel implies its
+  // model and make (taxonomy is hierarchical), so we don't AND all three.
+  if (vehicleSubmodelSlug)   filters.push(`vehicleSubmodelSlugs = "${vehicleSubmodelSlug}"`);
+  else if (vehicleModelSlug) filters.push(`vehicleModelSlugs = "${vehicleModelSlug}"`);
+  else if (vehicleMakeSlug)  filters.push(`vehicleMakeSlugs = "${vehicleMakeSlug}"`);
 
   // Sort — some fields (totalSales, averageRating) require a prior sync to become
   // sortable. If Meilisearch rejects the sort, we fall back to relevance so

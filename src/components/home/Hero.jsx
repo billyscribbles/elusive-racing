@@ -1,28 +1,26 @@
 import { useState, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gauge, X } from 'lucide-react';
-import { vehicleData } from '../../data/navigation';
-import useVehicleStore from '../../store/vehicleStore';
+import useVehicleSelector from '../../hooks/useVehicleSelector';
 import './Hero.css';
 
 function DesktopFinder() {
-  const { make, model, year, setVehicle, clearVehicle } = useVehicleStore();
+  const {
+    make, model, submodel,
+    makes, models, submodels,
+    loadingMakes, loadingModels, loadingSubmodels,
+    onMakeChange, onModelChange, onSubmodelChange,
+    clearVehicle, buildSearchUrl,
+  } = useVehicleSelector();
   const navigate = useNavigate();
-  const models = make ? (vehicleData.models[make] || []) : [];
-
-  function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
-  function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
-  function handleYearChange(e)  { setVehicle(make, model, e.target.value); }
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!make) return;
-    const params = new URLSearchParams();
-    params.set('make', make);
-    if (model) params.set('model', model);
-    if (year)  params.set('year', year);
-    navigate(`/search?${params.toString()}`);
+    const url = buildSearchUrl();
+    if (url) navigate(url);
   }
+
+  const summary = [make?.name, model?.name, submodel?.name].filter(Boolean).join(' ');
 
   return (
     <form className="vf-form" onSubmit={handleSubmit}>
@@ -31,22 +29,20 @@ function DesktopFinder() {
       </div>
       <h2 className="vf-title">Find Parts For<br />Your Vehicle</h2>
       <p className="vf-sub">
-        {make
-          ? `Your vehicle: ${[make, model, year].filter(Boolean).join(' ')}`
-          : 'Select your vehicle to find compatible parts'}
+        {make ? `Your vehicle: ${summary}` : 'Select your vehicle to find compatible parts'}
       </p>
       <div className="vf-selects">
-        <select className="vf-select" value={make} onChange={handleMakeChange} aria-label="Vehicle make">
-          <option value="">Select Make</option>
-          {vehicleData.makes.map((m) => <option key={m} value={m}>{m}</option>)}
+        <select className="vf-select" value={make?.id ?? ''} onChange={onMakeChange} disabled={loadingMakes} aria-label="Vehicle make">
+          <option value="">{loadingMakes ? 'Loading…' : 'Select Make'}</option>
+          {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select className="vf-select" value={model} onChange={handleModelChange} disabled={!make} aria-label="Vehicle model">
-          <option value="">Select Model</option>
-          {models.map((m) => <option key={m} value={m}>{m}</option>)}
+        <select className="vf-select" value={model?.id ?? ''} onChange={onModelChange} disabled={!make || loadingModels} aria-label="Vehicle model">
+          <option value="">{loadingModels ? 'Loading…' : 'Select Model'}</option>
+          {models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select className="vf-select" value={year} onChange={handleYearChange} disabled={!model} aria-label="Vehicle year">
-          <option value="">Select Year</option>
-          {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}
+        <select className="vf-select" value={submodel?.id ?? ''} onChange={onSubmodelChange} disabled={!model || loadingSubmodels} aria-label="Vehicle submodel">
+          <option value="">{loadingSubmodels ? 'Loading…' : 'Select Submodel'}</option>
+          {submodels.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         {make && (
           <button type="button" className="vf-remove-btn" onClick={clearVehicle}>
@@ -63,38 +59,35 @@ function DesktopFinder() {
 }
 
 function MobileFinderForm() {
-  const { make, model, year, setVehicle, clearVehicle } = useVehicleStore();
+  const {
+    make, model, submodel,
+    makes, models, submodels,
+    loadingMakes, loadingModels, loadingSubmodels,
+    onMakeChange, onModelChange, onSubmodelChange,
+    clearVehicle, buildSearchUrl,
+  } = useVehicleSelector();
   const navigate = useNavigate();
-  const models = make ? (vehicleData.models[make] || []) : [];
-
-  function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
-  function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
-  function handleYearChange(e)  { setVehicle(make, model, e.target.value); }
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!make) return;
-    const params = new URLSearchParams();
-    params.set('make', make);
-    if (model) params.set('model', model);
-    if (year)  params.set('year', year);
-    navigate(`/search?${params.toString()}`);
+    const url = buildSearchUrl();
+    if (url) navigate(url);
   }
 
   return (
     <form className="vehicle-bar-form" onSubmit={handleSubmit}>
       <div className="vehicle-bar-selects">
-        <select className="vb-select" value={make} onChange={handleMakeChange} aria-label="Vehicle make">
-          <option value="">Select Make</option>
-          {vehicleData.makes.map((m) => <option key={m} value={m}>{m}</option>)}
+        <select className="vb-select" value={make?.id ?? ''} onChange={onMakeChange} disabled={loadingMakes} aria-label="Vehicle make">
+          <option value="">{loadingMakes ? 'Loading…' : 'Select Make'}</option>
+          {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select className="vb-select" value={model} onChange={handleModelChange} disabled={!make} aria-label="Vehicle model">
-          <option value="">Select Model</option>
-          {models.map((m) => <option key={m} value={m}>{m}</option>)}
+        <select className="vb-select" value={model?.id ?? ''} onChange={onModelChange} disabled={!make || loadingModels} aria-label="Vehicle model">
+          <option value="">{loadingModels ? 'Loading…' : 'Select Model'}</option>
+          {models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select className="vb-select" value={year} onChange={handleYearChange} disabled={!model} aria-label="Vehicle year">
-          <option value="">Select Year / Submodel</option>
-          {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}
+        <select className="vb-select" value={submodel?.id ?? ''} onChange={onSubmodelChange} disabled={!model || loadingSubmodels} aria-label="Vehicle submodel">
+          <option value="">{loadingSubmodels ? 'Loading…' : 'Select Submodel'}</option>
+          {submodels.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
       <button type="submit" className="vb-btn" disabled={!make}>GO</button>

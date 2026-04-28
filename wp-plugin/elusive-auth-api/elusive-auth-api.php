@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Elusive Racing Auth API
- * Description: Lightweight REST API endpoints for headless customer authentication and password reset.
- * Version: 1.2.0
+ * Description: Lightweight REST API endpoints for headless customer authentication, password reset, and the vehicle_fitment taxonomy used by the React vehicle selector.
+ * Version: 1.3.0
  * Author: Elusive Racing
  */
 
@@ -30,6 +30,30 @@ add_action('rest_api_init', function () {
     register_rest_route('elusive/v1', '/reset-password', [
         'methods'             => 'POST',
         'callback'            => 'elusive_auth_reset_password',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('elusive/v1', '/vehicles/makes', [
+        'methods'             => 'GET',
+        'callback'            => 'elusive_vehicles_makes',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('elusive/v1', '/vehicles/models', [
+        'methods'             => 'GET',
+        'callback'            => 'elusive_vehicles_models',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('elusive/v1', '/vehicles/submodels', [
+        'methods'             => 'GET',
+        'callback'            => 'elusive_vehicles_submodels',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('elusive/v1', '/vehicles/term/(?P<id>\d+)', [
+        'methods'             => 'GET',
+        'callback'            => 'elusive_vehicles_term',
         'permission_callback' => '__return_true',
     ]);
 });
@@ -201,3 +225,156 @@ add_filter('retrieve_password_title', function ($title) {
     $site_name = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
     return '[' . $site_name . '] Reset your password';
 }, 10, 1);
+
+// ---------------------------------------------------------------------------
+// Vehicle fitment taxonomy
+// ---------------------------------------------------------------------------
+// The live site stores Make/Model/Submodel as a 3-level hierarchical custom
+// taxonomy named `vehicle_fitment`. The taxonomy is registered by a separate
+// plugin on the production server. These routes expose its terms as a public
+// read-only API so the React frontend can populate the vehicle selector.
+
+const ELUSIVE_VEHICLE_TAXONOMY = 'vehicle_fitment';
+
+function elusive_vehicles_format_term($term) {
+    return [
+        'id'     => (int) $term->term_id,
+        'name'   => $term->name,
+        'slug'   => $term->slug,
+        'parent' => (int) $term->parent,
+    ];
+}
+
+function elusive_vehicles_taxonomy_missing_response() {
+    return new WP_REST_Response([
+        'code'    => 'taxonomy_missing',
+        'message' => 'vehicle_fitment taxonomy is not registered on this site.',
+    ], 404);
+}
+
+function elusive_vehicles_children(int $parent_id) {
+    if (!taxonomy_exists(ELUSIVE_VEHICLE_TAXONOMY)) {
+        return elusive_vehicles_taxonomy_missing_response();
+    }
+
+    $terms = get_terms([
+        'taxonomy'   => ELUSIVE_VEHICLE_TAXONOMY,
+        'parent'     => $parent_id,
+        'hide_empty' => false,
+        'orderby'    => 'name',
+        'order'      => 'ASC',
+    ]);
+
+    if (is_wp_error($terms)) {
+        return new WP_REST_Response([
+            'code'    => 'terms_query_failed',
+            'message' => $terms->get_error_message(),
+        ], 500);
+    }
+
+    return new WP_REST_Response(array_map('elusive_vehicles_format_term', $terms), 200);
+}
+
+function elusive_vehicles_makes(WP_REST_Request $request) {
+    return elusive_vehicles_children(0);
+}
+
+function elusive_vehicles_models(WP_REST_Request $request) {
+    $make_id = (int) $request->get_param('make_id');
+    if ($make_id <= 0) {
+        return new WP_REST_Response([
+            'code'    => 'missing_make_id',
+            'message' => 'make_id is required.',
+        ], 400);
+    }
+    return elusive_vehicles_children($make_id);
+}
+
+function elusive_vehicles_submodels(WP_REST_Request $request) {
+    $model_id = (int) $request->get_param('model_id');
+    if ($model_id <= 0) {
+        return new WP_REST_Response([
+            'code'    => 'missing_model_id',
+            'message' => 'model_id is required.',
+        ], 400);
+    }
+    return elusive_vehicles_children($model_id);
+}
+
+// Resolve a single term and its ancestor chain (root → self). Used by the
+// React Go button to build the slug path /shop?vehicle_make=…&vehicle_model=…
+// without making three extra round-trips.
+function elusive_vehicles_term(WP_REST_Request $request) {
+    if (!taxonomy_exists(ELUSIVE_VEHICLE_TAXONOMY)) {
+        return elusive_vehicles_taxonomy_missing_response();
+    }
+
+    $id   = (int) $request->get_param('id');
+    $term = get_term($id, ELUSIVE_VEHICLE_TAXONOMY);
+
+    if (!$term || is_wp_error($term)) {
+        return new WP_REST_Response([
+            'code'    => 'term_not_found',
+            'message' => 'Vehicle term not found.',
+        ], 404);
+    }
+
+    $ancestor_ids = get_ancestors($term->term_id, ELUSIVE_VEHICLE_TAXONOMY, 'taxonomy');
+    // get_ancestors() returns immediate-parent first; reverse so the path
+    // reads root → parent.
+    $ancestor_ids = array_reverse($ancestor_ids);
+
+    $ancestors = [];
+    foreach ($ancestor_ids as $aid) {
+        $a = get_term($aid, ELUSIVE_VEHICLE_TAXONOMY);
+        if ($a && !is_wp_error($a)) {
+            $ancestors[] = elusive_vehicles_format_term($a);
+        }
+    }
+
+    return new WP_REST_Response(array_merge(elusive_vehicles_format_term($term), [
+        'link'      => get_term_link($term),
+        'ancestors' => $ancestors,
+    ]), 200);
+}
+
+// Inject vehicle_fitment terms into every WC REST product response so the
+// search-server sync can index Make/Model/Submodel slugs as filterable
+// attributes. Each entry includes its ancestor chain (root → parent) so
+// sync can derive make/model slugs from a deeper assignment without
+// looking up parents itself.
+add_filter('woocommerce_rest_prepare_product_object', function ($response, $object, $request) {
+    if (!taxonomy_exists(ELUSIVE_VEHICLE_TAXONOMY)) {
+        return $response;
+    }
+    $terms = wp_get_post_terms($object->get_id(), ELUSIVE_VEHICLE_TAXONOMY, ['fields' => 'all']);
+    if (is_wp_error($terms)) {
+        return $response;
+    }
+    $data = $response->get_data();
+    $data['vehicle_fitment'] = array_map(function ($t) {
+        $aids = get_ancestors($t->term_id, ELUSIVE_VEHICLE_TAXONOMY, 'taxonomy');
+        // get_ancestors() returns immediate-parent first; reverse so the path reads root → parent.
+        $aids = array_reverse($aids);
+        $ancestors = [];
+        foreach ($aids as $aid) {
+            $a = get_term($aid, ELUSIVE_VEHICLE_TAXONOMY);
+            if ($a && !is_wp_error($a)) {
+                $ancestors[] = [
+                    'id'   => (int) $a->term_id,
+                    'name' => $a->name,
+                    'slug' => $a->slug,
+                ];
+            }
+        }
+        return [
+            'id'        => (int) $t->term_id,
+            'name'      => $t->name,
+            'slug'      => $t->slug,
+            'parent'    => (int) $t->parent,
+            'ancestors' => $ancestors,
+        ];
+    }, $terms);
+    $response->set_data($data);
+    return $response;
+}, 10, 3);

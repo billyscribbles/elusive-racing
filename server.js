@@ -694,6 +694,54 @@ function isWcPathAllowed(pathWithoutQuery) {
   );
 }
 
+// Public read-only proxy for the vehicle_fitment taxonomy exposed by our
+// elusive-auth-api WP plugin. Browser hits /api/elusive-vehicles/<sub> and we
+// forward to /wp-json/elusive/v1/vehicles/<sub>. No auth — these endpoints
+// are public; this proxy exists to keep all WP traffic same-origin (avoids
+// CORS) and consistent with the rest of the app.
+//   /api/elusive-vehicles/makes
+//   /api/elusive-vehicles/models?make_id=N
+//   /api/elusive-vehicles/submodels?model_id=N
+//   /api/elusive-vehicles/term/N
+const ELUSIVE_VEHICLE_ALLOWED = /^(makes|models|submodels|term\/\d+)$/;
+
+async function handleElusiveVehicleProxy(req, res) {
+  if (req.method !== 'GET') {
+    res.writeHead(405, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+  if (!WC_URL) {
+    res.writeHead(503, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'WC URL not configured' }));
+    return;
+  }
+
+  const urlObj = new URL(req.url, 'http://localhost');
+  const afterPrefix = urlObj.pathname.replace(/^\/api\/elusive-vehicles\/?/, '');
+  if (!ELUSIVE_VEHICLE_ALLOWED.test(afterPrefix)) {
+    res.writeHead(404, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+
+  const target = `${WC_URL}/wp-json/elusive/v1/vehicles/${afterPrefix}${urlObj.search}`;
+  try {
+    const r = await fetch(target);
+    const text = await r.text();
+    res.writeHead(r.status, {
+      'Content-Type': r.headers.get('content-type') || 'application/json',
+      'Cache-Control': 'public, max-age=600',
+      ...securityHeaders(),
+    });
+    res.end(text);
+  } catch (err) {
+    console.error('[elusive-vehicles] error:', err.message);
+    res.writeHead(502, { 'Content-Type': 'application/json', ...securityHeaders() });
+    res.end(JSON.stringify({ error: 'Upstream error' }));
+  }
+}
+
 async function handleWcProxy(req, res) {
   if (req.method !== 'GET') {
     res.writeHead(405, { 'Content-Type': 'application/json', ...securityHeaders() });
@@ -846,7 +894,7 @@ async function handleChat(req, res) {
       }
 
       const vehicleContext = vehicle?.make
-        ? `\n\nCUSTOMER'S VEHICLE: ${[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ')}. Keep this in mind when recommending parts or answering fitment questions.`
+        ? `\n\nCUSTOMER'S VEHICLE: ${[vehicle.make, vehicle.model, vehicle.submodel || vehicle.year].filter(Boolean).join(' ')}. Keep this in mind when recommending parts or answering fitment questions.`
         : '';
 
       const response = await anthropic.messages.create({
@@ -2954,6 +3002,7 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/sync-products') { handleSyncProducts(req, res); return; }
   if (req.url === '/api/check-stock') { handleCheckStock(req, res); return; }
   if (req.url.startsWith('/api/wc/')) { handleWcProxy(req, res); return; }
+  if (req.url.startsWith('/api/elusive-vehicles/')) { handleElusiveVehicleProxy(req, res); return; }
 
   // Dynamic sitemap
   if (req.url === '/sitemap.xml') { handleSitemap(req, res); return; }

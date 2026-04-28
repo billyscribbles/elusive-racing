@@ -1,15 +1,18 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gauge, X } from 'lucide-react';
-import { vehicleData } from '../../data/navigation';
-import useVehicleStore from '../../store/vehicleStore';
+import useVehicleSelector from '../../hooks/useVehicleSelector';
 import './StickyFinder.css';
 
 export default function StickyFinder() {
-  const { make, model, year, setVehicle, clearVehicle } = useVehicleStore();
+  const {
+    make, model, submodel,
+    makes, models, submodels,
+    loadingMakes, loadingModels, loadingSubmodels,
+    onMakeChange, onModelChange, onSubmodelChange,
+    clearVehicle, buildSearchUrl,
+  } = useVehicleSelector();
   const navigate = useNavigate();
-
-  const models = make ? (vehicleData.models[make] || []) : [];
 
   // Animate bar in/out on scroll + keep --finder-height in sync
   useEffect(() => {
@@ -33,7 +36,6 @@ export default function StickyFinder() {
       });
     };
 
-    // Initialise on mount
     setFinderHeight(false);
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -43,18 +45,10 @@ export default function StickyFinder() {
     };
   }, []);
 
-  function handleMakeChange(e)  { setVehicle(e.target.value, '', ''); }
-  function handleModelChange(e) { setVehicle(make, e.target.value, ''); }
-  function handleYearChange(e)  { setVehicle(make, model, e.target.value); }
-
   function handleSubmit(e) {
     e.preventDefault();
-    if (!make) return;
-    const params = new URLSearchParams();
-    params.set('make', make);
-    if (model) params.set('model', model);
-    if (year)  params.set('year', year);
-    navigate(`/search?${params.toString()}`);
+    const url = buildSearchUrl();
+    if (url) navigate(url);
   }
 
   return (
@@ -68,32 +62,33 @@ export default function StickyFinder() {
         <div className="sticky-finder-selects">
           <select
             className="sticky-finder-select"
-            value={make}
-            onChange={handleMakeChange}
+            value={make?.id ?? ''}
+            onChange={onMakeChange}
+            disabled={loadingMakes}
             aria-label="Vehicle make"
           >
-            <option value="">Make</option>
-            {vehicleData.makes.map((m) => <option key={m} value={m}>{m}</option>)}
+            <option value="">{loadingMakes ? '…' : 'Make'}</option>
+            {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
           <select
             className="sticky-finder-select"
-            value={model}
-            onChange={handleModelChange}
-            disabled={!make}
+            value={model?.id ?? ''}
+            onChange={onModelChange}
+            disabled={!make || loadingModels}
             aria-label="Vehicle model"
           >
-            <option value="">Model</option>
-            {models.map((m) => <option key={m} value={m}>{m}</option>)}
+            <option value="">{loadingModels ? '…' : 'Model'}</option>
+            {models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
           <select
             className="sticky-finder-select"
-            value={year}
-            onChange={handleYearChange}
-            disabled={!model}
-            aria-label="Vehicle year"
+            value={submodel?.id ?? ''}
+            onChange={onSubmodelChange}
+            disabled={!model || loadingSubmodels}
+            aria-label="Vehicle submodel"
           >
-            <option value="">Year</option>
-            {vehicleData.years.map((y) => <option key={y} value={y}>{y}</option>)}
+            <option value="">{loadingSubmodels ? '…' : 'Submodel'}</option>
+            {submodels.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <button type="submit" className="sticky-finder-btn" disabled={!make}>

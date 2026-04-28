@@ -588,6 +588,60 @@ export async function getCollectionByHandle(slug, productCount = 24) {
   };
 }
 
+// ── Vehicle fitment (vehicle_fitment custom taxonomy via /api/elusive-vehicles proxy) ──
+//
+// The live WP site stores Make/Model/Submodel as a 3-level hierarchical taxonomy.
+// Our elusive-auth-api plugin exposes it through public REST routes; the Node
+// server proxies them at /api/elusive-vehicles/* for same-origin safety.
+//
+// Each fetcher returns an array of `{ id, name, slug, parent }` shaped term
+// objects. Makes are cached in sessionStorage because they rarely change and
+// the dropdown is the first thing on the homepage.
+
+const VEHICLE_BASE = '/api/elusive-vehicles';
+const VEHICLE_MAKES_CACHE_KEY = 'elusive-vehicle-makes-v1';
+const _vehicleChildrenCache = new Map(); // key: `${type}:${parentId}` → terms[]
+
+async function vehicleFetch(path) {
+  const r = await fetch(`${VEHICLE_BASE}${path}`);
+  if (!r.ok) throw new Error(`Vehicle API error: ${r.status} ${path}`);
+  return r.json();
+}
+
+export async function getVehicleMakes() {
+  if (typeof sessionStorage !== 'undefined') {
+    const cached = sessionStorage.getItem(VEHICLE_MAKES_CACHE_KEY);
+    if (cached) {
+      try { return JSON.parse(cached); } catch { /* fall through */ }
+    }
+  }
+  const makes = await vehicleFetch('/makes');
+  if (typeof sessionStorage !== 'undefined') {
+    try { sessionStorage.setItem(VEHICLE_MAKES_CACHE_KEY, JSON.stringify(makes)); } catch { /* quota — ignore */ }
+  }
+  return makes;
+}
+
+export async function getVehicleModels(makeId) {
+  const key = `models:${makeId}`;
+  if (_vehicleChildrenCache.has(key)) return _vehicleChildrenCache.get(key);
+  const models = await vehicleFetch(`/models?make_id=${encodeURIComponent(makeId)}`);
+  _vehicleChildrenCache.set(key, models);
+  return models;
+}
+
+export async function getVehicleSubmodels(modelId) {
+  const key = `submodels:${modelId}`;
+  if (_vehicleChildrenCache.has(key)) return _vehicleChildrenCache.get(key);
+  const subs = await vehicleFetch(`/submodels?model_id=${encodeURIComponent(modelId)}`);
+  _vehicleChildrenCache.set(key, subs);
+  return subs;
+}
+
+export async function getVehicleTerm(termId) {
+  return vehicleFetch(`/term/${encodeURIComponent(termId)}`);
+}
+
 // ── Cart (WooCommerce Store API — no auth needed) ─────────────────────────────
 
 export async function getCart() {

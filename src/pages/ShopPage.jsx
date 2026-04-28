@@ -289,9 +289,9 @@ export default function ShopPage() {
   const sortParam = searchParams.get("sort") ?? "best-selling";
   const minParam = searchParams.get("min_price") ?? "";
   const maxParam = searchParams.get("max_price") ?? "";
-  const makeParam = searchParams.get("make") ?? "";
-  const modelParam = searchParams.get("model") ?? "";
-  const yearParam = searchParams.get("year") ?? "";
+  const vehicleMakeParam     = searchParams.get("vehicle_make") ?? "";
+  const vehicleModelParam    = searchParams.get("vehicle_model") ?? "";
+  const vehicleSubmodelParam = searchParams.get("vehicle_submodel") ?? "";
   const pageParam = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const perPageParam = parseInt(searchParams.get("per_page") ?? "12", 10);
 
@@ -325,9 +325,9 @@ export default function ShopPage() {
       minPrice: minParam ? parseFloat(minParam) : null,
       maxPrice: maxParam ? parseFloat(maxParam) : null,
       sort: sortParam,
-      make: makeParam,
-      model: modelParam,
-      year: yearParam,
+      vehicleMakeSlug:     vehicleMakeParam,
+      vehicleModelSlug:    vehicleModelParam,
+      vehicleSubmodelSlug: vehicleSubmodelParam,
     })
       .then(({ hits, totalHits, totalPages }) => {
         setProducts(hits.map(mapProduct));
@@ -352,9 +352,9 @@ export default function ShopPage() {
     sortParam,
     pageParam,
     perPageParam,
-    makeParam,
-    modelParam,
-    yearParam,
+    vehicleMakeParam,
+    vehicleModelParam,
+    vehicleSubmodelParam,
   ]);
 
   const filtered = useMemo(() => products, [products]);
@@ -481,22 +481,22 @@ export default function ShopPage() {
       instockParam,
       backorderParam,
       qParam,
-      makeParam,
+      vehicleMakeParam,
     ].filter(Boolean).length;
 
   // Sync: if vehicle is cleared from hero/nav (store), also strip URL params
   const storedMake = useVehicleStore((s) => s.make);
   useEffect(() => {
-    if (!storedMake && makeParam) {
+    if (!storedMake && vehicleMakeParam) {
       const p = Object.fromEntries(searchParams.entries());
-      delete p.make; delete p.model; delete p.year; delete p.page;
+      delete p.vehicle_make; delete p.vehicle_model; delete p.vehicle_submodel; delete p.page;
       setSearchParams(p, { replace: true });
     }
   }, [storedMake]);
 
   function clearVehicle() {
     const p = Object.fromEntries(searchParams.entries());
-    delete p.make; delete p.model; delete p.year; delete p.page;
+    delete p.vehicle_make; delete p.vehicle_model; delete p.vehicle_submodel; delete p.page;
     setSearchParams(p);
     storeClearVehicle(); // also wipe from localStorage/store
   }
@@ -806,8 +806,17 @@ export default function ShopPage() {
     </div>
   );
 
-  const vehicleLabel = makeParam
-    ? [makeParam, modelParam, yearParam].filter(Boolean).join(" ")
+  // Prefer the names persisted in the vehicle store (set by the finder); fall
+  // back to the URL slugs for direct-URL visitors. Slugs like "fk2-type-r-15-17"
+  // get displayed as-is — readable enough for an active filter chip.
+  const storedModel    = useVehicleStore((s) => s.model);
+  const storedSubmodel = useVehicleStore((s) => s.submodel);
+  const vehicleLabel = vehicleMakeParam
+    ? [
+        storedMake?.name     ?? vehicleMakeParam,
+        storedModel?.name    ?? vehicleModelParam,
+        storedSubmodel?.name ?? vehicleSubmodelParam,
+      ].filter(Boolean).join(" ")
     : "";
 
   const pageTitle = qParam
@@ -823,8 +832,9 @@ export default function ShopPage() {
   if (qParam)      canonicalParams.set('q', qParam);
   if (subParam)    canonicalParams.set('sub', subParam);
   if (brandsParam) canonicalParams.set('brands', brandsParam);
-  if (makeParam)   canonicalParams.set('make', makeParam);
-  if (modelParam)  canonicalParams.set('model', modelParam);
+  if (vehicleMakeParam)     canonicalParams.set('vehicle_make', vehicleMakeParam);
+  if (vehicleModelParam)    canonicalParams.set('vehicle_model', vehicleModelParam);
+  if (vehicleSubmodelParam) canonicalParams.set('vehicle_submodel', vehicleSubmodelParam);
   if (saleParam)   canonicalParams.set('sale', '1');
   const canonicalPath = window.location.pathname;
   const canonicalUrl  = `${SITE_URL}${canonicalPath}${canonicalParams.toString() ? '?' + canonicalParams.toString() : ''}`;
@@ -910,7 +920,7 @@ export default function ShopPage() {
                 )}
               </button>
               <div className="shop-active-filters">
-                {makeParam && (
+                {vehicleMakeParam && (
                   <span className="shop-chip shop-chip--vehicle">
                     {vehicleLabel}
                     <button onClick={clearVehicle}>

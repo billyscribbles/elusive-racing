@@ -27,3 +27,4 @@
 - Added a search box to the Categories list on the admin add and edit product pages — start typing to jump straight to a category instead of scrolling through the full list.
 - The product description editor on the admin add and edit product pages now always shows a white background and toolbar, even when the rest of the admin is in dark mode.
 - Added a Permalink field on the admin add and edit product pages — you can now change a product's URL directly without leaving the site.
+- The Find Your Vehicle selector now matches the live site — pick make, model, and your specific sub-model (e.g. FK2 TYPE-R 15-17), and the shop only shows parts that fit.
