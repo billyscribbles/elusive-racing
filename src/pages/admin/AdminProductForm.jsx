@@ -34,6 +34,7 @@ function isFitmentSlotAttr(a) {
 
 const EMPTY_FORM = {
   name: "",
+  slug: "",
   sku: "",
   brand: "",
   regular_price: "",
@@ -82,6 +83,7 @@ function formFromProduct(p) {
 
   return {
     name: p.name || "",
+    slug: p.slug || "",
     sku: p.sku || "",
     brand,
     regular_price: p.regular_price || "",
@@ -126,6 +128,7 @@ function buildPayload(form) {
   if (form.manage_stock && form.stock_quantity !== "") {
     payload.stock_quantity = parseInt(form.stock_quantity, 10) || 0;
   }
+  if (form.slug && form.slug.trim()) payload.slug = form.slug.trim();
 
   const attributes = [...(form.otherAttributes || [])];
   if (form.brand) {
@@ -332,6 +335,7 @@ export default function AdminProductForm() {
       if (isNew) {
         navigate(`/admin/products/${data.id}`, { replace: true });
       } else {
+        setForm(formFromProduct(data));
         setSuccess("Product saved.");
         setTimeout(() => setSuccess(""), 3000);
       }
@@ -464,6 +468,24 @@ export default function AdminProductForm() {
                     onChange={handleChange}
                     required
                   />
+                </div>
+                <div className="af-field">
+                  <label className="af-label">Permalink</label>
+                  <div className="af-permalink-preview">
+                    https://elusiveracing.com.au/product/
+                    <strong>{form.slug || "<auto>"}</strong>
+                  </div>
+                  <input
+                    className="af-input"
+                    name="slug"
+                    value={form.slug}
+                    onChange={handleChange}
+                    placeholder="auto-generated from name if left blank"
+                  />
+                  <div className="af-help">
+                    Lowercase, hyphens, no spaces. Changing this breaks any
+                    old links to the previous URL — no redirect is set up.
+                  </div>
                 </div>
                 <div className="af-row">
                   <div className="af-field">

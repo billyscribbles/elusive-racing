@@ -365,6 +365,28 @@
 .af-fitment-intro { margin: 0 0 16px; }
 .af-fitment-chips { margin-top: 8px; }
 
+/* Permalink */
+.af-permalink-preview {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.82rem;
+  color: #888;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  word-break: break-all;
+}
+.af-permalink-preview strong { color: #d8d8d8; font-weight: 600; }
+.af-page[data-admin-theme="light"] .af-permalink-preview {
+  background: #f4f5f7;
+  border-color: #e2e4e8;
+  color: #6b7280;
+}
+.af-page[data-admin-theme="light"] .af-permalink-preview strong { color: #111827; }
+
+.af-help { font-size: 0.78rem; color: #777; }
+.af-page[data-admin-theme="light"] .af-help { color: #6b7280; }
+
 /* Responsive */
 @media (max-width: 900px) {
   .af-form-layout { grid-template-columns: 1fr; }
