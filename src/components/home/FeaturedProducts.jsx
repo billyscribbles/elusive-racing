@@ -14,6 +14,19 @@ function mapProduct(p) {
   const variants = p.variants ?? [];
   const isDefaultOnly = variants.length === 1 && variants[0].title === 'Default';
   const hasVariants = variants.length > 1 || (variants.length === 1 && !isDefaultOnly);
+  const outOfStock = p.stockStatus === 'outofstock';
+  let badge = null;
+  let badgeType = null;
+  if (outOfStock) {
+    badge = 'Sold Out';
+    badgeType = 'outofstock';
+  } else if (originalPrice) {
+    badge = 'Sale';
+    badgeType = 'sale';
+  } else if (p.stockStatus === 'onbackorder') {
+    badge = 'Backorder';
+    badgeType = 'backorder';
+  }
   return {
     id: p.id,
     name: p.title,
@@ -23,8 +36,9 @@ function mapProduct(p) {
     image: p.featuredImage?.url ?? null,
     slug: p.handle,
     href: `/products/${p.handle}`,
-    badge: originalPrice ? 'Sale' : p.stockStatus === 'onbackorder' ? 'Backorder' : null,
-    badgeType: originalPrice ? 'sale' : p.stockStatus === 'onbackorder' ? 'backorder' : null,
+    badge,
+    badgeType,
+    outOfStock,
     variantId: isDefaultOnly ? variants[0]?.id : null,
     hasVariants,
     stockQuantity: p.stockQuantity != null ? p.stockQuantity : (p.stock_quantity != null ? parseInt(p.stock_quantity, 10) : null),
@@ -77,7 +91,11 @@ function ProductCard({ product }) {
         )}
       </div>
       <div className="product-actions">
-        {product.hasVariants ? (
+        {product.outOfStock ? (
+          <span className="product-quick-add product-quick-add--soldout">
+            Sold Out
+          </span>
+        ) : product.hasVariants ? (
           <span className="product-quick-add product-quick-add--variants">
             Select Variant
           </span>

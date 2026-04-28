@@ -43,6 +43,7 @@ const EMPTY_FORM = {
   short_description: "",
   manage_stock: false,
   stock_quantity: "",
+  low_stock_amount: "",
   stock_status: "instock",
   backorders: "no",
   status: "publish",
@@ -92,6 +93,7 @@ function formFromProduct(p) {
     short_description: p.short_description || "",
     manage_stock: p.manage_stock || false,
     stock_quantity: p.stock_quantity != null ? String(p.stock_quantity) : "",
+    low_stock_amount: p.low_stock_amount != null ? String(p.low_stock_amount) : "",
     stock_status: p.stock_status || "instock",
     backorders: p.backorders || "no",
     status: p.status || "publish",
@@ -116,7 +118,6 @@ function buildPayload(form) {
     description: form.description,
     short_description: form.short_description,
     manage_stock: form.manage_stock,
-    stock_status: form.stock_status,
     backorders: form.backorders || "no",
     status: form.status,
     categories: form.categories.map((id) => ({ id })),
@@ -125,8 +126,14 @@ function buildPayload(form) {
       img.id ? { id: img.id } : { src: img.src, alt: img.alt },
     ),
   };
-  if (form.manage_stock && form.stock_quantity !== "") {
-    payload.stock_quantity = parseInt(form.stock_quantity, 10) || 0;
+  if (form.manage_stock) {
+    if (form.stock_quantity !== "") {
+      payload.stock_quantity = parseInt(form.stock_quantity, 10) || 0;
+    }
+    payload.low_stock_amount =
+      form.low_stock_amount === "" ? null : parseInt(form.low_stock_amount, 10) || 0;
+  } else {
+    payload.stock_status = form.stock_status;
   }
   if (form.slug && form.slug.trim()) payload.slug = form.slug.trim();
 
@@ -850,34 +857,6 @@ export default function AdminProductForm() {
               <div className="af-card">
                 <h2 className="af-card-title">Inventory</h2>
                 <div className="af-field">
-                  <label className="af-label">Stock Status</label>
-                  <select
-                    className="af-select"
-                    name="stock_status"
-                    value={form.stock_status}
-                    onChange={handleChange}
-                  >
-                    <option value="instock">In Stock</option>
-                    <option value="outofstock">Out of Stock</option>
-                    <option value="onbackorder">On Backorder</option>
-                  </select>
-                </div>
-                {form.stock_status === "outofstock" && (
-                  <div className="af-field">
-                    <label className="af-label">Backorders</label>
-                    <select
-                      className="af-select"
-                      name="backorders"
-                      value={form.backorders}
-                      onChange={handleChange}
-                    >
-                      <option value="no">Do not allow</option>
-                      <option value="notify">Allow, but notify customer</option>
-                      <option value="yes">Allow</option>
-                    </select>
-                  </div>
-                )}
-                <div className="af-field">
                   <label className="af-toggle-label">
                     <input
                       type="checkbox"
@@ -892,19 +871,69 @@ export default function AdminProductForm() {
                     <span>Track stock quantity</span>
                   </label>
                 </div>
-                {form.manage_stock && (
+                {form.manage_stock ? (
+                  <>
+                    <div className="af-field">
+                      <label className="af-label">Quantity</label>
+                      <input
+                        className="af-input"
+                        type="number"
+                        name="stock_quantity"
+                        value={form.stock_quantity}
+                        onChange={handleChange}
+                        min="0"
+                        step="1"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="af-field">
+                      <label className="af-label">Allow backorders?</label>
+                      <div className="af-radio-group">
+                        {[
+                          { value: "no", label: "Do not allow" },
+                          { value: "notify", label: "Allow, but notify customer" },
+                          { value: "yes", label: "Allow" },
+                        ].map((opt) => (
+                          <label key={opt.value} className="af-radio-label">
+                            <input
+                              type="radio"
+                              name="backorders"
+                              value={opt.value}
+                              checked={form.backorders === opt.value}
+                              onChange={handleChange}
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="af-field">
+                      <label className="af-label">Low stock threshold</label>
+                      <input
+                        className="af-input"
+                        type="number"
+                        name="low_stock_amount"
+                        value={form.low_stock_amount}
+                        onChange={handleChange}
+                        min="0"
+                        step="1"
+                        placeholder="Store-wide threshold"
+                      />
+                    </div>
+                  </>
+                ) : (
                   <div className="af-field">
-                    <label className="af-label">Stock Quantity</label>
-                    <input
-                      className="af-input"
-                      type="number"
-                      name="stock_quantity"
-                      value={form.stock_quantity}
+                    <label className="af-label">Stock Status</label>
+                    <select
+                      className="af-select"
+                      name="stock_status"
+                      value={form.stock_status}
                       onChange={handleChange}
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                    />
+                    >
+                      <option value="instock">In Stock</option>
+                      <option value="outofstock">Out of Stock</option>
+                      <option value="onbackorder">On Backorder</option>
+                    </select>
                   </div>
                 )}
               </div>

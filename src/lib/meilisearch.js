@@ -211,7 +211,7 @@ export async function queryProducts({
   if (brands.length)     filters.push(brands.map(b => `vendor = "${b}"`).join(' OR '));
   if (categories.length) filters.push(categories.map(c => `categoryHandles = "${c}"`).join(' OR '));
   if (onSale)    filters.push('onSale = true');
-  if (inStock)   filters.push('stockStatus != "onbackorder"');
+  if (inStock)   filters.push('stockStatus = "instock"');
   if (backorder) filters.push('stockStatus = "onbackorder"');
   if (hideUsed)  filters.push('NOT categoryHandles = "used-parts"');
   if (usedOnly)  filters.push('categoryHandles = "used-parts"');

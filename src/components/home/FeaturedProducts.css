@@ -184,6 +184,11 @@
   color: white;
 }
 
+.product-badge--outofstock {
+  background: #555;
+  color: white;
+}
+
 .product-actions {
   padding: 0 16px 14px;
 }
@@ -232,6 +237,18 @@
 
 .product-quick-add--variants:hover {
   background: var(--color-red);
+}
+
+.product-quick-add--soldout {
+  background: #555;
+  color: #ddd;
+  cursor: not-allowed;
+  display: block;
+  text-align: center;
+}
+
+.product-quick-add--soldout:hover {
+  background: #555;
 }
 
 .product-info {

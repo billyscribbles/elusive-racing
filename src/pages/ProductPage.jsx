@@ -44,6 +44,7 @@ function mapProduct(p) {
     wholesalePrices: p.wholesalePrices || null,
     backorder: p.stockStatus === 'onbackorder',
     inStock: p.stockStatus === 'instock',
+    outOfStock: p.stockStatus === 'outofstock',
     _isVariable: p._isVariable ?? false,
   };
 }
@@ -81,6 +82,7 @@ function mapMeiliProduct(h) {
     wholesalePrices: h.wholesalePrices || null,
     backorder: h.stockStatus === 'onbackorder',
     inStock: h.stockStatus === 'instock',
+    outOfStock: h.stockStatus === 'outofstock',
   };
 }
 
@@ -114,7 +116,8 @@ function mapNavProduct(p) {
     stockQuantity: p.stockQuantity ?? null,
     wholesalePrices: p.wholesalePrices || null,
     backorder: p.backorder ?? false,
-    inStock: !p.backorder,
+    inStock: !p.backorder && !p.outOfStock,
+    outOfStock: p.outOfStock ?? false,
   };
 }
 
@@ -353,7 +356,7 @@ export default function ProductPage() {
   const effectiveMax = maxQty !== null && maxQty > 0 ? maxQty : null;
   const lowStock = effectiveMax !== null && effectiveMax <= 5;
 
-  const canAddToCart = !effectiveVariantsLoading && (!display.hasVariants || !!selectedVariant) && displayPrice > 0 && (effectiveMax === null || effectiveMax > 0);
+  const canAddToCart = !effectiveVariantsLoading && !display.outOfStock && (!display.hasVariants || !!selectedVariant) && displayPrice > 0 && (effectiveMax === null || effectiveMax > 0);
 
   function handleAddToCart() {
     if (!canAddToCart) return;
@@ -497,9 +500,13 @@ export default function ProductPage() {
               )}
             </div>
 
-            <div className={`product-page-stock ${display.backorder ? 'product-page-stock--backorder' : 'product-page-stock--instock'}`}>
+            <div className={`product-page-stock ${display.outOfStock ? 'product-page-stock--outofstock' : display.backorder ? 'product-page-stock--backorder' : 'product-page-stock--instock'}`}>
               <Package size={14} />
-              {display.backorder ? 'Available on Backorder' : 'In Stock'}
+              {display.outOfStock
+                ? 'Out of Stock'
+                : display.backorder
+                  ? 'Available on Backorder'
+                  : 'In Stock'}
             </div>
 
             {/* Variant selector — skeleton while API data loads for variable products */}

@@ -34,6 +34,7 @@ function mapProduct(h) {
   const isBackorder =
     h.stockStatus === "onbackorder" ||
     (h.tags ?? []).some((t) => t.toLowerCase().includes("backorder"));
+  const isOutOfStock = h.stockStatus === "outofstock";
   return {
     id: h.id,
     name: h.title,
@@ -49,6 +50,7 @@ function mapProduct(h) {
     categoryHandles: h.categoryHandles ?? [],
     tags: h.tags ?? [],
     backorder: isBackorder,
+    outOfStock: isOutOfStock,
     dateCreated: h.dateCreated || "",
     variantId: h.hasVariants ? null : h.id,
     hasVariants: h.hasVariants || false,
@@ -222,9 +224,14 @@ function ProductCard({ product, index = 0 }) {
             -{discount}%
           </span>
         )}
-        {product.backorder && (
+        {product.backorder && !product.outOfStock && (
           <span className="shop-product-badge shop-product-badge--backorder">
             Backorder
+          </span>
+        )}
+        {product.outOfStock && (
+          <span className="shop-product-badge shop-product-badge--outofstock">
+            Sold Out
           </span>
         )}
       </div>
@@ -232,7 +239,11 @@ function ProductCard({ product, index = 0 }) {
         <span className="shop-product-brand">{product.brand}</span>
         <h3 className="shop-product-name">{product.name}</h3>
         <p className="shop-product-backorder">
-          {product.backorder ? "Available on backorder" : ""}
+          {product.outOfStock
+            ? "Out of stock"
+            : product.backorder
+              ? "Available on backorder"
+              : ""}
         </p>
         <div className="shop-product-pricing">
           <span className={`shop-product-price${comparePrice ? ' shop-product-price--sale' : ''}`}>
@@ -251,7 +262,11 @@ function ProductCard({ product, index = 0 }) {
         )}
       </div>
       <div className="shop-product-actions">
-        {product.hasVariants ? (
+        {product.outOfStock ? (
+          <span className="shop-quick-add shop-quick-add--soldout">
+            Sold Out
+          </span>
+        ) : product.hasVariants ? (
           <span className="shop-quick-add shop-quick-add--variants">
             Select Variant
           </span>

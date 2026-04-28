@@ -377,6 +377,12 @@
   border: 1px solid #a07fd4;
 }
 
+.product-page-stock--outofstock {
+  color: #fff;
+  background: #555;
+  border: 1px solid #777;
+}
+
 /* Variant selector */
 .product-page-variants {
   margin-bottom: 20px;

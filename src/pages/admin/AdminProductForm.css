@@ -361,6 +361,29 @@
 }
 .af-page[data-admin-theme="light"] .af-toggle-label { color: #374151; }
 
+/* Radio group */
+.af-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.af-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.93rem;
+  color: #c0c0c0;
+  user-select: none;
+}
+.af-radio-label input[type="radio"] {
+  accent-color: #d94040;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.af-page[data-admin-theme="light"] .af-radio-label { color: #374151; }
+
 /* Vehicle Fitment */
 .af-fitment-intro { margin: 0 0 16px; }
 .af-fitment-chips { margin-top: 8px; }

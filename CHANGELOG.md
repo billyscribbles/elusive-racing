@@ -29,3 +29,6 @@
 - Added a Permalink field on the admin add and edit product pages — you can now change a product's URL directly without leaving the site.
 - The Find Your Vehicle selector now matches the live site — pick make, model, and your specific sub-model (e.g. FK2 TYPE-R 15-17), and the shop only shows parts that fit.
 - Fixed the vehicle finder so picking a make, model or sub-model now actually narrows the shop to parts that fit instead of showing every product.
+- Out-of-stock products now clearly show "Sold Out" on shop and homepage cards and on the product page, and the Add to Cart button is replaced with a disabled "Sold Out" pill so customers can't try to buy them.
+- Fixed the "Available Now" filter on the shop page — it used to still include sold-out items; it now only shows products you can actually buy right now.
+- Tidied the Inventory section on the admin add and edit product pages — tick "Track stock quantity" to set a quantity and choose how backorders behave; leave it unticked to manually mark a product as In Stock, Out of Stock, or On Backorder.
