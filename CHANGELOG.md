@@ -22,3 +22,6 @@
 - Made the cart drawer fit comfortably on small phones — it used to cover almost the entire screen with no space left to tap outside to close.
 - Added PayPal as a payment option at checkout alongside card and bank transfer.
 - Added Afterpay as a payment option at checkout — buy now, pay in four interest-free instalments.
+- Fixed the product description editor on the admin add and edit product pages — the editor box was loading empty.
+- Fixed the tag list on the admin add and edit product pages — tags now load instead of showing an error.
+- Added a search box to the Categories list on the admin add and edit product pages — start typing to jump straight to a category instead of scrolling through the full list.

@@ -162,6 +162,7 @@ export default function AdminProductForm() {
   const [brands, setBrands] = useState([]);
   const [allTags, setAllTags] = useState([]);
   const [tagSearch, setTagSearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
   const fileInputRef = useRef(null);
   const tagInputRef = useRef(null);
 
@@ -398,6 +399,24 @@ export default function AdminProductForm() {
     }
     return acc;
   }, {});
+
+  // Filter categories by search. A top group is visible if its own name
+  // matches OR any of its children match. When only children match, the
+  // parent stays as context but we hide non-matching siblings.
+  const catSearchLower = categorySearch.trim().toLowerCase();
+  const catMatches = (name) => name.toLowerCase().includes(catSearchLower);
+  const visibleTopCats = catSearchLower
+    ? topCats.filter(
+        (top) =>
+          catMatches(top.name) ||
+          (childMap[top.id] || []).some((c) => catMatches(c.name)),
+      )
+    : topCats;
+  const visibleChildren = (top) => {
+    const children = childMap[top.id] || [];
+    if (!catSearchLower || catMatches(top.name)) return children;
+    return children.filter((c) => catMatches(c.name));
+  };
 
   if (loading) {
     return (
@@ -672,33 +691,61 @@ export default function AdminProductForm() {
                 {categories.length === 0 ? (
                   <p className="af-muted">Loading categories…</p>
                 ) : (
-                  <div className="af-cat-grid">
-                    {topCats.map((top) => (
-                      <div key={top.id} className="af-cat-group">
-                        <label className="af-cat-check af-cat-check--top">
-                          <input
-                            type="checkbox"
-                            checked={form.categories.includes(top.id)}
-                            onChange={() => toggleCategory(top.id)}
-                          />
-                          {top.name}
-                        </label>
-                        {(childMap[top.id] || []).map((child) => (
-                          <label
-                            key={child.id}
-                            className="af-cat-check af-cat-check--child"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={form.categories.includes(child.id)}
-                              onChange={() => toggleCategory(child.id)}
-                            />
-                            {child.name}
-                          </label>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <div className="af-cat-search-wrap">
+                      <input
+                        type="search"
+                        className="af-input af-cat-search"
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        placeholder="Search categories…"
+                        autoComplete="off"
+                      />
+                      {categorySearch && (
+                        <button
+                          type="button"
+                          className="af-cat-search-clear"
+                          onClick={() => setCategorySearch("")}
+                          title="Clear search"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="af-cat-grid">
+                      {visibleTopCats.length === 0 ? (
+                        <p className="af-muted" style={{ padding: "8px 4px" }}>
+                          No matches.
+                        </p>
+                      ) : (
+                        visibleTopCats.map((top) => (
+                          <div key={top.id} className="af-cat-group">
+                            <label className="af-cat-check af-cat-check--top">
+                              <input
+                                type="checkbox"
+                                checked={form.categories.includes(top.id)}
+                                onChange={() => toggleCategory(top.id)}
+                              />
+                              {top.name}
+                            </label>
+                            {visibleChildren(top).map((child) => (
+                              <label
+                                key={child.id}
+                                className="af-cat-check af-cat-check--child"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={form.categories.includes(child.id)}
+                                  onChange={() => toggleCategory(child.id)}
+                                />
+                                {child.name}
+                              </label>
+                            ))}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

@@ -135,6 +135,18 @@
 .af-page[data-admin-theme="light"] .af-btn-delete:hover:not(:disabled) { border-color: #d94040; color: #d94040; }
 
 /* Categories */
+.af-cat-search-wrap { position: relative; margin-bottom: 10px; }
+.af-cat-search { padding-right: 34px; font-size: 0.92rem; padding-top: 9px; padding-bottom: 9px; }
+.af-cat-search::-webkit-search-cancel-button { display: none; }
+.af-cat-search-clear {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  background: transparent; border: 0; color: #888; cursor: pointer;
+  padding: 4px; border-radius: 4px; display: inline-flex; align-items: center;
+}
+.af-cat-search-clear:hover { color: #e8e8e8; background: #2a2a2c; }
+.af-page[data-admin-theme="light"] .af-cat-search-clear { color: #6b7280; }
+.af-page[data-admin-theme="light"] .af-cat-search-clear:hover { color: #111827; background: #f3f4f6; }
+
 .af-cat-grid { display: flex; flex-direction: column; gap: 2px; max-height: 360px; overflow-y: auto; }
 .af-cat-check {
   display: flex; align-items: center; gap: 10px;
