@@ -47,6 +47,10 @@ const EMPTY_FORM = {
   stock_status: "instock",
   backorders: "no",
   status: "publish",
+  weight: "",
+  length: "",
+  width: "",
+  height: "",
   categories: [],
   tags: [],
   images: [],
@@ -97,6 +101,10 @@ function formFromProduct(p) {
     stock_status: p.stock_status || "instock",
     backorders: p.backorders || "no",
     status: p.status || "publish",
+    weight: p.weight || "",
+    length: p.dimensions?.length || "",
+    width: p.dimensions?.width || "",
+    height: p.dimensions?.height || "",
     categories: (p.categories || []).map((c) => c.id),
     tags: (p.tags || []).map((t) => t.name),
     images: (p.images || []).map((img) => ({
@@ -136,6 +144,13 @@ function buildPayload(form) {
     payload.stock_status = form.stock_status;
   }
   if (form.slug && form.slug.trim()) payload.slug = form.slug.trim();
+
+  payload.weight = String(form.weight || "").trim();
+  payload.dimensions = {
+    length: String(form.length || "").trim(),
+    width: String(form.width || "").trim(),
+    height: String(form.height || "").trim(),
+  };
 
   const attributes = [...(form.otherAttributes || [])];
   if (form.brand) {
@@ -936,6 +951,67 @@ export default function AdminProductForm() {
                     </select>
                   </div>
                 )}
+              </div>
+
+              <div className="af-card">
+                <h2 className="af-card-title">Shipping</h2>
+                <div className="af-field">
+                  <label className="af-label">Weight (kg)</label>
+                  <input
+                    className="af-input"
+                    type="number"
+                    name="weight"
+                    value={form.weight}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                  <div className="af-help">
+                    Used for freight calculation. Australia Post rates depend on this.
+                  </div>
+                </div>
+                <div className="af-row">
+                  <div className="af-field">
+                    <label className="af-label">Length (cm)</label>
+                    <input
+                      className="af-input"
+                      type="number"
+                      name="length"
+                      value={form.length}
+                      onChange={handleChange}
+                      min="0"
+                      step="0.1"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="af-field">
+                    <label className="af-label">Width (cm)</label>
+                    <input
+                      className="af-input"
+                      type="number"
+                      name="width"
+                      value={form.width}
+                      onChange={handleChange}
+                      min="0"
+                      step="0.1"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="af-field">
+                  <label className="af-label">Height (cm)</label>
+                  <input
+                    className="af-input"
+                    type="number"
+                    name="height"
+                    value={form.height}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.1"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
           </div>

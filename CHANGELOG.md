@@ -34,3 +34,4 @@
 - Tidied the Inventory section on the admin add and edit product pages — tick "Track stock quantity" to set a quantity and choose how backorders behave; leave it unticked to manually mark a product as In Stock, Out of Stock, or On Backorder.
 - Bank transfer details on the checkout payment page, order confirmation page, and emailed receipt now show the real Elusive Racing account instead of placeholder numbers.
 - If your phone or computer is set to reduce animations, the site now respects that across every page — spinners, slide-ins, and pulsing buttons stay still.
+- Added a Shipping section on the admin add and edit product pages where you can set a product's weight (kg) and length, width, height (cm) — these are used to calculate freight at checkout.
