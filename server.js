@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
 import { Meilisearch } from 'meilisearch';
+import { z } from 'zod';
 
 // Load .env manually — only sets vars not already injected by the environment (e.g. Railway)
 try {
@@ -48,12 +49,18 @@ const AFTERPAY_BASE        = AFTERPAY_ENV === 'live'
   ? 'https://global-api.afterpay.com'
   : 'https://global-api-sandbox.afterpay.com';
 
-// Prefer non-VITE names; fall back to legacy VITE_ names for backwards compat.
-// Frontend now reaches WC REST only via /api/wc/* — the consumer key/secret must
-// NEVER be exposed as a VITE_ var because Vite bakes those into the client bundle.
-const WC_URL    = process.env.WC_URL            || process.env.VITE_WC_URL;
-const WC_KEY    = process.env.WC_CONSUMER_KEY   || process.env.VITE_WC_CONSUMER_KEY;
-const WC_SECRET = process.env.WC_CONSUMER_SECRET || process.env.VITE_WC_CONSUMER_SECRET;
+// Frontend reaches WC REST only via /api/wc/* — the consumer key/secret must
+// NEVER carry a VITE_ prefix because Vite would inline a referenced VITE_*
+// var into the client bundle. WC_URL keeps a VITE_ fallback because it's also
+// read by the React client (a public URL, safe to ship).
+const WC_URL    = process.env.WC_URL || process.env.VITE_WC_URL;
+const WC_KEY    = process.env.WC_CONSUMER_KEY;
+const WC_SECRET = process.env.WC_CONSUMER_SECRET;
+// Boot warning if anyone is still leaning on the old names. Production refuses
+// to start (see validateProductionConfig); local dev just warns.
+if (process.env.VITE_WC_CONSUMER_KEY || process.env.VITE_WC_CONSUMER_SECRET) {
+  console.warn('[BOOT] VITE_WC_CONSUMER_KEY / VITE_WC_CONSUMER_SECRET are deprecated and ignored — rename to WC_CONSUMER_KEY / WC_CONSUMER_SECRET. The VITE_ prefix would inline these into the browser bundle if any frontend file referenced them.');
+}
 
 const MS_HOST = process.env.MEILISEARCH_HOST;
 const MS_KEY  = process.env.MEILISEARCH_ADMIN_KEY;
@@ -81,9 +88,15 @@ const IS_PROD = process.env.NODE_ENV === 'production';
   } else if (process.env.STRIPE_SECRET_KEY.startsWith('sk_test_')) {
     errors.push('STRIPE_SECRET_KEY is a TEST key (sk_test_*) — refusing to start in production');
   }
-  if (!WC_URL)    errors.push('VITE_WC_URL / WC_URL is not set');
-  if (!WC_KEY)    errors.push('WooCommerce consumer key is not set');
-  if (!WC_SECRET) errors.push('WooCommerce consumer secret is not set');
+  if (!WC_URL)    errors.push('WC_URL (or legacy VITE_WC_URL) is not set');
+  if (!WC_KEY)    errors.push('WC_CONSUMER_KEY is not set');
+  if (!WC_SECRET) errors.push('WC_CONSUMER_SECRET is not set');
+  // The VITE_ prefix marks env vars for inlining into the client bundle by Vite.
+  // For consumer secrets that's a footgun — refuse to start in production if
+  // anyone is still relying on the old names.
+  if (process.env.VITE_WC_CONSUMER_KEY || process.env.VITE_WC_CONSUMER_SECRET) {
+    errors.push('VITE_WC_CONSUMER_KEY / VITE_WC_CONSUMER_SECRET found — rename to WC_CONSUMER_KEY / WC_CONSUMER_SECRET (the VITE_ prefix would inline these into the public bundle)');
+  }
   if (!process.env.ADMIN_JWT_SECRET || process.env.ADMIN_JWT_SECRET === 'change-me-in-production') {
     errors.push('ADMIN_JWT_SECRET is missing or still set to the default placeholder');
   }
@@ -124,14 +137,39 @@ function corsOrigin(req) {
 }
 
 // ── Security headers baseline ────────────────────────────────────────────────
-// Applied to HTML and JSON responses. CSP is deliberately permissive for script/style
-// to avoid breaking Stripe, GTM, and inline React styles — tighten once sources are known.
+// Applied to HTML and JSON responses.
+//
+// CSP is sent in REPORT-ONLY mode for now: violations are logged in the browser
+// console and (if a report-uri is configured) sent to Sentry, but nothing is
+// blocked. After a soak period with no spurious violations, flip the header
+// name to `Content-Security-Policy` to enforce.
+//
+// `'unsafe-inline'` on script-src/style-src is intentional for v1: index.html
+// has an inline `onload="..."` font-loader, React injects inline styles, and
+// Stripe Elements / PayPal / Afterpay / Sentry all rely on inlined config.
+// Tighten with nonces or hashes once we've confirmed nothing else is broken.
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com https://portal.afterpay.com https://js.afterpay.com https://*.sentry.io",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' https://api.stripe.com https://*.stripe.com https://*.paypal.com https://*.paypalobjects.com https://*.afterpay.com https://*.sentry.io https://elusiveracing.com.au https://*.meilisearch.com https://*.meilisearch.io https://*.up.railway.app",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://portal.afterpay.com",
+  "media-src 'self' https: data: blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 function securityHeaders() {
   return {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    'Content-Security-Policy-Report-Only': CSP_DIRECTIVES,
     ...(IS_PROD ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {}),
   };
 }
@@ -1004,8 +1042,15 @@ async function handleChat(req, res) {
 
 // ── Admin auth helpers ────────────────────────────────────────────────────────
 
+// Admin session JWT — HMAC-signed, 8h expiry. Stored in an httpOnly cookie
+// (`er_admin`) so JS in the page can't read it (XSS can't steal the session).
+// We accept the legacy Bearer header during the rollout; it can be deleted
+// once all open admin tabs have re-authenticated.
+const ADMIN_COOKIE_NAME   = 'er_admin';
+const ADMIN_TOKEN_TTL_MS  = 8 * 60 * 60 * 1000;
+
 function signAdminToken(username) {
-  const payload = { sub: username, exp: Date.now() + 8 * 60 * 60 * 1000 };
+  const payload = { sub: username, exp: Date.now() + ADMIN_TOKEN_TTL_MS };
   const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const sig  = crypto.createHmac('sha256', ADMIN_JWT_SECRET).update(data).digest('base64url');
   return `${data}.${sig}`;
@@ -1025,9 +1070,52 @@ function verifyAdminToken(token) {
   } catch { return null; }
 }
 
+function readCookie(req, name) {
+  const raw = req.headers['cookie'];
+  if (!raw) return null;
+  for (const part of raw.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq < 0) continue;
+    const k = part.slice(0, eq).trim();
+    if (k === name) return decodeURIComponent(part.slice(eq + 1).trim());
+  }
+  return null;
+}
+
+function adminCookieAttrs(maxAgeSec) {
+  // SameSite=Lax means the cookie still rides on top-level navigation back to
+  // /admin from password-reset emails etc., but not on third-party POSTs. In
+  // dev the cookie isn't Secure (so http://localhost works). In prod always Secure.
+  const parts = [
+    `${ADMIN_COOKIE_NAME}=`,
+    'HttpOnly',
+    'SameSite=Lax',
+    'Path=/',
+    `Max-Age=${maxAgeSec}`,
+  ];
+  if (IS_PROD) parts.splice(1, 0, 'Secure');
+  return parts;
+}
+
+function setAdminCookie(res, token) {
+  const parts = adminCookieAttrs(Math.floor(ADMIN_TOKEN_TTL_MS / 1000));
+  parts[0] = `${ADMIN_COOKIE_NAME}=${encodeURIComponent(token)}`;
+  res.setHeader('Set-Cookie', parts.join('; '));
+}
+
+function clearAdminCookie(res) {
+  const parts = adminCookieAttrs(0);
+  parts[0] = `${ADMIN_COOKIE_NAME}=`;
+  res.setHeader('Set-Cookie', parts.join('; '));
+}
+
 function requireAdminAuth(req, res) {
-  const auth = req.headers['authorization'] || '';
-  if (!verifyAdminToken(auth.startsWith('Bearer ') ? auth.slice(7) : null)) {
+  // Prefer the httpOnly cookie; fall back to the legacy Bearer header so admin
+  // tabs that still have a localStorage token keep working through the rollout.
+  const cookieTok = readCookie(req, ADMIN_COOKIE_NAME);
+  const authHdr   = req.headers['authorization'] || '';
+  const headerTok = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : null;
+  if (!verifyAdminToken(cookieTok) && !verifyAdminToken(headerTok)) {
     res.writeHead(401, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify({ error: 'Unauthorised' }));
     return false;
@@ -1091,17 +1179,71 @@ function safeErrorMessage(err, fallback = 'Something went wrong') {
   return fallback;
 }
 
+// ── Body schemas for critical routes ─────────────────────────────────────────
+// `passthrough()` lets unknown keys through so we don't break clients that send
+// extra fields. We only enforce the shape of values we actually consume.
+const AdminLoginBody     = z.object({ username: z.string().min(1).max(200), password: z.string().min(1).max(500) });
+const AuthLoginBody      = z.object({ email: z.string().email().max(320), password: z.string().min(1).max(500) });
+const AuthRegisterBody   = z.object({
+  email:     z.string().email().max(320),
+  password:  z.string().min(1).max(500),
+  firstName: z.string().max(200).optional().default(''),
+  lastName:  z.string().max(200).optional().default(''),
+}).passthrough();
+const LostPasswordBody   = z.object({ email: z.string().email().max(320) });
+const ResetPasswordBody  = z.object({
+  key:      z.string().min(1).max(500),
+  login:    z.string().min(1).max(320),
+  password: z.string().min(8).max(500),
+});
+const PaymentIntentBody  = z.object({
+  amountCents:    z.number().int().positive().max(100_00_000),     // ≤ $100k AUD
+  idempotencyKey: z.string().min(8).max(255).optional(),
+});
+const ShippingRatesBody  = z.object({
+  items:   z.array(z.object({}).passthrough()).max(200),
+  address: z.object({}).passthrough(),
+}).passthrough();
+
+// Returns the validated body, or null if validation failed (response already sent).
+async function readValidatedBody(req, res, schema, maxBytes = DEFAULT_BODY_LIMIT) {
+  let raw;
+  try {
+    raw = await readBody(req, maxBytes);
+  } catch (err) {
+    if (handlePayloadTooLarge(err, res)) return null;
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid JSON' }));
+    return null;
+  }
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const path = issue.path.join('.') || '(root)';
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: `Invalid request: ${path} — ${issue.message}` }));
+    return null;
+  }
+  return parsed.data;
+}
+
 function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 }
 
 function adminJson(res, status, data, req = null) {
-  res.writeHead(status, {
+  // Admin routes use httpOnly cookie auth, which requires the response to
+  // include Allow-Credentials AND echo a specific origin (never '*'). When no
+  // request is supplied (e.g. early boot 401s) we omit the credential header.
+  const origin = req ? corsOrigin(req) : '*';
+  const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': req ? corsOrigin(req) : '*',
+    'Access-Control-Allow-Origin': origin,
     'Vary': 'Origin',
     ...securityHeaders(),
-  });
+  };
+  if (req && origin !== '*') headers['Access-Control-Allow-Credentials'] = 'true';
+  res.writeHead(status, headers);
   res.end(JSON.stringify(data));
 }
 
@@ -1122,8 +1264,10 @@ async function handleAdminLogin(req, res) {
     res.end(JSON.stringify({ error: `Too many login attempts. Try again in ${Math.ceil(gate.retryAfterSec / 60)} minute(s).` }));
     return;
   }
+  const body = await readValidatedBody(req, res, AdminLoginBody);
+  if (!body) return;
+  const { username, password } = body;
   try {
-    const { username, password } = await readBody(req);
     if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
       return adminJson(res, 503, { error: 'Admin credentials not configured on server.' }, req);
     }
@@ -1133,10 +1277,22 @@ async function handleAdminLogin(req, res) {
       return adminJson(res, 401, { error: 'Invalid username or password.' }, req);
     }
     clearAdminLoginAttempts(ip);
-    adminJson(res, 200, { token: signAdminToken(username), username }, req);
+    const token = signAdminToken(username);
+    setAdminCookie(res, token);
+    // We still return the token in JSON during the rollout: the React client
+    // continues to mirror it into localStorage as a fallback for older tabs.
+    // Once all tabs have re-authenticated, this can be dropped.
+    adminJson(res, 200, { token, username }, req);
   } catch {
     res.writeHead(400); res.end();
   }
+}
+
+// Clears the httpOnly admin cookie. Idempotent — safe to call without auth.
+async function handleAdminLogout(req, res) {
+  if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+  clearAdminCookie(res);
+  adminJson(res, 200, { ok: true }, req);
 }
 
 async function handleAdminListProducts(req, res) {
@@ -1732,31 +1888,28 @@ async function handleShippingRates(req, res) {
     return;
   }
 
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
-    try {
-      const { items, address } = JSON.parse(body);
-      const result = await getShippingRatesServer(items || [], address || {});
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify(result));
-    } catch (err) {
-      console.error('Shipping rates error:', err);
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ rates: [], taxAmount: 0 }));
-    }
-  });
+  const body = await readValidatedBody(req, res, ShippingRatesBody);
+  if (!body) return;
+  try {
+    const result = await getShippingRatesServer(body.items, body.address);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify(result));
+  } catch (err) {
+    console.error('Shipping rates error:', err);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ rates: [], taxAmount: 0 }));
+  }
 }
 
 // ── Auth: login + register (proxied to avoid CORS, keeps WC keys server-side) ─
 // Requires "JWT Authentication for WP REST API" plugin on the WordPress site.
 async function handleAuthLogin(req, res) {
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
+  const parsed = await readValidatedBody(req, res, AuthLoginBody);
+  if (!parsed) return;
+  (async () => {
     try {
-      const { email, password } = JSON.parse(body);
+      const { email, password } = parsed;
       const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 
       // 1. Authenticate via custom Elusive Auth plugin
@@ -1823,16 +1976,16 @@ async function handleAuthLogin(req, res) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Login failed. Please try again.' }));
     }
-  });
+  })();
 }
 
 async function handleAuthRegister(req, res) {
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
+  const parsed = await readValidatedBody(req, res, AuthRegisterBody);
+  if (!parsed) return;
+  (async () => {
     try {
-      const { email, password, firstName, lastName } = JSON.parse(body);
+      const { email, password, firstName, lastName } = parsed;
       const auth = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 
       // 1. Create customer via WC REST API
@@ -1876,7 +2029,7 @@ async function handleAuthRegister(req, res) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Registration failed. Please try again.' }));
     }
-  });
+  })();
 }
 
 async function handleWholesaleRegister(req, res) {
@@ -1985,39 +2138,35 @@ async function handleLostPassword(req, res) {
   }
   recordPwResetAttempt(ip);
 
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
-    const genericOk = () => {
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
-      res.end(JSON.stringify({ ok: true, message: "If an account with that email exists, we've sent a password reset link." }));
-    };
+  const genericOk = () => {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
+    res.end(JSON.stringify({ ok: true, message: "If an account with that email exists, we've sent a password reset link." }));
+  };
 
-    try {
-      const { email } = JSON.parse(body || '{}');
-      if (!email || typeof email !== 'string' || !email.includes('@')) {
-        // Still return the generic success — don't hint at validation either.
-        return genericOk();
-      }
+  // Anti-enumeration: any input always returns the generic 200. We still want
+  // body-size protection and shape validation to keep the route cheap, but we
+  // swallow validation errors and respond OK rather than 400.
+  let raw;
+  try {
+    raw = await readBody(req);
+  } catch (err) {
+    if (handlePayloadTooLarge(err, res)) return;
+    return genericOk();
+  }
+  const parsed = LostPasswordBody.safeParse(raw);
+  if (!parsed.success) return genericOk();
+  const { email } = parsed.data;
 
-      // Fire at WP but don't gate the response on it. WP plugin also returns 200
-      // regardless of whether the email matched a user.
-      try {
-        await fetch(`${WC_URL}/wp-json/elusive/v1/lost-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
-      } catch (err) {
-        console.error('[lost-password] WP call failed:', err?.message || err);
-      }
-
-      genericOk();
-    } catch (err) {
-      console.error('[lost-password] error:', err);
-      genericOk();
-    }
-  });
+  try {
+    await fetch(`${WC_URL}/wp-json/elusive/v1/lost-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  } catch (err) {
+    console.error('[lost-password] WP call failed:', err?.message || err);
+  }
+  genericOk();
 }
 
 // Consume a reset key + login from the email and set a new password.
@@ -2037,22 +2186,11 @@ async function handleResetPassword(req, res) {
   }
   recordPwResetAttempt(ip);
 
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
+  const parsed = await readValidatedBody(req, res, ResetPasswordBody);
+  if (!parsed) return;
+  (async () => {
     try {
-      const { key, login, password } = JSON.parse(body || '{}');
-
-      if (!key || !login || !password) {
-        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
-        res.end(JSON.stringify({ error: 'Reset key, login and new password are all required.' }));
-        return;
-      }
-      if (typeof password !== 'string' || password.length < 8) {
-        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
-        res.end(JSON.stringify({ error: 'Password must be at least 8 characters.' }));
-        return;
-      }
+      const { key, login, password } = parsed;
 
       const wpRes = await fetch(`${WC_URL}/wp-json/elusive/v1/reset-password`, {
         method: 'POST',
@@ -2072,7 +2210,7 @@ async function handleResetPassword(req, res) {
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': corsOrigin(req), 'Vary': 'Origin' });
       res.end(JSON.stringify({ error: 'Could not reset password. Please try again.' }));
     }
-  });
+  })();
 }
 
 // Update a signed-in customer's own profile (name, email, phone, addresses).
@@ -2525,31 +2663,26 @@ async function handleCreatePaymentIntent(req, res) {
     res.end(JSON.stringify({ error: 'Stripe secret key not configured' }));
     return;
   }
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
-    try {
-      const { amountCents, idempotencyKey } = JSON.parse(body);
-      // Idempotency key prevents duplicate PaymentIntents on flaky network /
-      // React StrictMode double-mounts. Client supplies a stable UUID per
-      // (amount, method) tuple; same key → same PI, no double charge.
-      const opts = {};
-      if (typeof idempotencyKey === 'string' && idempotencyKey.length >= 8 && idempotencyKey.length <= 255) {
-        opts.idempotencyKey = idempotencyKey;
-      }
-      const paymentIntent = await stripeClient.paymentIntents.create({
-        amount:   Math.max(50, Math.round(amountCents)), // Stripe minimum is 50 cents
-        currency: 'aud',
-        automatic_payment_methods: { enabled: true },   // enables Link, Apple Pay, Google Pay etc.
-      }, opts);
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ clientSecret: paymentIntent.client_secret }));
-    } catch (err) {
-      console.error('PaymentIntent error:', err.message);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: safeErrorMessage(err, 'Payment setup failed. Please try again.') }));
-    }
-  });
+  const body = await readValidatedBody(req, res, PaymentIntentBody);
+  if (!body) return;
+  try {
+    const { amountCents, idempotencyKey } = body;
+    // Idempotency key prevents duplicate PaymentIntents on flaky network /
+    // React StrictMode double-mounts. Client supplies a stable UUID per
+    // (amount, method) tuple; same key → same PI, no double charge.
+    const opts = idempotencyKey ? { idempotencyKey } : {};
+    const paymentIntent = await stripeClient.paymentIntents.create({
+      amount:   Math.max(50, Math.round(amountCents)), // Stripe minimum is 50 cents
+      currency: 'aud',
+      automatic_payment_methods: { enabled: true },   // enables Link, Apple Pay, Google Pay etc.
+    }, opts);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ clientSecret: paymentIntent.client_secret }));
+  } catch (err) {
+    console.error('PaymentIntent error:', err.message);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: safeErrorMessage(err, 'Payment setup failed. Please try again.') }));
+  }
 }
 
 // ── PayPal ────────────────────────────────────────────────────────────────────
@@ -3185,7 +3318,8 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/public/wholesale-tiers') { handlePublicWsTiers(req, res); return; }
 
   // Admin API
-  if (req.url === '/api/admin/login') { handleAdminLogin(req, res); return; }
+  if (req.url === '/api/admin/login')  { handleAdminLogin(req, res);  return; }
+  if (req.url === '/api/admin/logout') { handleAdminLogout(req, res); return; }
   if (req.url === '/api/admin/promo-banner' && req.method === 'GET') { handleAdminGetPromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner' && req.method === 'PUT') { handleAdminSavePromoBanner(req, res); return; }
   if (req.url === '/api/admin/promo-banner/image' && req.method === 'POST') { handleAdminPromoBannerImage(req, res); return; }
@@ -3263,7 +3397,19 @@ const server = http.createServer((req, res) => {
 
   // CORS preflight
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' });
+    // Echo a specific origin (and Allow-Credentials) for admin routes so the
+    // httpOnly cookie can ride cross-origin in dev (vite :5173 → server :8080).
+    // Other routes can keep wildcard CORS.
+    const origin = corsOrigin(req);
+    const isAdminRoute = req.url?.startsWith('/api/admin/') ?? false;
+    const headers = {
+      'Access-Control-Allow-Origin': isAdminRoute && origin !== '*' ? origin : '*',
+      'Vary': 'Origin',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    };
+    if (isAdminRoute && origin !== '*') headers['Access-Control-Allow-Credentials'] = 'true';
+    res.writeHead(204, headers);
     res.end();
     return;
   }
