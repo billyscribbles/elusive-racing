@@ -36,3 +36,4 @@
 - If your phone or computer is set to reduce animations, the site now respects that across every page — spinners, slide-ins, and pulsing buttons stay still.
 - Added a Shipping section on the admin add and edit product pages where you can set a product's weight (kg) and length, width, height (cm) — these are used to calculate freight at checkout.
 - Fixed adding a backorder product to the cart — it used to land in the cart at $0.00 with quantity 0, and now goes in at the correct price and quantity like any other product.
+- Errors that hit shoppers — like checkout glitches or page crashes — are now reported to our error tracker so we can spot and fix them faster.

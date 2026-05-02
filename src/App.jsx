@@ -1,12 +1,18 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect, useRef, lazy, Suspense } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import * as Sentry from '@sentry/react';
 import AdminRoute from './components/admin/AdminRoute';
 import WholesaleRoute from './components/auth/WholesaleRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import useAuthStore from './store/authStore';
 import useCartStore from './store/cartStore';
 import MainLayout from './layouts/MainLayout';
+
+// Sentry-instrumented Routes. Renders identically to react-router's <Routes>
+// but reports parameterised route names to Sentry's tracing so the dashboard
+// shows /products/:handle instead of every concrete slug.
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -78,7 +84,7 @@ export default function App() {
       <CartRepricer />
       <ErrorBoundary>
       <Suspense fallback={<div style={{minHeight:'100vh',background:'#0a0a0a'}} />}>
-      <Routes>
+      <SentryRoutes>
         {/* Admin routes — no site layout */}
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
@@ -117,7 +123,7 @@ export default function App() {
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
-      </Routes>
+      </SentryRoutes>
       </Suspense>
       </ErrorBoundary>
     </BrowserRouter>

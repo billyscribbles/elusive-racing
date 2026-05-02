@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import compression from 'vite-plugin-compression'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 export default defineConfig({
   plugins: [
@@ -22,6 +23,16 @@ export default defineConfig({
         { src: 'node_modules/tinymce/plugins/**', dest: 'tinymce/plugins', rename: { stripBase: 3 } },
       ],
     }),
+    // Source-map upload to Sentry. `disable` makes this a no-op when the auth
+    // token isn't present (local dev, or first-time prod build before Railway
+    // env vars are set), so the build never fails just because Sentry isn't
+    // configured yet. Maps still get *generated* via build.sourcemap below.
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      disable: !process.env.SENTRY_AUTH_TOKEN,
+    }),
   ],
   server: {
     proxy: {
@@ -34,6 +45,10 @@ export default defineConfig({
     allowedHosts: 'all',
   },
   build: {
+    // 'hidden' generates source maps but omits the //# sourceMappingURL
+    // comment from the served JS, so end users don't see them in DevTools
+    // while Sentry's plugin can still upload + use them server-side.
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         manualChunks: {

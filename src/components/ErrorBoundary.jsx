@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import * as Sentry from '@sentry/react';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -14,8 +15,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     // eslint-disable-next-line no-console
     console.error('[ErrorBoundary]', error, errorInfo);
-    // Hook point for Sentry / Rollbar once wired:
-    // window.Sentry?.captureException(error, { contexts: { react: errorInfo } });
+    Sentry.captureException(error, { contexts: { react: errorInfo } });
   }
 
   handleReload = () => {
