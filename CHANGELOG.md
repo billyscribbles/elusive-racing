@@ -35,3 +35,4 @@
 - Bank transfer details on the checkout payment page, order confirmation page, and emailed receipt now show the real Elusive Racing account instead of placeholder numbers.
 - If your phone or computer is set to reduce animations, the site now respects that across every page — spinners, slide-ins, and pulsing buttons stay still.
 - Added a Shipping section on the admin add and edit product pages where you can set a product's weight (kg) and length, width, height (cm) — these are used to calculate freight at checkout.
+- Fixed adding a backorder product to the cart — it used to land in the cart at $0.00 with quantity 0, and now goes in at the correct price and quantity like any other product.

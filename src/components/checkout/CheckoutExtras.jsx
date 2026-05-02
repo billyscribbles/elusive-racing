@@ -172,6 +172,7 @@ export default function CheckoutExtras() {
   }, []);
 
   function handleAdd(product, effectivePrice, selectedVariant) {
+    if (!(effectivePrice > 0)) return;
     const variantId = product.hasVariants ? selectedVariant?.id : product.variantId;
     const variantTitle = product.hasVariants ? selectedVariant?.title : null;
     const stockQuantity = product.hasVariants

@@ -144,7 +144,7 @@ function normalizeProduct(p) {
     wholesalePrices: extractWholesalePrices(p.meta_data),
     variants: p.variations?.length
       ? p.variations.map(v => ({ id: String(v.id) }))
-      : [{ id: String(p.id), title: 'Default', availableForSale: p.stock_status === 'instock' }],
+      : [{ id: String(p.id), title: 'Default', availableForSale: p.stock_status !== 'outofstock' }],
   };
 }
 
@@ -184,7 +184,7 @@ function normalizeProductDetail(p) {
             title: 'Default',
             price: { amount: p.price || '0', currencyCode: 'AUD' },
             compareAtPrice: p.regular_price ? { amount: p.regular_price, currencyCode: 'AUD' } : null,
-            availableForSale: p.stock_status === 'instock',
+            availableForSale: p.stock_status !== 'outofstock',
             selectedOptions: [],
           },
         ],

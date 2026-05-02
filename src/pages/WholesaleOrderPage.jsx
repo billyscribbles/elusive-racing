@@ -330,6 +330,7 @@ export default function WholesaleOrderPage() {
       if (!product) continue;
 
       const { price: displayPrice } = getDisplayPrice(product);
+      if (!(displayPrice > 0)) continue;
       let stockQuantity, title, image, retail;
       if (variantId) {
         const variant = variantCache[productId]?.find((v) => v.id === variantId);
@@ -386,6 +387,7 @@ export default function WholesaleOrderPage() {
     const [productId, variantId] = key.split('__');
 
     const { price: displayPrice } = getDisplayPrice(product);
+    if (!(displayPrice > 0)) return;
     let stockQuantity, title, image, retail;
     if (variantId && variantId !== productId) {
       const variant = variantCache[productId]?.find((v) => v.id === variantId);

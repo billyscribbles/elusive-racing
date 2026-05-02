@@ -102,7 +102,13 @@ function ProductCard({ product }) {
         ) : (
           <button
             className="product-quick-add"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ ...product, price: effectivePrice, retailPrice: product.price }); openCart(); }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!(effectivePrice > 0)) return;
+              addItem({ ...product, price: effectivePrice, retailPrice: product.price });
+              openCart();
+            }}
           >
             Add to Cart
           </button>

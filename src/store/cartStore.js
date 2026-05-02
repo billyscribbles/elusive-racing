@@ -12,15 +12,24 @@ const useCartStore = create(
       closeCart: () => set({ isOpen: false }),
 
       addItem: (product) => {
+        if (!(Number(product.price) > 0)) {
+          console.error('[cart] refusing to add zero-priced item', { id: product.id, name: product.name ?? product.title, price: product.price });
+          return;
+        }
         const qty = product.quantity ?? 1;
+        // Treat stockQuantity 0/null as "no max" — backorder products report
+        // 0 stock but customers can still order them. Out-of-stock-no-backorder
+        // items are blocked at the call site, so by the time we get here a
+        // 0-stock item is implicitly backorder.
+        const stockMax = (n) => (Number(n) > 0 ? Number(n) : null);
         set((s) => {
           const existing = s.items.find((i) => i.id === product.id && i.variantId === product.variantId);
           if (existing) {
-            const max = existing.stockQuantity ?? product.stockQuantity ?? null;
+            const max = stockMax(existing.stockQuantity ?? product.stockQuantity);
             const newQty = max !== null ? Math.min(max, existing.quantity + qty) : existing.quantity + qty;
             return { items: s.items.map((i) => i.id === product.id && i.variantId === product.variantId ? { ...i, quantity: newQty } : i) };
           }
-          const max = product.stockQuantity ?? null;
+          const max = stockMax(product.stockQuantity);
           const clampedQty = max !== null ? Math.min(max, qty) : qty;
           const retailPrice = product.retailPrice ?? product.price;
           return { items: [...s.items, { ...product, retailPrice, wholesalePrices: product.wholesalePrices ?? null, quantity: clampedQty }] };
@@ -28,17 +37,24 @@ const useCartStore = create(
       },
 
       addItems: (products) => {
+        const valid = products.filter((p) => {
+          if (Number(p.price) > 0) return true;
+          console.error('[cart] refusing to add zero-priced item', { id: p.id, name: p.name ?? p.title, price: p.price });
+          return false;
+        });
+        if (!valid.length) return;
+        const stockMax = (n) => (Number(n) > 0 ? Number(n) : null);
         set((s) => {
           let items = [...s.items];
-          for (const product of products) {
+          for (const product of valid) {
             const qty = product.quantity ?? 1;
             const idx = items.findIndex((i) => i.id === product.id && i.variantId === product.variantId);
             if (idx !== -1) {
-              const max = items[idx].stockQuantity ?? product.stockQuantity ?? null;
+              const max = stockMax(items[idx].stockQuantity ?? product.stockQuantity);
               const newQty = max !== null ? Math.min(max, items[idx].quantity + qty) : items[idx].quantity + qty;
               items[idx] = { ...items[idx], quantity: newQty };
             } else {
-              const max = product.stockQuantity ?? null;
+              const max = stockMax(product.stockQuantity);
               const clampedQty = max !== null ? Math.min(max, qty) : qty;
               const retailPrice = product.retailPrice ?? product.price;
               items = [...items, { ...product, retailPrice, wholesalePrices: product.wholesalePrices ?? null, quantity: clampedQty }];
@@ -58,7 +74,8 @@ const useCartStore = create(
           set((s) => ({
             items: s.items.map((i) => {
               if (!(i.id === id && i.variantId === variantId)) return i;
-              const max = i.stockQuantity ?? null;
+              // 0 stock means "backorder, no real cap" — see addItem comment.
+              const max = Number(i.stockQuantity) > 0 ? Number(i.stockQuantity) : null;
               return { ...i, quantity: max !== null ? Math.min(max, quantity) : quantity };
             }),
           }));
@@ -78,11 +95,22 @@ const useCartStore = create(
     }),
     {
       name: 'elusive-cart',
-      version: 1,
+      version: 2,
       // Drop persisted cart whenever we bump the schema. Returning `undefined`
       // is zustand's way of saying "throw out the old state, use defaults".
       migrate: (persistedState, version) => {
         if (version < 1) return undefined;
+        // v2: scrub leftover zero-priced AND zero-quantity items from before
+        // the backorder fix (backorder products were entering at qty 0
+        // because Math.min(stockQuantity=0, 1) = 0).
+        if (version < 2 && persistedState?.items) {
+          return {
+            ...persistedState,
+            items: persistedState.items.filter(
+              (i) => Number(i.price) > 0 && Number(i.quantity) > 0,
+            ),
+          };
+        }
         return persistedState;
       },
     }

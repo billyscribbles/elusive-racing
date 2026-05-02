@@ -554,6 +554,13 @@ function normaliseMsProduct(p) {
   );
   const price        = parseFloat(p.price || p.regular_price || '0');
   const regularPrice = parseFloat(p.regular_price || p.price || '0');
+  // Skip products WC returns with no price — they'd index as $0.00 and
+  // surface as free items in cards / carts. Better to hide them from search
+  // until an admin fixes the price in WC.
+  if (!(price > 0)) {
+    console.warn(`[sync] skipping zero-priced product id=${p.id} sku=${p.sku || ''} name=${(p.name || '').slice(0, 60)}`);
+    return null;
+  }
   const vehicleSlugs = extractVehicleSlugs(p);
   return {
     id:              String(p.id),
@@ -616,7 +623,7 @@ async function runMsSync() {
 
     const totalPages = parseInt(firstRes.headers.get('X-WP-TotalPages') || '1', 10);
     const firstPage  = await firstRes.json();
-    const all = firstPage.map(normaliseMsProduct);
+    const all = firstPage.map(normaliseMsProduct).filter(Boolean);
 
     for (let page = 2; page <= totalPages; page++) {
       const r = await fetch(
@@ -625,7 +632,7 @@ async function runMsSync() {
       );
       if (!r.ok) break;
       const data = await r.json();
-      all.push(...data.map(normaliseMsProduct));
+      all.push(...data.map(normaliseMsProduct).filter(Boolean));
       await new Promise(res => setTimeout(res, 150));
     }
 
@@ -674,7 +681,8 @@ async function handleSyncProducts(req, res) {
           );
           if (r.ok) {
             const product = await r.json();
-            docs.push(normaliseMsProduct(product));
+            const doc = normaliseMsProduct(product);
+            if (doc) docs.push(doc);
           }
         } catch (err) {
           console.error(`[sync-products] Failed to fetch product ${id}:`, err.message);

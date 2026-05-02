@@ -194,6 +194,7 @@ function ProductCard({ product, index = 0 }) {
   function handleAddToCart(e) {
     e.preventDefault();
     e.stopPropagation();
+    if (!(effectivePrice > 0)) return;
     addItem({ ...product, price: effectivePrice, retailPrice: product.price });
     openCart();
     setAdded(true);
