@@ -1042,10 +1042,9 @@ async function handleChat(req, res) {
 
 // ── Admin auth helpers ────────────────────────────────────────────────────────
 
-// Admin session JWT — HMAC-signed, 8h expiry. Stored in an httpOnly cookie
-// (`er_admin`) so JS in the page can't read it (XSS can't steal the session).
-// We accept the legacy Bearer header during the rollout; it can be deleted
-// once all open admin tabs have re-authenticated.
+// Admin session JWT — HMAC-signed, 8h expiry. Stored only in an httpOnly cookie
+// (`er_admin`) so JS in the page can't read it. An XSS bug here cannot steal
+// the admin session.
 const ADMIN_COOKIE_NAME   = 'er_admin';
 const ADMIN_TOKEN_TTL_MS  = 8 * 60 * 60 * 1000;
 
@@ -1110,12 +1109,8 @@ function clearAdminCookie(res) {
 }
 
 function requireAdminAuth(req, res) {
-  // Prefer the httpOnly cookie; fall back to the legacy Bearer header so admin
-  // tabs that still have a localStorage token keep working through the rollout.
-  const cookieTok = readCookie(req, ADMIN_COOKIE_NAME);
-  const authHdr   = req.headers['authorization'] || '';
-  const headerTok = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : null;
-  if (!verifyAdminToken(cookieTok) && !verifyAdminToken(headerTok)) {
+  const tok = readCookie(req, ADMIN_COOKIE_NAME);
+  if (!verifyAdminToken(tok)) {
     res.writeHead(401, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify({ error: 'Unauthorised' }));
     return false;
@@ -1277,12 +1272,8 @@ async function handleAdminLogin(req, res) {
       return adminJson(res, 401, { error: 'Invalid username or password.' }, req);
     }
     clearAdminLoginAttempts(ip);
-    const token = signAdminToken(username);
-    setAdminCookie(res, token);
-    // We still return the token in JSON during the rollout: the React client
-    // continues to mirror it into localStorage as a fallback for older tabs.
-    // Once all tabs have re-authenticated, this can be dropped.
-    adminJson(res, 200, { token, username }, req);
+    setAdminCookie(res, signAdminToken(username));
+    adminJson(res, 200, { username }, req);
   } catch {
     res.writeHead(400); res.end();
   }

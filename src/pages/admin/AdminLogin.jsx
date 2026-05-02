@@ -28,7 +28,7 @@ export default function AdminLogin() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Login failed.'); return; }
-      saveAdminAuth(data.token, data.username);
+      saveAdminAuth(data.username);
       navigate('/admin/products', { replace: true });
     } catch {
       setError('Could not connect to server.');
