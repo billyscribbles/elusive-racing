@@ -207,6 +207,43 @@ function recordPwResetAttempt(ip) {
   }
 }
 
+// ── Generic per-IP+key rate limiter for public POST endpoints ────────────────
+// Bucketed by `${key}:${ip}` so each route gets its own quota. Used for
+// /api/shipping-rates and any other unauthenticated route that hits an upstream
+// API or expensive computation. Does not need to be exact under load — the
+// in-memory map drifts across multiple dynos, but Railway runs us as a single
+// instance, and the goal is to cap the abuse blast radius rather than hit
+// nginx-level precision.
+const publicRateAttempts = new Map(); // `${key}:${ip}` → { count, firstAt }
+
+function checkAndRecordPublicRate(ip, key, { windowMs, maxAttempts }) {
+  const bucketKey = `${key}:${ip}`;
+  const now = Date.now();
+  const entry = publicRateAttempts.get(bucketKey);
+  if (!entry || now - entry.firstAt > windowMs) {
+    publicRateAttempts.set(bucketKey, { count: 1, firstAt: now });
+    return { allowed: true };
+  }
+  if (entry.count >= maxAttempts) {
+    const retryAfterMs = windowMs - (now - entry.firstAt);
+    return { allowed: false, retryAfterSec: Math.max(1, Math.ceil(retryAfterMs / 1000)) };
+  }
+  entry.count += 1;
+  return { allowed: true };
+}
+
+const SHIPPING_RATE_LIMIT  = { windowMs: 60 * 1000, maxAttempts: 30 };  // 30 req/min/IP
+const STOCK_CHECK_LIMIT    = { windowMs: 60 * 1000, maxAttempts: 60 };  // 60 req/min/IP
+
+// Periodically prune stale entries so the map doesn't grow unbounded under sustained traffic.
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of publicRateAttempts) {
+    // 1h is longer than any of our windows; safe to drop.
+    if (now - v.firstAt > 60 * 60 * 1000) publicRateAttempts.delete(k);
+  }
+}, 10 * 60 * 1000).unref();
+
 const BRAND_TERMS = [
   'skunk2', 'k-tuned', 'ktuned', 'hondata', 'exedy', 'bc racing', 'hks', 'arp', 'acl',
   'spoon', 'mugen', 'bosch', 'ngk', 'mishimoto', 'cusco', 'project mu', 'tein', 'whiteline',
@@ -700,7 +737,7 @@ async function handleSyncProducts(req, res) {
     } catch (err) {
       console.error('[sync-products] error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ error: err.message }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'Sync failed') }));
     }
   });
 }
@@ -835,6 +872,15 @@ async function handleWcProxy(req, res) {
 //   - reason ∈ 'out_of_stock' | 'insufficient_stock' | 'not_found'
 async function handleCheckStock(req, res) {
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+
+  const ip = getClientIp(req);
+  const limit = checkAndRecordPublicRate(ip, 'stock', STOCK_CHECK_LIMIT);
+  if (!limit.allowed) {
+    res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfterSec) });
+    res.end(JSON.stringify({ error: 'Too many requests. Please wait and try again.' }));
+    return;
+  }
+
   let body = '';
   req.on('data', chunk => { body += chunk.toString(); });
   req.on('end', async () => {
@@ -877,7 +923,7 @@ async function handleCheckStock(req, res) {
     } catch (err) {
       console.error('[check-stock] error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ error: err.message }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'Stock check failed') }));
     }
   });
 }
@@ -989,13 +1035,60 @@ function requireAdminAuth(req, res) {
   return true;
 }
 
-function readBody(req) {
+// Body-size limits. Most routes get the small default; image uploads override.
+const DEFAULT_BODY_LIMIT  = 1 * 1024 * 1024;       // 1 MB — JSON payloads
+const UPLOAD_BODY_LIMIT   = 16 * 1024 * 1024;      // 16 MB — base64-encoded images
+
+class PayloadTooLargeError extends Error {
+  constructor(limit) { super(`Payload exceeded ${limit} bytes`); this.code = 'PAYLOAD_TOO_LARGE'; this.limit = limit; }
+}
+
+function readBody(req, maxBytes = DEFAULT_BODY_LIMIT) {
   return new Promise((resolve, reject) => {
+    // Fast-path: trust Content-Length if the client volunteered it; reject early
+    // before allocating any buffer. Real attackers usually omit it, so this is
+    // belt-and-braces with the streaming guard below.
+    const declared = parseInt(req.headers['content-length'], 10);
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      reject(new PayloadTooLargeError(maxBytes));
+      return;
+    }
+    let received = 0;
     let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('data', chunk => {
+      received += chunk.length;
+      if (received > maxBytes) {
+        // Stop reading — destroy the stream so the client gets EOF instead of
+        // us silently buffering megabytes.
+        req.destroy();
+        reject(new PayloadTooLargeError(maxBytes));
+        return;
+      }
+      body += chunk.toString();
+    });
     req.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
     req.on('error', reject);
   });
+}
+
+// Helper: writes a 413 response when readBody rejects with PayloadTooLargeError.
+// Returns true if the error was handled, false otherwise — caller falls through
+// to its own catch.
+function handlePayloadTooLarge(err, res) {
+  if (err && err.code === 'PAYLOAD_TOO_LARGE') {
+    res.writeHead(413, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Payload too large' }));
+    return true;
+  }
+  return false;
+}
+
+// In production, never echo raw upstream error messages to the browser — they
+// can leak internal IDs, URLs, or partial config. The full message still goes
+// to console.error → Sentry. In dev, return the real message so we can debug.
+function safeErrorMessage(err, fallback = 'Something went wrong') {
+  if (!IS_PROD) return err?.message || fallback;
+  return fallback;
 }
 
 function wcAuth() {
@@ -1087,7 +1180,7 @@ async function handleAdminProductImageUpload(req, res) {
   if (!requireAdminAuth(req, res)) return;
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
   try {
-    const { imageBase64, mimeType } = await readBody(req);
+    const { imageBase64, mimeType } = await readBody(req, UPLOAD_BODY_LIMIT);
     const ext = (mimeType || 'image/jpeg').split('/')[1].replace('jpeg', 'jpg');
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const uploadDir = path.join(__dirname, 'dist', 'uploads', 'products');
@@ -1095,6 +1188,7 @@ async function handleAdminProductImageUpload(req, res) {
     fs.writeFileSync(path.join(uploadDir, safeName), Buffer.from(imageBase64, 'base64'));
     adminJson(res, 200, { url: `/uploads/products/${safeName}` });
   } catch (err) {
+    if (handlePayloadTooLarge(err, res)) return;
     console.error('[admin] product image upload:', err.message);
     adminJson(res, 500, { error: 'Failed to upload image.' });
   }
@@ -1217,13 +1311,14 @@ async function handleAdminPromoBannerImage(req, res) {
   if (!requireAdminAuth(req, res)) return;
   if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
   try {
-    const { imageBase64, mimeType } = await readBody(req);
+    const { imageBase64, mimeType } = await readBody(req, UPLOAD_BODY_LIMIT);
     const ext = (mimeType || 'image/jpeg').split('/')[1].replace('jpeg', 'jpg');
     const filename = `promo-banner.${ext}`;
     const dest = path.join(__dirname, 'public', filename);
     fs.writeFileSync(dest, Buffer.from(imageBase64, 'base64'));
     adminJson(res, 200, { url: `/${filename}` });
   } catch (err) {
+    if (handlePayloadTooLarge(err, res)) return;
     console.error('[admin] promo banner image upload:', err.message);
     adminJson(res, 500, { error: 'Failed to upload image.' });
   }
@@ -1629,6 +1724,14 @@ async function handleShippingRates(req, res) {
     return;
   }
 
+  const ip = getClientIp(req);
+  const limit = checkAndRecordPublicRate(ip, 'shipping', SHIPPING_RATE_LIMIT);
+  if (!limit.allowed) {
+    res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfterSec) });
+    res.end(JSON.stringify({ error: 'Too many requests. Please wait and try again.' }));
+    return;
+  }
+
   let body = '';
   req.on('data', chunk => { body += chunk.toString(); });
   req.on('end', async () => {
@@ -1666,7 +1769,7 @@ async function handleAuthLogin(req, res) {
       if (!authRes.ok) {
         const err = await authRes.json().catch(() => ({}));
         res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message || 'Invalid email or password.' }));
+        res.end(JSON.stringify({ error: IS_PROD ? 'Invalid email or password.' : (err.message || 'Invalid email or password.') }));
         return;
       }
 
@@ -1742,7 +1845,7 @@ async function handleAuthRegister(req, res) {
       if (!createRes.ok) {
         const err = await createRes.json().catch(() => ({}));
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message || 'Could not create account. Email may already be in use.' }));
+        res.end(JSON.stringify({ error: IS_PROD ? 'Could not create account. Email may already be in use.' : (err.message || 'Could not create account. Email may already be in use.') }));
         return;
       }
 
@@ -1825,7 +1928,7 @@ async function handleWholesaleRegister(req, res) {
       if (!createRes.ok) {
         const err = await createRes.json().catch(() => ({}));
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message || 'Could not submit wholesale application. Email may already be in use.' }));
+        res.end(JSON.stringify({ error: IS_PROD ? 'Could not submit wholesale application. Email may already be in use.' : (err.message || 'Could not submit wholesale application. Email may already be in use.') }));
         return;
       }
 
@@ -2426,18 +2529,25 @@ async function handleCreatePaymentIntent(req, res) {
   req.on('data', chunk => { body += chunk.toString(); });
   req.on('end', async () => {
     try {
-      const { amountCents } = JSON.parse(body);
+      const { amountCents, idempotencyKey } = JSON.parse(body);
+      // Idempotency key prevents duplicate PaymentIntents on flaky network /
+      // React StrictMode double-mounts. Client supplies a stable UUID per
+      // (amount, method) tuple; same key → same PI, no double charge.
+      const opts = {};
+      if (typeof idempotencyKey === 'string' && idempotencyKey.length >= 8 && idempotencyKey.length <= 255) {
+        opts.idempotencyKey = idempotencyKey;
+      }
       const paymentIntent = await stripeClient.paymentIntents.create({
         amount:   Math.max(50, Math.round(amountCents)), // Stripe minimum is 50 cents
         currency: 'aud',
         automatic_payment_methods: { enabled: true },   // enables Link, Apple Pay, Google Pay etc.
-      });
+      }, opts);
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({ clientSecret: paymentIntent.client_secret }));
     } catch (err) {
       console.error('PaymentIntent error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'Payment setup failed. Please try again.') }));
     }
   });
 }
@@ -2515,7 +2625,7 @@ async function handleCreatePayPalOrder(req, res) {
     } catch (err) {
       console.error('[paypal] create-order error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ error: err.message }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'PayPal order creation failed. Please try again.') }));
     }
   });
 }
@@ -2686,7 +2796,7 @@ async function handleCapturePayPalOrder(req, res) {
     } catch (err) {
       console.error('[paypal] capture-order error:', err.message, captureId ? `(captureId=${captureId})` : '');
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ error: err.message, captureId }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'PayPal capture failed. Please contact support.'), captureId }));
     }
   });
 }
@@ -2814,7 +2924,7 @@ async function handleCreateAfterpayCheckout(req, res) {
     } catch (err) {
       console.error('[afterpay] create-checkout error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ error: err.message }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'Afterpay checkout failed. Please try again.') }));
     }
   });
 }
@@ -2949,7 +3059,7 @@ async function handleCaptureAfterpayPayment(req, res) {
     } catch (err) {
       console.error('[afterpay] capture-payment error:', err.message, paymentId ? `(paymentId=${paymentId})` : '');
       res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ error: err.message, paymentId }));
+      res.end(JSON.stringify({ error: safeErrorMessage(err, 'Afterpay capture failed. Please contact support.'), paymentId }));
     }
   });
 }
@@ -3033,7 +3143,28 @@ async function handleSitemap(req, res) {
   }
 }
 
+// Routes that legitimately accept large bodies (base64 image uploads).
+const LARGE_BODY_PATHS = new Set([
+  '/api/admin/products/upload-image',
+  '/api/admin/promo-banner/image',
+]);
+
 const server = http.createServer((req, res) => {
+  // Global precheck: if the client volunteered a Content-Length larger than the
+  // route's limit, reject before any handler allocates a buffer or hits an upstream.
+  // Inline req.on('data') readers benefit from this guard alongside readBody().
+  // Real attackers may omit Content-Length / use chunked transfer; readBody and
+  // future per-route streaming caps cover that case.
+  const declared = parseInt(req.headers['content-length'], 10);
+  if (Number.isFinite(declared)) {
+    const limit = LARGE_BODY_PATHS.has(req.url?.split('?')[0]) ? UPLOAD_BODY_LIMIT : DEFAULT_BODY_LIMIT;
+    if (declared > limit) {
+      res.writeHead(413, { 'Content-Type': 'application/json', 'Connection': 'close' });
+      res.end(JSON.stringify({ error: 'Payload too large' }));
+      return;
+    }
+  }
+
   // Meilisearch sync triggers
   if (req.url === '/api/sync') { handleSync(req, res); return; }
   if (req.url === '/api/sync-products') { handleSyncProducts(req, res); return; }

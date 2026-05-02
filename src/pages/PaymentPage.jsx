@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -525,6 +525,16 @@ export default function PaymentPage() {
   const shippingCost = fulfillment === 'collect' ? 0 : (freight?.price ?? 0);
   const totalCents   = Math.round((subtotal + shippingCost) * 100);
 
+  // Stable idempotency key for THIS amount+method tuple. Re-rendering the
+  // effect (StrictMode double-mount, React 18 transitions, transient state
+  // flips) reuses the same key so Stripe returns the same PaymentIntent
+  // instead of creating duplicates. When totalCents or method change, a new
+  // key is generated — that's a different attempt and deserves a new PI.
+  const stripeIdempotencyKey = useMemo(() => {
+    if (method !== 'stripe' || totalCents <= 0) return null;
+    return (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  }, [totalCents, method]);
+
   // Create a PaymentIntent whenever the total is known and Stripe is configured
   useEffect(() => {
     if (method !== 'stripe') return;
@@ -533,6 +543,7 @@ export default function PaymentPage() {
       return;
     }
     if (totalCents <= 0) return;           // wait for cart to hydrate
+    if (!stripeIdempotencyKey) return;
     setPiError(null);
     setClientSecret(null);
     let cancelled = false;
@@ -541,7 +552,7 @@ export default function PaymentPage() {
     fetch('/api/create-payment-intent', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ amountCents: totalCents }),
+      body:    JSON.stringify({ amountCents: totalCents, idempotencyKey: stripeIdempotencyKey }),
       signal:  controller.signal,
     })
       .then(r => {
@@ -560,7 +571,7 @@ export default function PaymentPage() {
       })
       .finally(() => clearTimeout(timeout));
     return () => { cancelled = true; controller.abort(); clearTimeout(timeout); };
-  }, [totalCents, method]);
+  }, [totalCents, method, stripeIdempotencyKey]);
 
   if (items.length === 0) {
     return (

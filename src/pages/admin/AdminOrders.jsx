@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronLeft, ChevronRight, X, RefreshCw, Trash2, Plus } from 'lucide-react';
 import { adminFetch, clearAdminAuth, useAdminTheme } from '../../lib/adminAuth';
+import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import AdminHeader from '../../components/admin/AdminHeader';
 import './AdminOrders.css';
 
@@ -551,7 +552,7 @@ export default function AdminOrders() {
                               <span className="ao-note-date">{formatDate(n.date_created)}</span>
                               {n.customer_note && <span className="ao-note-tag">Customer</span>}
                             </div>
-                            <div className="ao-note-body" dangerouslySetInnerHTML={{ __html: n.note }} />
+                            <div className="ao-note-body" dangerouslySetInnerHTML={{ __html: sanitizeHtml(n.note) }} />
                           </li>
                         ))}
                       </ul>
