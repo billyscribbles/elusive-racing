@@ -38,3 +38,4 @@
 - Fixed adding a backorder product to the cart — it used to land in the cart at $0.00 with quantity 0, and now goes in at the correct price and quantity like any other product.
 - Errors that hit shoppers — like checkout glitches or page crashes — are now reported to our error tracker so we can spot and fix them faster.
 - If your card payment hiccups and the page retries automatically, you'll no longer end up with a duplicate charge — the same attempt now reuses the same order behind the scenes.
+- Old links to the site from Google, emails, or bookmarks now land on the right page on the new site — for example an old product link goes straight to that product, and an old brand or category link goes to the new shop filtered to it, instead of showing a missing-page error.

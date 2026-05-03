@@ -11,7 +11,8 @@
     "start": "node server.js",
     "server": "lsof -ti :8080 | xargs kill -9 2>/dev/null; yarn node server.js",
     "search-server": "node search-server/server.js",
-    "search-sync": "node --env-file=.env -e \"import('./search-server/sync.js').then(m => m.runFullSync().then(() => process.exit(0)))\""
+    "search-sync": "node --env-file=.env -e \"import('./search-server/sync.js').then(m => m.runFullSync().then(() => process.exit(0)))\"",
+    "audit-redirects": "node scripts/audit-redirects.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
