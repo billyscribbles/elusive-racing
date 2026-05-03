@@ -102,13 +102,25 @@ Sentry.init({
 // Forward any Error passed to console.error into Sentry. server.js has ~30
 // "} catch (err) { console.error('[x]', err); res.writeHead(500); ... }"
 // handlers — wiring Sentry.captureException into each one would be churn and
-// easy to miss on future routes. Instead we observe console.error: if any
-// argument is an Error instance, capture it. Plain string warnings stay local.
+// easy to miss on future routes. Instead we observe console.error:
+//   1. If any arg is an Error instance → captureException (full stack).
+//   2. Else, if arg[0] is a tagged log line like "[admin] foo:" → captureMessage
+//      so the many handlers that log `err.message` instead of `err` still
+//      surface in Sentry (no stack, but at least we see them).
+// Plain untagged console.error calls (library warnings, etc) stay local.
 if (process.env.SENTRY_DSN) {
   const origConsoleError = console.error;
   console.error = (...args) => {
     const err = args.find((a) => a instanceof Error);
-    if (err) Sentry.captureException(err);
+    if (err) {
+      Sentry.captureException(err);
+    } else {
+      const first = typeof args[0] === 'string' ? args[0].trimStart() : '';
+      if (first.startsWith('[')) {
+        const msg = args.map((a) => (typeof a === 'string' ? a : String(a))).join(' ').trim();
+        if (msg) Sentry.captureMessage(msg, 'error');
+      }
+    }
     origConsoleError.apply(console, args);
   };
 }
