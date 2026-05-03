@@ -1,0 +1,29 @@
+Audit run: 2026-05-02T19:05:12.468Z
+Source:    https://elusiveracing.com.au/sitemap_index.xml
+
+Total URLs:   5306
+Matched 301:  5300
+Marked 410:   0
+Unmatched:    6
+Coverage:     99.89%
+
+Unmatched URLs grouped by first path segment (largest groups first):
+
+  //  (1)
+    /
+
+  /brands/  (1)
+    /brands/
+
+  /contact/  (1)
+    /contact/
+
+  /services/  (1)
+    /services/
+
+  /wholesale-registration/  (1)
+    /wholesale-registration/
+
+  /shop/  (1)
+    /shop/
+

@@ -9,6 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
 import { Meilisearch } from 'meilisearch';
 import { z } from 'zod';
+import { mapLegacyUrl } from './scripts/legacy-redirects.mjs';
 
 // Load .env manually — only sets vars not already injected by the environment (e.g. Railway)
 try {
@@ -3188,6 +3189,25 @@ async function handleCaptureAfterpayPayment(req, res) {
   });
 }
 
+// Returns true if it issued a 301/410 response for a legacy WordPress URL,
+// false if the request should fall through to the normal handler chain.
+function handleLegacyUrl(req, res) {
+  const result = mapLegacyUrl(req.url);
+  if (!result) return false;
+  if (result.type === 'gone') {
+    res.writeHead(410, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Gone');
+    return true;
+  }
+  // result.type === 'redirect'
+  res.writeHead(301, {
+    Location: result.location,
+    'Cache-Control': 'public, max-age=86400',
+  });
+  res.end();
+  return true;
+}
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
@@ -3288,6 +3308,10 @@ const server = http.createServer((req, res) => {
       return;
     }
   }
+
+  // Legacy WordPress URL rewrites — runs before any other handler so bot-bait
+  // probes and old SEO URLs never reach API routes or the SPA fallback.
+  if (handleLegacyUrl(req, res)) return;
 
   // Meilisearch sync triggers
   if (req.url === '/api/sync') { handleSync(req, res); return; }
