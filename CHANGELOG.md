@@ -41,3 +41,4 @@
 - Old links to the site from Google, emails, or bookmarks now land on the right page on the new site — for example an old product link goes straight to that product, and an old brand or category link goes to the new shop filtered to it, instead of showing a missing-page error.
 - The Brand, Engine, and Suspension menus now close instantly when you move your mouse away, instead of lingering for a split second.
 - The Instagram cards on the homepage no longer zoom or darken when you hover them — they sit still while the video plays.
+- Fixed checkout — pressing Place Order with direct bank transfer (and card payments) now goes through reliably instead of stopping with an "Unauthorized" error.

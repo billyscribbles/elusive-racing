@@ -725,74 +725,25 @@ export async function getWCShippingRates(items, address = {}) {
   }
 }
 
-// Place an order via WooCommerce Store API (no redirect).
-// Syncs cart, sets customer info, then POSTs to /checkout.
+// Place an order via our server proxy at /api/place-order.
+// The server manages the WC Store API session cookie + nonce — browser-direct
+// Store API writes 401 because cross-origin nonce headers aren't readable.
 // paymentMethod: 'stripe_cc' | 'bacs'
 // paymentData: array of { key, value } pairs (e.g. Stripe PaymentMethod ID)
 export async function placeOrder({ items, contact, shipping, fulfillment, paymentMethod, paymentData = [] }) {
-  // 1. Clear existing WC session cart
-  const existingCart = await storeFetch('/cart').catch(() => null);
-  if (existingCart?.items?.length) {
-    await Promise.all(
-      existingCart.items.map((item) =>
-        storeFetch('/cart/remove-item', {
-          method: 'POST',
-          body: JSON.stringify({ key: item.key }),
-        }).catch(() => {})
-      )
-    );
-  }
-
-  // 2. Add local cart items to WC
-  await Promise.all(
-    items.map((item) => {
-      const productId = parseInt(item.id, 10);
-      const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
-      return storeFetch('/cart/add-item', {
-        method: 'POST',
-        body: JSON.stringify({ id: variantId ?? productId, quantity: item.quantity }),
-      }).catch(() => {});
-    })
-  );
-
-  // 3. Build address
-  const addr = fulfillment === 'delivery' ? {
-    address_1: shipping.address1 || '',
-    address_2: shipping.address2 || '',
-    city:      shipping.city     || '',
-    state:     shipping.state    || '',
-    postcode:  shipping.postcode || '',
-    country:   'AU',
-  } : {
-    address_1: '1/32 Graham Rd',
-    address_2: '',
-    city:      'Clayton South',
-    state:     'VIC',
-    postcode:  '3169',
-    country:   'AU',
-  };
-
-  const billingAddress = {
-    first_name: contact.firstName || '',
-    last_name:  contact.lastName  || '',
-    email:      contact.email     || '',
-    phone:      contact.phone     || '',
-    ...addr,
-  };
-
-  // 4. Place order via Store API
-  const result = await storeFetch('/checkout', {
+  const res = await fetch('/api/place-order', {
     method: 'POST',
-    body: JSON.stringify({
-      billing_address:  billingAddress,
-      shipping_address: { first_name: contact.firstName || '', last_name: contact.lastName || '', ...addr },
-      customer_note:    '',
-      payment_method:   paymentMethod,
-      payment_data:     paymentData,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, contact, shipping, fulfillment, paymentMethod, paymentData }),
   });
-
-  return result;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data?.error || `Place order failed (${res.status})`);
+    err.status = res.status;
+    err.wcCode = data?.wcCode || null;
+    throw err;
+  }
+  return data;
 }
 
 // Ask the server to capture a PayPal order and create the corresponding WC order.

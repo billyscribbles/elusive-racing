@@ -1200,6 +1200,14 @@ const ShippingRatesBody  = z.object({
   items:   z.array(z.object({}).passthrough()).max(200),
   address: z.object({}).passthrough(),
 }).passthrough();
+const PlaceOrderBody     = z.object({
+  items:         z.array(z.object({}).passthrough()).min(1).max(200),
+  contact:       z.object({}).passthrough(),
+  shipping:      z.object({}).passthrough().optional().default({}),
+  fulfillment:   z.enum(['delivery', 'pickup']),
+  paymentMethod: z.enum(['stripe_cc', 'bacs']),
+  paymentData:   z.array(z.object({}).passthrough()).optional().default([]),
+}).passthrough();
 
 // Returns the validated body, or null if validation failed (response already sent).
 async function readValidatedBody(req, res, schema, maxBytes = DEFAULT_BODY_LIMIT) {
@@ -1890,6 +1898,161 @@ async function handleShippingRates(req, res) {
     console.error('Shipping rates error:', err);
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify({ rates: [], taxAmount: 0 }));
+  }
+}
+
+// ── Place order proxy ────────────────────────────────────────────────────────
+// Browser cannot drive the WC Store API directly: cross-origin nonce headers
+// aren't readable, so write ops 401. Mirror the shipping-rates pattern — manage
+// session cookie + nonce server-side, then submit the order from here.
+async function placeOrderServer({ items, contact, shipping, fulfillment, paymentMethod, paymentData }) {
+  const storeBase = `${WC_URL}/wp-json/wc/store/v1`;
+  let sessionCookie = '';
+  let nonce = '';
+
+  function captureHeaders(res) {
+    const cookies = typeof res.headers.getSetCookie === 'function'
+      ? res.headers.getSetCookie()
+      : (res.headers.get('set-cookie') || '').split(/,(?=[^ ])/).map(c => c.trim()).filter(Boolean);
+    if (cookies.length) {
+      const jar = new Map(
+        sessionCookie.split('; ').filter(Boolean).map(kv => [kv.split('=')[0], kv])
+      );
+      for (const c of cookies) {
+        const kv = c.split(';')[0].trim();
+        if (kv) jar.set(kv.split('=')[0], kv);
+      }
+      sessionCookie = [...jar.values()].join('; ');
+    }
+    const n = res.headers.get('X-WC-Store-API-Nonce')
+           || res.headers.get('Nonce')
+           || res.headers.get('X-WooCommerce-StoreApiNonce');
+    if (n) nonce = n;
+  }
+
+  async function storeReq(path, method = 'GET', body = null) {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+    };
+    if (sessionCookie) headers['Cookie'] = sessionCookie;
+    if (nonce && method !== 'GET') headers['Nonce'] = nonce;
+
+    const res = await fetch(`${storeBase}${path}`, {
+      method,
+      headers,
+      ...(body && { body: JSON.stringify(body) }),
+    });
+    captureHeaders(res);
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = data?.message || data?.code || `WC ${method} ${path} failed (${res.status})`;
+      console.log(`[place-order] ${method} ${path} → ${res.status}: ${msg}`);
+      const err = new Error(msg);
+      err.status = res.status;
+      err.wcCode = data?.code || null;
+      throw err;
+    }
+    return data;
+  }
+
+  // 1. Establish session + nonce
+  const existingCart = await storeReq(`/cart?_=${Date.now()}`);
+  console.log(`[place-order] GET /cart ok=${!!existingCart} nonce=${nonce ? 'yes' : 'no'} cookie=${sessionCookie ? 'yes' : 'no'}`);
+
+  // 2. Clear any stale items from this session
+  if (existingCart?.items?.length) {
+    for (const item of existingCart.items) {
+      await storeReq('/cart/remove-item', 'POST', { key: item.key });
+    }
+  }
+
+  // 3. Add the customer's items
+  for (const item of items) {
+    const productId = parseInt(item.id, 10);
+    const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
+    await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
+    console.log(`[place-order] add-item ${variantId ?? productId} × ${item.quantity}`);
+  }
+
+  // 4. Build addresses (mirrors browser placeOrder() — pickup uses the store address)
+  const addr = fulfillment === 'delivery' ? {
+    address_1: shipping.address1 || '',
+    address_2: shipping.address2 || '',
+    city:      shipping.city     || '',
+    state:     shipping.state    || '',
+    postcode:  shipping.postcode || '',
+    country:   'AU',
+  } : {
+    address_1: '1/32 Graham Rd',
+    address_2: '',
+    city:      'Clayton South',
+    state:     'VIC',
+    postcode:  '3169',
+    country:   'AU',
+  };
+
+  const billingAddress = {
+    first_name: contact.firstName || '',
+    last_name:  contact.lastName  || '',
+    email:      contact.email     || '',
+    phone:      contact.phone     || '',
+    ...addr,
+  };
+  const shippingAddress = {
+    first_name: contact.firstName || '',
+    last_name:  contact.lastName  || '',
+    ...addr,
+  };
+
+  // 5. Sync customer address so WC picks the right shipping rate / tax before checkout
+  await storeReq('/cart/update-customer', 'POST', {
+    billing_address: billingAddress,
+    shipping_address: shippingAddress,
+  });
+
+  // 6. Submit checkout
+  const result = await storeReq('/checkout', 'POST', {
+    billing_address:  billingAddress,
+    shipping_address: shippingAddress,
+    customer_note:    '',
+    payment_method:   paymentMethod,
+    payment_data:     paymentData,
+  });
+  console.log(`[place-order] checkout → order_id=${result?.order_id ?? '?'}`);
+
+  return result;
+}
+
+async function handlePlaceOrder(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  const ip = getClientIp(req);
+  const limit = checkAndRecordPublicRate(ip, 'place-order', SHIPPING_RATE_LIMIT);
+  if (!limit.allowed) {
+    res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfterSec) });
+    res.end(JSON.stringify({ error: 'Too many requests. Please wait and try again.' }));
+    return;
+  }
+
+  const body = await readValidatedBody(req, res, PlaceOrderBody);
+  if (!body) return;
+
+  try {
+    const result = await placeOrderServer(body);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+  } catch (err) {
+    console.error('[place-order] error:', err.message);
+    const status = err.status >= 400 && err.status < 600 ? 502 : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: err.message || 'Order placement failed.', wcCode: err.wcCode || null }));
   }
 }
 
@@ -3386,6 +3549,12 @@ const server = http.createServer((req, res) => {
   // Shipping rates proxy
   if (req.url === '/api/shipping-rates') {
     handleShippingRates(req, res);
+    return;
+  }
+
+  // Place order proxy (WC Store API session/nonce handled server-side)
+  if (req.url === '/api/place-order') {
+    handlePlaceOrder(req, res);
     return;
   }
 
