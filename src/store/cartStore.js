@@ -16,11 +16,14 @@ const useCartStore = create(
           console.error('[cart] refusing to add zero-priced item', { id: product.id, name: product.name ?? product.title, price: product.price });
           return;
         }
+        if (product.stockStatus === 'outofstock') {
+          console.error('[cart] refusing to add out-of-stock item', { id: product.id, name: product.name ?? product.title });
+          return;
+        }
         const qty = product.quantity ?? 1;
-        // Treat stockQuantity 0/null as "no max" — backorder products report
-        // 0 stock but customers can still order them. Out-of-stock-no-backorder
-        // items are blocked at the call site, so by the time we get here a
-        // 0-stock item is implicitly backorder.
+        // stockQuantity 0/null = "no max". Out-of-stock items are rejected above,
+        // so a 0-stock item that reaches this point is implicitly backorder
+        // (orderable, no real cap).
         const stockMax = (n) => (Number(n) > 0 ? Number(n) : null);
         set((s) => {
           const existing = s.items.find((i) => i.id === product.id && i.variantId === product.variantId);
@@ -38,9 +41,15 @@ const useCartStore = create(
 
       addItems: (products) => {
         const valid = products.filter((p) => {
-          if (Number(p.price) > 0) return true;
-          console.error('[cart] refusing to add zero-priced item', { id: p.id, name: p.name ?? p.title, price: p.price });
-          return false;
+          if (!(Number(p.price) > 0)) {
+            console.error('[cart] refusing to add zero-priced item', { id: p.id, name: p.name ?? p.title, price: p.price });
+            return false;
+          }
+          if (p.stockStatus === 'outofstock') {
+            console.error('[cart] refusing to add out-of-stock item', { id: p.id, name: p.name ?? p.title });
+            return false;
+          }
+          return true;
         });
         if (!valid.length) return;
         const stockMax = (n) => (Number(n) > 0 ? Number(n) : null);

@@ -44,3 +44,4 @@
 - Fixed checkout — pressing Place Order with direct bank transfer (and card payments) now goes through reliably instead of stopping with an "Unauthorized" error.
 - The wholesale login link in the footer now works — wholesale and regular customers share the same sign-in form, so logging in works for both account types.
 - Made the "Edit details" save error easier to read — instead of a cryptic message, you'll now see a clear note telling you which address fields need fixing, and saving with optional fields left blank no longer fails.
+- Backorder products are now properly addable everywhere — shop page, product page, checkout merch upsell, and the wholesale order page. They used to get blocked or show "Sold out" next to the "Available on backorder" message. Out-of-stock products are still kept out of the cart.

@@ -41,6 +41,7 @@ function mapProduct(p) {
     variants,
     hasVariants,
     stockQuantity: p.stockQuantity ?? null,
+    stockStatus: p.stockStatus ?? null,
     wholesalePrices: p.wholesalePrices || null,
     backorder: p.stockStatus === 'onbackorder',
     inStock: p.stockStatus === 'instock',
@@ -79,6 +80,7 @@ function mapMeiliProduct(h) {
     hasVariants: h.hasVariants ?? false,
     _isVariable: h.hasVariants ?? false,
     stockQuantity: null,
+    stockStatus: h.stockStatus ?? null,
     wholesalePrices: h.wholesalePrices || null,
     backorder: h.stockStatus === 'onbackorder',
     inStock: h.stockStatus === 'instock',
@@ -114,6 +116,7 @@ function mapNavProduct(p) {
     hasVariants: p.hasVariants ?? false,
     _isVariable: p.hasVariants ?? false,
     stockQuantity: p.stockQuantity ?? null,
+    stockStatus: p.stockStatus ?? (p.outOfStock ? 'outofstock' : p.backorder ? 'onbackorder' : 'instock'),
     wholesalePrices: p.wholesalePrices || null,
     backorder: p.backorder ?? false,
     inStock: !p.backorder && !p.outOfStock,
@@ -372,6 +375,7 @@ export default function ProductPage() {
       variantId: variantId ?? null,
       variantTitle: selectedVariant?.title ?? null,
       stockQuantity: effectiveMax,
+      stockStatus: selectedVariant?.stockStatus ?? display.stockStatus ?? null,
       quantity: qty,
     });
     setAdded(true);

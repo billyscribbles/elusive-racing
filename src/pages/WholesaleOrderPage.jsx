@@ -268,7 +268,18 @@ export default function WholesaleOrderPage() {
     return key ? quantities[key] || 0 : 0;
   };
 
+  const getStockStatus = (product) => {
+    if (product.hasVariants) {
+      const variantId = selectedVariants[product.id];
+      const variant = variantCache[product.id]?.find((v) => v.id === variantId);
+      if (variant) return variant.stockStatus ?? null;
+    }
+    return product.stockStatus ?? null;
+  };
+
   const getMaxStock = (product) => {
+    // Backorder: no real cap, customer can order any quantity.
+    if (getStockStatus(product) === 'onbackorder') return null;
     if (product.hasVariants) {
       const variantId = selectedVariants[product.id];
       const variant = variantCache[product.id]?.find((v) => v.id === variantId);
@@ -331,15 +342,17 @@ export default function WholesaleOrderPage() {
 
       const { price: displayPrice } = getDisplayPrice(product);
       if (!(displayPrice > 0)) continue;
-      let stockQuantity, title, image, retail;
+      let stockQuantity, title, image, retail, stockStatus;
       if (variantId) {
         const variant = variantCache[productId]?.find((v) => v.id === variantId);
         stockQuantity = variant?.stockQuantity ?? product.stockQuantity;
+        stockStatus = variant?.stockStatus ?? product.stockStatus ?? null;
         title = `${product.title} - ${variant?.title || ''}`;
         retail = variant?.regularPrice || variant?.price || product.regularPrice || product.price;
         image = product.imageUrl;
       } else {
         stockQuantity = product.stockQuantity;
+        stockStatus = product.stockStatus ?? null;
         title = product.title;
         retail = product.regularPrice || product.price;
         image = product.imageUrl;
@@ -355,6 +368,7 @@ export default function WholesaleOrderPage() {
         quantity: qty,
         sku: product.sku,
         stockQuantity,
+        stockStatus,
         image,
         href: `/products/${product.handle}`,
       });
@@ -388,15 +402,17 @@ export default function WholesaleOrderPage() {
 
     const { price: displayPrice } = getDisplayPrice(product);
     if (!(displayPrice > 0)) return;
-    let stockQuantity, title, image, retail;
+    let stockQuantity, title, image, retail, stockStatus;
     if (variantId && variantId !== productId) {
       const variant = variantCache[productId]?.find((v) => v.id === variantId);
       stockQuantity = variant?.stockQuantity ?? product.stockQuantity;
+      stockStatus = variant?.stockStatus ?? product.stockStatus ?? null;
       title = `${product.title} - ${variant?.title || ''}`;
       retail = variant?.regularPrice || variant?.price || product.regularPrice || product.price;
       image = product.imageUrl;
     } else {
       stockQuantity = product.stockQuantity;
+      stockStatus = product.stockStatus ?? null;
       title = product.title;
       retail = product.regularPrice || product.price;
       image = product.imageUrl;
@@ -412,6 +428,7 @@ export default function WholesaleOrderPage() {
       quantity: qty,
       sku: product.sku,
       stockQuantity,
+      stockStatus,
       image,
       href: `/products/${product.handle}`,
     }]);
@@ -425,12 +442,15 @@ export default function WholesaleOrderPage() {
   // ── Stock badge helper ─────────────────────────────────────────────────────
 
   const renderStock = (product) => {
+    if (isOutOfStock(product)) {
+      return <span className="wholesale-stock stock-out">Not Available</span>;
+    }
+    if (getStockStatus(product) === 'onbackorder') {
+      return <span className="wholesale-stock stock-low">Backorder</span>;
+    }
     const stock = product.hasVariants
       ? variantCache[product.id]?.find((v) => v.id === selectedVariants[product.id])?.stockQuantity ?? product.stockQuantity
       : product.stockQuantity;
-    if (isOutOfStock(product) || stock === 0) {
-      return <span className="wholesale-stock stock-out">Not Available</span>;
-    }
     if (stock === null || stock === undefined) {
       return <span className="wholesale-stock stock-high">In Stock</span>;
     }

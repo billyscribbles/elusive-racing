@@ -144,7 +144,7 @@ function normalizeProduct(p) {
     wholesalePrices: extractWholesalePrices(p.meta_data),
     variants: p.variations?.length
       ? p.variations.map(v => ({ id: String(v.id) }))
-      : [{ id: String(p.id), title: 'Default', availableForSale: p.stock_status !== 'outofstock' }],
+      : [{ id: String(p.id), title: 'Default', availableForSale: p.stock_status !== 'outofstock', stockStatus: p.stock_status }],
   };
 }
 
@@ -174,6 +174,7 @@ function normalizeProductDetail(p) {
             ? { amount: v.regular_price, currencyCode: 'AUD' }
             : null,
           availableForSale: v.stock_status !== 'outofstock',
+          stockStatus: v.stock_status,
           quantityAvailable: typeof v.stock_quantity === 'number' ? v.stock_quantity : null,
           selectedOptions: v.attributes?.map(a => ({ name: a.name, value: a.option })) ?? [],
           wholesalePrices: extractWholesalePrices(v.meta_data),
@@ -185,6 +186,7 @@ function normalizeProductDetail(p) {
             price: { amount: p.price || '0', currencyCode: 'AUD' },
             compareAtPrice: p.regular_price ? { amount: p.regular_price, currencyCode: 'AUD' } : null,
             availableForSale: p.stock_status !== 'outofstock',
+            stockStatus: p.stock_status,
             selectedOptions: [],
           },
         ],

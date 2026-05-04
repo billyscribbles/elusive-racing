@@ -51,6 +51,7 @@ function mapProduct(h) {
     tags: h.tags ?? [],
     backorder: isBackorder,
     outOfStock: isOutOfStock,
+    stockStatus: h.stockStatus ?? null,
     dateCreated: h.dateCreated || "",
     variantId: h.hasVariants ? null : h.id,
     hasVariants: h.hasVariants || false,
@@ -256,7 +257,7 @@ function ProductCard({ product, index = 0 }) {
             </span>
           )}
         </div>
-        {product.stockQuantity != null && (
+        {product.stockQuantity != null && !product.backorder && (
           <span className={`shop-product-stock${product.stockQuantity <= 3 ? ' shop-product-stock--low' : ''}`}>
             {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
           </span>

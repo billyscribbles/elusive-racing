@@ -63,7 +63,7 @@ function ExtraCard({ product, added, onAdd }) {
   const allOos = product.hasVariants && (product.variants ?? []).every(v => !v.availableForSale);
   const unavailable = product.hasVariants
     ? allOos
-    : product.stockStatus === 'outofstock' || product.stockQuantity === 0;
+    : product.stockStatus === 'outofstock';
   const needsSize = product.hasVariants && !selectedVariantId && !allOos;
 
   return (

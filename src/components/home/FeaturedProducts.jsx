@@ -15,6 +15,7 @@ function mapProduct(p) {
   const isDefaultOnly = variants.length === 1 && variants[0].title === 'Default';
   const hasVariants = variants.length > 1 || (variants.length === 1 && !isDefaultOnly);
   const outOfStock = p.stockStatus === 'outofstock';
+  const backorder = p.stockStatus === 'onbackorder';
   let badge = null;
   let badgeType = null;
   if (outOfStock) {
@@ -23,7 +24,7 @@ function mapProduct(p) {
   } else if (originalPrice) {
     badge = 'Sale';
     badgeType = 'sale';
-  } else if (p.stockStatus === 'onbackorder') {
+  } else if (backorder) {
     badge = 'Backorder';
     badgeType = 'backorder';
   }
@@ -39,6 +40,8 @@ function mapProduct(p) {
     badge,
     badgeType,
     outOfStock,
+    backorder,
+    stockStatus: p.stockStatus ?? null,
     variantId: isDefaultOnly ? variants[0]?.id : null,
     hasVariants,
     stockQuantity: p.stockQuantity != null ? p.stockQuantity : (p.stock_quantity != null ? parseInt(p.stock_quantity, 10) : null),
@@ -84,7 +87,7 @@ function ProductCard({ product }) {
             </>
           )}
         </div>
-        {product.stockQuantity != null && (
+        {product.stockQuantity != null && !product.backorder && (
           <span className={`product-stock${product.stockQuantity <= 3 ? ' product-stock--low' : ''}`}>
             {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
           </span>
