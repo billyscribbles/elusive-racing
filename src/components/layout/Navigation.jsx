@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import { navItems, featuredBrands } from '../../data/navigation';
 import CartIcon from '../ui/CartIcon';
@@ -18,7 +18,7 @@ function MobileAuthLink() {
     return (
       <>
         <li className="mobile-menu-item mobile-menu-item--secondary">
-          <a href="/my-account/dashboard" className="mobile-menu-link">MY ACCOUNT</a>
+          <Link to="/my-account/dashboard" className="mobile-menu-link">MY ACCOUNT</Link>
         </li>
         <li className="mobile-menu-item mobile-menu-item--secondary">
           <button className="mobile-menu-link mobile-menu-link--btn" onClick={handleLogout}>
@@ -30,7 +30,7 @@ function MobileAuthLink() {
   }
   return (
     <li className="mobile-menu-item mobile-menu-item--secondary">
-      <a href="/my-account" className="mobile-menu-link">LOGIN / REGISTER</a>
+      <Link to="/my-account" className="mobile-menu-link">LOGIN / REGISTER</Link>
     </li>
   );
 }
@@ -41,7 +41,7 @@ function BrandsMegaMenu() {
       <div className="container">
         <div className="brands-grid">
           {featuredBrands.map((brand) => (
-            <a key={brand.name} href={brand.href} className="brand-item">
+            <Link key={brand.name} to={brand.href} className="brand-item">
               <img
                 src={brand.logo}
                 alt={brand.name}
@@ -52,11 +52,11 @@ function BrandsMegaMenu() {
                 }}
               />
               <span className="brand-fallback" style={{ display: 'none' }}>{brand.name}</span>
-            </a>
+            </Link>
           ))}
         </div>
         <div className="brands-mega-footer">
-          <a href="/brands" className="brands-see-all">See all brands →</a>
+          <Link to="/brands" className="brands-see-all">See all brands →</Link>
         </div>
       </div>
     </div>
@@ -71,15 +71,15 @@ function StandardMegaMenu({ columns }) {
           {columns.map((col, i) => (
             <div key={i} className="mega-column">
               {col.image && (
-                <a href={col.imageHref} className="mega-col-image-link">
+                <Link to={col.imageHref} className="mega-col-image-link">
                   <img src={col.image} alt={col.title} loading="lazy" className="mega-col-image" />
-                </a>
+                </Link>
               )}
-              <a href={col.titleHref} className="mega-col-title">{col.title}</a>
+              <Link to={col.titleHref} className="mega-col-title">{col.title}</Link>
               <ul className="mega-col-links">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <a href={link.href} className="mega-col-link">{link.label}</a>
+                    <Link to={link.href} className="mega-col-link">{link.label}</Link>
                   </li>
                 ))}
               </ul>
@@ -182,15 +182,15 @@ function TileDropdown({ links, parentHref }) {
       <div className="container">
         <div className="tile-dropdown-grid">
           {links.map((link) => (
-            <a
+            <Link
               key={link.href}
-              href={link.href}
+              to={link.href}
               className="tile-dropdown-item"
               style={{ '--tile-img': `url(${SUB_IMAGES[link.label] ?? '/menu/menu-accesories.jpg'})` }}
             >
               <span className="tile-dropdown-overlay" />
               <span className="tile-dropdown-label">{link.label}</span>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
@@ -250,14 +250,14 @@ export default function Navigation() {
                     </svg>
                   </button>
                 ) : (
-                  <a href={item.href} className={`nav-link${item.highlight ? ' nav-link--highlight' : ''}`}>
+                  <Link to={item.href} className={`nav-link${item.highlight ? ' nav-link--highlight' : ''}`}>
                     {item.label}
                     {item.links && item.links.length > 0 && (
                       <svg className="nav-arrow" viewBox="0 0 10 6" fill="none">
                         <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     )}
-                  </a>
+                  </Link>
                 )}
 
                 {activeItem === item.label && (
@@ -357,9 +357,9 @@ export default function Navigation() {
           <div className="mobile-menu-overlay" onClick={() => setMobileOpen(false)} />
           <div className="mobile-menu-panel">
             <div className="mobile-menu-header">
-              <a href="/" className="mobile-menu-logo">
+              <Link to="/" className="mobile-menu-logo" onClick={() => setMobileOpen(false)}>
                 <img src="/logo-main.svg" alt="Elusive Racing" height="32" />
-              </a>
+              </Link>
               <button className="mobile-menu-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
                   <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
@@ -379,7 +379,7 @@ export default function Navigation() {
                     {item.hasMega ? (
                       <span className="mobile-menu-link">{item.label}</span>
                     ) : (
-                      <a href={item.href} className="mobile-menu-link" onClick={(e) => e.stopPropagation()}>{item.label}</a>
+                      <Link to={item.href} className="mobile-menu-link" onClick={(e) => { e.stopPropagation(); setMobileOpen(false); }}>{item.label}</Link>
                     )}
                     {(item.hasMega || (item.links && item.links.length > 0)) && (
                       <button className="mobile-menu-expand" aria-label="Toggle">
@@ -393,29 +393,29 @@ export default function Navigation() {
                     <div className="mobile-submenu mobile-brands-panel">
                       <div className="mobile-brands-grid">
                         {featuredBrands.slice(0, 8).map((brand) => (
-                          <a
+                          <Link
                             key={brand.name}
-                            href={brand.href}
+                            to={brand.href}
                             className="mobile-brand-item"
                             onClick={() => setMobileOpen(false)}
                             style={{ '--brand-logo': `url(${brand.logo})` }}
                           >
                             <span className="mobile-brand-name">{brand.name}</span>
-                          </a>
+                          </Link>
                         ))}
                       </div>
-                      <a href="/brands" className="mobile-brands-all" onClick={() => setMobileOpen(false)}>
+                      <Link to="/brands" className="mobile-brands-all" onClick={() => setMobileOpen(false)}>
                         View All Brands →
-                      </a>
+                      </Link>
                     </div>
                   )}
                   {mobileExpanded === item.label && item.type !== 'brands' && item.columns && (
                     <div className="mobile-submenu">
                       {item.columns.map((col, i) => (
                         <div key={i} className="mobile-submenu-group">
-                          <a href={col.titleHref} className="mobile-submenu-title">{col.title}</a>
+                          <Link to={col.titleHref} className="mobile-submenu-title" onClick={() => setMobileOpen(false)}>{col.title}</Link>
                           {col.links.map((link) => (
-                            <a key={link.href} href={link.href} className="mobile-submenu-link">{link.label}</a>
+                            <Link key={link.href} to={link.href} className="mobile-submenu-link" onClick={() => setMobileOpen(false)}>{link.label}</Link>
                           ))}
                         </div>
                       ))}
@@ -424,16 +424,16 @@ export default function Navigation() {
                   {mobileExpanded === item.label && !item.hasMega && item.links && (
                     <div className="mobile-submenu">
                       {item.links.map((link) => (
-                        <a key={link.href} href={link.href} className="mobile-submenu-link">{link.label}</a>
+                        <Link key={link.href} to={link.href} className="mobile-submenu-link" onClick={() => setMobileOpen(false)}>{link.label}</Link>
                       ))}
                     </div>
                   )}
                 </li>
               ))}
               <li className="mobile-menu-item mobile-menu-item--secondary">
-                <a href={wholesale ? '/my-account/dashboard' : '/wholesale-registration'} className="mobile-menu-link">
+                <Link to={wholesale ? '/my-account/dashboard' : '/wholesale-registration'} className="mobile-menu-link" onClick={() => setMobileOpen(false)}>
                   {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
-                </a>
+                </Link>
               </li>
               <MobileAuthLink />
             </ul>

@@ -1,5 +1,5 @@
 import { useState, useLayoutEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Gauge, X } from 'lucide-react';
 import useVehicleSelector from '../../hooks/useVehicleSelector';
 import './Hero.css';
@@ -171,8 +171,8 @@ export default function Hero() {
             <h1 className="hero-headline">Honda Performance<br />Specialists</h1>
             <p className="hero-sub">10,000+ genuine &amp; aftermarket parts.<br />Over a decade of expertise.</p>
             <div className="hero-actions">
-              <a href="/shop" className="hero-btn-primary">Shop Now</a>
-              <a href="/about" className="hero-btn-ghost">Our Story</a>
+              <Link to="/shop" className="hero-btn-primary">Shop Now</Link>
+              <Link to="/about" className="hero-btn-ghost">Our Story</Link>
             </div>
           </div>
         </div>
@@ -202,8 +202,8 @@ export default function Hero() {
             <h1 className="hero-mobile-headline">Honda Performance<br />Specialists</h1>
             <p className="hero-mobile-sub">10,000+ parts. Over a decade of expertise.</p>
             <div className="hero-mobile-actions">
-              <a href="/shop" className="hero-btn-primary">Shop Now</a>
-              <a href="/services" className="hero-btn-ghost">Our Services</a>
+              <Link to="/shop" className="hero-btn-primary">Shop Now</Link>
+              <Link to="/services" className="hero-btn-ghost">Our Services</Link>
             </div>
           </div>
         </div>

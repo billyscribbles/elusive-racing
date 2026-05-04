@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ShoppingBag, Trash2, Minus, Plus, ArrowLeft, Wrench, Lock, ShieldCheck, X } from 'lucide-react';
 
 const BOOKING_URL = 'https://www.mechanicdesk.com.au/online-booking/index.html?token=2b596cc338e4f3e969aab07b9cf924eb618076c9';
@@ -57,9 +58,9 @@ export default function CheckoutPage() {
       <div className="container">
 
         <div className="co-header">
-          <a href="/shop" className="co-back">
+          <Link to="/shop" className="co-back">
             <ArrowLeft size={16} /> Continue Shopping
-          </a>
+          </Link>
           <h1 className="co-title">Checkout</h1>
           <CheckoutSteps current={0} />
         </div>
@@ -68,7 +69,7 @@ export default function CheckoutPage() {
           <div className="co-empty">
             <ShoppingBag size={64} strokeWidth={1} />
             <p>Your cart is empty.</p>
-            <a href="/shop" className="co-empty-btn">Browse Products</a>
+            <Link to="/shop" className="co-empty-btn">Browse Products</Link>
           </div>
         ) : (
           <div className="co-layout">
@@ -146,9 +147,9 @@ export default function CheckoutPage() {
 
               <p className="co-tax-note">Taxes and shipping calculated at checkout</p>
 
-              <a href="/checkout/contact" className="co-checkout-btn">
+              <Link to="/checkout/contact" className="co-checkout-btn">
                 Proceed to Contact Details
-              </a>
+              </Link>
 
               <div className="co-trust-row">
                 <span><ShieldCheck size={13} /> Secure Checkout</span>

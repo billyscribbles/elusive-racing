@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
@@ -59,7 +59,7 @@ function ShippingSummary() {
             : '1/32 Graham Rd, Clayton South VIC 3169'}
         </span>
       </div>
-      <a href="/checkout/contact" className="pp-shipping-edit">Edit</a>
+      <Link to="/checkout/contact" className="pp-shipping-edit">Edit</Link>
     </div>
   );
 }
@@ -210,7 +210,7 @@ function StripePaymentForm({ onSuccess }) {
         // makes them think payment failed — but we do flag orphan orders internally
         // so the confirmation page can tell them support will follow up.
         const { wcResponse, error: orderError } = await placeOrderWithRetry({
-          items, contact, shipping, fulfillment,
+          items, contact, shipping, fulfillment, freight,
           paymentMethod: 'stripe_cc',
           paymentData: [
             { key: 'stripe_payment_method', value: paymentIntent.payment_method },
@@ -275,7 +275,7 @@ function BacsForm({ onSuccess }) {
     setError(null);
     setLoading(true);
     try {
-      const wcResponse = await placeOrder({ items, contact, shipping, fulfillment, paymentMethod: 'bacs', paymentData: [] });
+      const wcResponse = await placeOrder({ items, contact, shipping, fulfillment, freight, paymentMethod: 'bacs', paymentData: [] });
       syncProductsToSearch(items.map(i => parseInt(i.id, 10)));
       useOrderStore.getState().setOrder(
         buildOrderSnapshot({ wcResponse, items, contact, shipping, fulfillment, freight, paymentMethod: 'bacs' })
@@ -581,7 +581,7 @@ export default function PaymentPage() {
             <div className="pp-empty-icon">🛒</div>
             <h2 className="pp-empty-title">Your cart is empty</h2>
             <p className="pp-empty-text">Looks like you haven&apos;t added anything yet.</p>
-            <a href="/shop" className="pp-empty-btn">Continue Shopping</a>
+            <Link to="/shop" className="pp-empty-btn">Continue Shopping</Link>
           </div>
         </div>
       </div>
@@ -601,7 +601,7 @@ export default function PaymentPage() {
     <div className="pp-page">
       <div className="container">
         <div className="pp-header">
-          <a href="/checkout/contact" className="pp-back"><ArrowLeft size={16} /> Back to Contact</a>
+          <Link to="/checkout/contact" className="pp-back"><ArrowLeft size={16} /> Back to Contact</Link>
           <h1 className="pp-title">Payment</h1>
           <CheckoutSteps current={2} />
         </div>

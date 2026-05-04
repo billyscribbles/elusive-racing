@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import './PromoBanner.css';
 
 const DEFAULTS = {
@@ -48,10 +49,14 @@ export default function PromoBanner() {
           </h2>
           <p className="promo-subtext">{config.subtext}</p>
           <div className="promo-actions">
-            <a href={config.ctaUrl || DEFAULTS.ctaUrl} className="promo-btn-primary">
-              {config.ctaLabel || DEFAULTS.ctaLabel}
-            </a>
-            <a href="/shop" className="promo-btn-secondary">Browse All Parts</a>
+            {(() => {
+              const url = config.ctaUrl || DEFAULTS.ctaUrl;
+              const label = config.ctaLabel || DEFAULTS.ctaLabel;
+              return url.startsWith('/')
+                ? <Link to={url} className="promo-btn-primary">{label}</Link>
+                : <a href={url} className="promo-btn-primary">{label}</a>;
+            })()}
+            <Link to="/shop" className="promo-btn-secondary">Browse All Parts</Link>
           </div>
         </div>
       </div>

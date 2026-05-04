@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Truck, Store, Package, Zap, Phone, Mail } from 'lucide-react';
 import CheckoutSteps from '../components/ui/CheckoutSteps';
 import useCartStore from '../store/cartStore';
@@ -183,7 +183,7 @@ export default function ContactPage() {
     return (
       <div className="cp-page">
         <div className="container">
-          <p className="cp-empty">Your cart is empty. <a href="/shop">Continue shopping</a></p>
+          <p className="cp-empty">Your cart is empty. <Link to="/shop">Continue shopping</Link></p>
         </div>
       </div>
     );
@@ -360,7 +360,7 @@ export default function ContactPage() {
       <div className="container">
 
         <div className="cp-header">
-          <a href="/checkout" className="cp-back"><ArrowLeft size={16} /> Back to Cart</a>
+          <Link to="/checkout" className="cp-back"><ArrowLeft size={16} /> Back to Cart</Link>
           <h1 className="cp-title">Contact &amp; Shipping</h1>
           <CheckoutSteps current={1} />
         </div>

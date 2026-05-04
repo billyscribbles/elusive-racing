@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Check } from 'lucide-react';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
@@ -68,14 +69,14 @@ function ExtraCard({ product, added, onAdd }) {
 
   return (
     <div className="co-extras-card">
-      <a href={product.href} className="co-extras-card-link" tabIndex={-1}>
+      <Link to={product.href} className="co-extras-card-link" tabIndex={-1}>
         <div className="co-extras-image">
           {product.image
             ? <img src={product.image} alt={product.name} loading="lazy" width={120} height={120} />
             : <div className="co-extras-image-placeholder" />
           }
         </div>
-      </a>
+      </Link>
       <div className="co-extras-info">
         {product.brand && <span className="co-extras-brand">{product.brand}</span>}
         <p className="co-extras-name">{product.name}</p>

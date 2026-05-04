@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { X, ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react';
 import useCartStore from '../../store/cartStore';
 import { formatPrice } from '../../lib/formatPrice';
@@ -88,9 +89,9 @@ export default function CartIcon() {
                   <span className="cart-subtotal-amount">{formatPrice(subtotal)}</span>
                 </div>
                 <p className="cart-shipping-note">Shipping &amp; taxes calculated at checkout</p>
-                <a href="/checkout" className="cart-checkout-btn" onClick={closeCart}>
+                <Link to="/checkout" className="cart-checkout-btn" onClick={closeCart}>
                   Proceed to Checkout
-                </a>
+                </Link>
                 <button className="cart-clear" onClick={() => setConfirmingClear(true)}>Clear cart</button>
               </div>
             )}

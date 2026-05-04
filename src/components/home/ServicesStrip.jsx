@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './ServicesStrip.css';
 
 const services = [
@@ -37,7 +38,7 @@ export default function ServicesStrip() {
 
       <div className="services-strip-grid">
         {services.map((s) => (
-          <a key={s.title} href={s.href} className="service-card">
+          <Link key={s.title} to={s.href} className="service-card">
             <div className="service-card-img-wrap">
               <img src={s.image} alt={s.title} className="service-card-img" loading="lazy" />
               <div className="service-card-overlay" />
@@ -47,14 +48,14 @@ export default function ServicesStrip() {
               <p className="service-card-desc">{s.description}</p>
               <span className="service-card-cta">Learn More →</span>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 
       <div className="services-strip-footer">
-        <a href="/services" className="services-btn">
+        <Link to="/services" className="services-btn">
           View All Services
-        </a>
+        </Link>
       </div>
     </section>
   );

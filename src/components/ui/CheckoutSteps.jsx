@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import './CheckoutSteps.css';
 
@@ -16,9 +17,9 @@ export default function CheckoutSteps({ current }) {
         return (
           <div key={step.label} className={`co-step${done ? ' done' : active ? ' active' : ' pending'}`}>
             {done ? (
-              <a href={step.href} className="co-step-bubble" aria-label={`Go back to ${step.label}`}>
+              <Link to={step.href} className="co-step-bubble" aria-label={`Go back to ${step.label}`}>
                 <Check size={13} strokeWidth={3} />
-              </a>
+              </Link>
             ) : (
               <div className="co-step-bubble"><span>{i + 1}</span></div>
             )}

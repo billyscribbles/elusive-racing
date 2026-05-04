@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './CategoryGrid.css';
 
 const categories = [
@@ -53,14 +54,14 @@ export default function CategoryGrid() {
         </div>
         <div className="category-grid">
           {categories.map((cat) => (
-            <a key={cat.href} href={cat.href} className="cat-card">
+            <Link key={cat.href} to={cat.href} className="cat-card">
               <img src={cat.image} alt={cat.title} loading="lazy" className="cat-card-img" width={400} height={300} />
               <div className="cat-card-overlay" />
               <div className="cat-card-label">
                 <span className="cat-card-name">{cat.title}</span>
                 <span className="cat-card-cta">Shop Now</span>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import { pageTitle, SITE_URL, DEFAULT_IMAGE } from '../lib/seo';
 import './ServicesPage.css';
 
@@ -103,7 +104,7 @@ export default function ServicesPage() {
           <p className="sp-hero-sub">
             Based in Clayton, Melbourne — we build, service, and tune Hondas the right way.
           </p>
-          <a href="/book" className="sp-hero-btn">Book a Service</a>
+          <Link to="/book" className="sp-hero-btn">Book a Service</Link>
         </div>
       </section>
 
@@ -127,7 +128,7 @@ export default function ServicesPage() {
                     </li>
                   ))}
                 </ul>
-                <a href="/book" className="sp-service-btn">Book This Service</a>
+                <Link to="/book" className="sp-service-btn">Book This Service</Link>
               </div>
             </div>
           ))}

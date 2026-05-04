@@ -45,3 +45,5 @@
 - The wholesale login link in the footer now works — wholesale and regular customers share the same sign-in form, so logging in works for both account types.
 - Made the "Edit details" save error easier to read — instead of a cryptic message, you'll now see a clear note telling you which address fields need fixing, and saving with optional fields left blank no longer fails.
 - Backorder products are now properly addable everywhere — shop page, product page, checkout merch upsell, and the wholesale order page. They used to get blocked or show "Sold out" next to the "Available on backorder" message. Out-of-stock products are still kept out of the cart.
+- Clicking links across the site now reliably scrolls you to the top of the new page — no more landing partway down because the previous page was scrolled. This covers the footer, header, navigation menu, search results, homepage banners, checkout steps and product cards.
+- Fixed card payments so completed orders now land in our system straight away, instead of being charged in Stripe but needing manual entry into WooCommerce.

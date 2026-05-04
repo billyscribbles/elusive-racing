@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Loader2, X, Tag, Layers } from 'lucide-react';
 import { searchProducts as msSearch } from '../../lib/meilisearch';
 import { BRANDS } from '../../data/brands';
@@ -116,28 +116,28 @@ export default function SearchBar() {
           {(suggestions.brands.length > 0 || suggestions.categories.length > 0) && (
             <div className="search-suggestions">
               {suggestions.brands.map((b) => (
-                <a
+                <Link
                   key={b.id}
                   className="search-suggestion-item"
-                  href={`/shop?brands=${encodeURIComponent(b.name)}`}
+                  to={`/shop?brands=${encodeURIComponent(b.name)}`}
                   onClick={() => { setOpen(false); setQuery(''); }}
                 >
                   <Tag size={13} className="search-suggestion-icon" />
                   <span className="search-suggestion-label">{b.name}</span>
                   <span className="search-suggestion-type">Brand</span>
-                </a>
+                </Link>
               ))}
               {suggestions.categories.map((c) => (
-                <a
+                <Link
                   key={c.id}
                   className="search-suggestion-item"
-                  href={`/shop?sub=${encodeURIComponent(c.slug)}`}
+                  to={`/shop?sub=${encodeURIComponent(c.slug)}`}
                   onClick={() => { setOpen(false); setQuery(''); }}
                 >
                   <Layers size={13} className="search-suggestion-icon" />
                   <span className="search-suggestion-label">{c.name}</span>
                   <span className="search-suggestion-type">Category</span>
-                </a>
+                </Link>
               ))}
             </div>
           )}
@@ -147,9 +147,9 @@ export default function SearchBar() {
             <>
               <div className="search-section-label">Products</div>
               {results.map((product) => (
-                <a
+                <Link
                   key={product.id}
-                  href={product.href}
+                  to={product.href}
                   className="search-result-item"
                   onClick={() => { setOpen(false); setQuery(''); }}
                 >
@@ -170,7 +170,7 @@ export default function SearchBar() {
                       <span className="search-result-compare">{formatPrice(product.originalPrice)}</span>
                     )}
                   </div>
-                </a>
+                </Link>
               ))}
             </>
           )}
@@ -181,13 +181,13 @@ export default function SearchBar() {
           )}
 
           {!(results.length === 1 && suggestions.brands.length === 0 && suggestions.categories.length === 0) && (
-            <a
-              href={`/search?q=${encodeURIComponent(query)}`}
+            <Link
+              to={`/search?q=${encodeURIComponent(query)}`}
               className="search-view-all"
               onClick={() => setOpen(false)}
             >
               View all results for "{query}"
-            </a>
+            </Link>
           )}
         </div>
       )}

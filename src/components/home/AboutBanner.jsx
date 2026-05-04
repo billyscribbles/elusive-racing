@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './AboutBanner.css';
 
 export default function AboutBanner() {
@@ -28,7 +29,7 @@ export default function AboutBanner() {
               <span>Years Experience</span>
             </div>
           </div>
-          <a href="/about" className="about-cta">About Elusive Racing</a>
+          <Link to="/about" className="about-cta">About Elusive Racing</Link>
         </div>
       </div>
     </section>

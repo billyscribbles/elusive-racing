@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import './TopBar.css';
@@ -37,22 +37,22 @@ export default function TopBar() {
 
         {/* Right — account links */}
         <div className="topbar-right">
-          <a href={wholesale ? '/my-account/dashboard' : '/wholesale-registration'} className="topbar-link">
+          <Link to={wholesale ? '/my-account/dashboard' : '/wholesale-registration'} className="topbar-link">
             {wholesale ? 'WHOLESALE ORDERS' : 'WHOLESALE'}
-          </a>
+          </Link>
           <span className="topbar-divider">|</span>
           {loggedIn ? (
             <>
-              <a href="/my-account/dashboard" className="topbar-link">
+              <Link to="/my-account/dashboard" className="topbar-link">
                 Hi, {user.firstName}
-              </a>
+              </Link>
               <span className="topbar-divider">|</span>
               <button className="topbar-logout" onClick={handleLogout} aria-label="Sign out">
                 <LogOut size={12} /> SIGN OUT
               </button>
             </>
           ) : (
-            <a href="/my-account" className="topbar-link">LOGIN / REGISTER</a>
+            <Link to="/my-account" className="topbar-link">LOGIN / REGISTER</Link>
           )}
         </div>
 

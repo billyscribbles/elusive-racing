@@ -175,7 +175,7 @@ export default function FeaturedProducts() {
         </div>
         )}
         <div className="products-cta">
-          <a href="/shop" className="btn-primary">View All Products</a>
+          <Link to="/shop" className="btn-primary">View All Products</Link>
         </div>
       </div>
     </section>
