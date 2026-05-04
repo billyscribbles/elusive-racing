@@ -2368,6 +2368,25 @@ async function handleResetPassword(req, res) {
   })();
 }
 
+// Translate raw WooCommerce REST error messages into something a non-technical
+// shopper can act on. The original message is logged server-side for debugging.
+function friendlyAccountUpdateError(raw) {
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    return 'We couldn’t save your changes. Please try again.';
+  }
+  const lower = raw.toLowerCase();
+  if (lower.includes('invalid parameter') && lower.includes('billing')) {
+    return 'Some of your billing address fields look invalid. Please double-check the street address, suburb, state and postcode, then try again.';
+  }
+  if (lower.includes('invalid parameter') && lower.includes('shipping')) {
+    return 'Some of your shipping address fields look invalid. Please double-check the street address, suburb, state and postcode, then try again.';
+  }
+  if (lower.includes('email')) {
+    return 'That email address doesn’t look right. Please check it and try again.';
+  }
+  return 'We couldn’t save your changes. Please check the highlighted fields and try again.';
+}
+
 // Update a signed-in customer's own profile (name, email, phone, addresses).
 // Auth: the user's login token is verified via /elusive/v1/verify (the Elusive
 // Auth plugin's HMAC check) to resolve the authenticated user ID. The client
@@ -2409,19 +2428,32 @@ async function handleUpdateAccountProfile(req, res) {
     const raw = await readBody(req);
     const ADDRESS_KEYS = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country'];
     const BILLING_KEYS = [...ADDRESS_KEYS, 'email', 'phone'];
+    // Only forward non-empty trimmed strings — WooCommerce rejects empty
+    // strings inside billing/shipping objects with "Invalid parameter(s)".
     const pick = (obj, keys) => {
       const out = {};
       if (!obj || typeof obj !== 'object') return out;
-      for (const k of keys) if (typeof obj[k] === 'string') out[k] = obj[k].trim();
+      for (const k of keys) {
+        const v = obj[k];
+        if (typeof v !== 'string') continue;
+        const trimmed = v.trim();
+        if (trimmed !== '') out[k] = trimmed;
+      }
       return out;
     };
 
     const payload = {};
-    if (typeof raw.first_name === 'string') payload.first_name = raw.first_name.trim();
-    if (typeof raw.last_name  === 'string') payload.last_name  = raw.last_name.trim();
-    if (typeof raw.email      === 'string') payload.email      = raw.email.trim();
-    if (raw.billing  && typeof raw.billing  === 'object') payload.billing  = pick(raw.billing,  BILLING_KEYS);
-    if (raw.shipping && typeof raw.shipping === 'object') payload.shipping = pick(raw.shipping, ADDRESS_KEYS);
+    if (typeof raw.first_name === 'string' && raw.first_name.trim() !== '') payload.first_name = raw.first_name.trim();
+    if (typeof raw.last_name  === 'string' && raw.last_name.trim()  !== '') payload.last_name  = raw.last_name.trim();
+    if (typeof raw.email      === 'string' && raw.email.trim()      !== '') payload.email      = raw.email.trim();
+    if (raw.billing && typeof raw.billing === 'object') {
+      const billing = pick(raw.billing, BILLING_KEYS);
+      if (Object.keys(billing).length > 0) payload.billing = billing;
+    }
+    if (raw.shipping && typeof raw.shipping === 'object') {
+      const shipping = pick(raw.shipping, ADDRESS_KEYS);
+      if (Object.keys(shipping).length > 0) payload.shipping = shipping;
+    }
 
     if (payload.email && (!payload.email.includes('@') || payload.email.length > 254)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -2449,8 +2481,9 @@ async function handleUpdateAccountProfile(req, res) {
         res.end(JSON.stringify({ error: 'That email is already in use.' }));
         return;
       }
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: customer?.message || 'Could not save changes. Please try again.' }));
+      console.error('[account/profile] WC rejected update:', customer?.code, customer?.message);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: friendlyAccountUpdateError(customer?.message) }));
       return;
     }
 

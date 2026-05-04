@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag, Pencil, X } from 'lucide-react';
+import { Package, MapPin, LogOut, ChevronDown, ChevronRight, User, Phone, Calendar, CreditCard, Truck, ShoppingBag, Pencil, X, AlertCircle } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { clearAdminAuth } from '../lib/adminAuth';
 import WholesaleOrderPage from './WholesaleOrderPage';
@@ -95,13 +95,24 @@ export default function AccountDashboard() {
     if (!user?.token) return;
     setSaving(true); setSaveError('');
     try {
-      const billing  = { ...(user.billing || {}), ...draft.billing, phone: draft.phone };
+      // Only include fields with actual values — empty strings inside billing /
+      // shipping cause WooCommerce to reject the whole request.
+      const billing = { ...(user.billing || {}), ...draft.billing };
+      const phone = (draft.phone || '').trim();
+      if (phone) billing.phone = phone;
+      else delete billing.phone;
+
       const shipping = draft.sameAsBilling
-        ? ADDRESS_COMPARE_KEYS.reduce((acc, k) => ({ ...acc, [k]: draft.billing[k] || '' }), {})
+        ? ADDRESS_COMPARE_KEYS.reduce((acc, k) => {
+            const v = (draft.billing[k] || '').trim();
+            if (v) acc[k] = v;
+            return acc;
+          }, {})
         : draft.shipping;
+
       const payload = {
-        first_name: draft.first_name,
-        last_name:  draft.last_name,
+        first_name: (draft.first_name || '').trim(),
+        last_name:  (draft.last_name  || '').trim(),
         billing,
         shipping,
       };
@@ -111,7 +122,11 @@ export default function AccountDashboard() {
       setSavedMsg('Saved.');
       setTimeout(() => setSavedMsg(''), 3000);
     } catch (err) {
-      setSaveError(err.message || 'Could not save changes.');
+      const raw = err && err.message;
+      const friendly = (typeof raw === 'string' && raw.trim() && !/^[A-Z_]+$/.test(raw))
+        ? raw
+        : 'Please check your details and try again.';
+      setSaveError(friendly);
     } finally {
       setSaving(false);
     }
@@ -506,7 +521,15 @@ function EditModal({ draft, setDraft, saving, saveError, onSave, onCancel }) {
             <AddressFields address={draft.shipping} onChange={shipping => update({ shipping })} />
           )}
 
-          {saveError && <p className="dash-form-notice dash-form-notice--error">{saveError}</p>}
+          {saveError && (
+            <div className="dash-form-notice dash-form-notice--error" role="alert">
+              <AlertCircle size={18} className="dash-form-notice-icon" aria-hidden="true" />
+              <div className="dash-form-notice-body">
+                <strong>We couldn’t save your changes</strong>
+                <span>{saveError}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="dash-modal-actions">

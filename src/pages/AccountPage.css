@@ -1020,14 +1020,45 @@
 
 .dash-form-notice {
   font-size: 13px;
-  padding: 9px 12px;
-  border-radius: 4px;
+  padding: 12px 14px;
+  border-radius: 6px;
   margin: 0;
+  line-height: 1.45;
 }
 .dash-form-notice--error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   background: #fff5f5;
-  color: #c03333;
+  color: #b21f1f;
   border: 1px solid #f5c0c0;
+  border-left: 3px solid var(--color-red);
+}
+.dash-form-notice-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-red);
+}
+.dash-form-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.dash-form-notice-body strong {
+  font-size: 13px;
+  color: #8a1a1a;
+}
+.dash-form-notice-body span {
+  font-size: 13px;
+  color: #6b2222;
+  word-wrap: break-word;
+}
+
+@media (max-width: 480px) {
+  .dash-form-notice { padding: 10px 12px; }
+  .dash-form-notice-body strong,
+  .dash-form-notice-body span { font-size: 12.5px; }
 }
 
 @media (max-width: 480px) {
