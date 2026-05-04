@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import { navItems, featuredBrands } from '../../data/navigation';
@@ -222,22 +222,14 @@ export default function Navigation() {
     setVehicleOpen(false);
   };
   const navRef = useRef(null);
-  const timeoutRef = useRef(null);
 
   const handleMouseEnter = (label) => {
-    clearTimeout(timeoutRef.current);
     setActiveItem(label);
   };
 
   const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setActiveItem(null);
-    }, 150);
+    setActiveItem(null);
   };
-
-  useEffect(() => {
-    return () => clearTimeout(timeoutRef.current);
-  }, []);
 
   return (
     <>
