@@ -83,14 +83,6 @@
   cursor: pointer;
   display: block;
   border: 1px solid rgba(255, 255, 255, 0.07);
-  transition:
-    border-color 0.3s,
-    transform 0.3s;
-}
-
-.reel-card:hover {
-  border-color: rgba(217, 64, 64, 0.3);
-  transform: scale(1.025);
 }
 
 .reel-video {
@@ -115,38 +107,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0);
-  transition: background 0.3s ease;
 }
 
-.reel-card:hover .reel-overlay {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-/* Play icon — visible by default, hides on hover */
+/* Play icon */
 .reel-play-icon {
   position: absolute;
   opacity: 0.65;
   color: #fff;
-  transition: opacity 0.25s ease;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
-}
-
-.reel-card:hover .reel-play-icon {
-  opacity: 0;
-}
-
-/* Instagram icon — hidden by default, appears on hover */
-.reel-ig-icon {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  color: rgba(255, 255, 255, 0);
-  transition: color 0.3s ease;
-}
-
-.reel-card:hover .reel-ig-icon {
-  color: #fff;
 }
 
 /* CTA */

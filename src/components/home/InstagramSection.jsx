@@ -53,7 +53,6 @@ function ReelCard({ src, href, visible }) {
             <path d="M8 5v14l11-7z" />
           </svg>
         </div>
-        <FaInstagram size={22} className="reel-ig-icon" />
       </div>
     </a>
   );
