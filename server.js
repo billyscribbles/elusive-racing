@@ -1204,7 +1204,7 @@ const PlaceOrderBody     = z.object({
   items:         z.array(z.object({}).passthrough()).min(1).max(200),
   contact:       z.object({}).passthrough(),
   shipping:      z.object({}).passthrough().optional().default({}),
-  fulfillment:   z.enum(['delivery', 'pickup']),
+  fulfillment:   z.enum(['delivery', 'collect']),
   paymentMethod: z.enum(['stripe_cc', 'bacs']),
   paymentData:   z.array(z.object({}).passthrough()).optional().default([]),
 }).passthrough();
