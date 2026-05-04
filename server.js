@@ -1207,6 +1207,10 @@ const PlaceOrderBody     = z.object({
   fulfillment:   z.enum(['delivery', 'collect']),
   paymentMethod: z.enum(['stripe_cc', 'bacs']),
   paymentData:   z.array(z.object({}).passthrough()).optional().default([]),
+  freight:       z.object({
+    label: z.string().max(200),
+    price: z.number().nonnegative().max(100_000),
+  }).optional().nullable(),
 }).passthrough();
 
 // Returns the validated body, or null if validation failed (response already sent).
@@ -1902,88 +1906,24 @@ async function handleShippingRates(req, res) {
 }
 
 // ── Place order proxy ────────────────────────────────────────────────────────
-// Browser cannot drive the WC Store API directly: cross-origin nonce headers
-// aren't readable, so write ops 401. Mirror the shipping-rates pattern — manage
-// session cookie + nonce server-side, then submit the order from here.
-async function placeOrderServer({ items, contact, shipping, fulfillment, paymentMethod, paymentData }) {
-  const storeBase = `${WC_URL}/wp-json/wc/store/v1`;
-  let sessionCookie = '';
-  let nonce = '';
+// We previously routed this through the WC Store API /checkout endpoint, which
+// requires the WC Stripe gateway plugin to recognise a pre-confirmed Stripe
+// PaymentIntent — it doesn't, so /checkout failed silently and customers were
+// charged without a WC order being created. Mirror the PayPal handler pattern
+// instead: Stripe has already taken the money client-side, so we just create
+// the WC order directly via REST v3 admin with set_paid:true and the Stripe
+// PaymentIntent stamped into meta_data for reconciliation. BACS uses the same
+// path with set_paid:false / status 'on-hold'.
+async function placeOrderServer({ items, contact, shipping, fulfillment, paymentMethod, paymentData, freight }) {
+  // Pull values out of the array-of-{key,value} payment_data shape the frontend sends.
+  const pdMap = new Map((paymentData || []).map(p => [p?.key, p?.value]));
 
-  function captureHeaders(res) {
-    const cookies = typeof res.headers.getSetCookie === 'function'
-      ? res.headers.getSetCookie()
-      : (res.headers.get('set-cookie') || '').split(/,(?=[^ ])/).map(c => c.trim()).filter(Boolean);
-    if (cookies.length) {
-      const jar = new Map(
-        sessionCookie.split('; ').filter(Boolean).map(kv => [kv.split('=')[0], kv])
-      );
-      for (const c of cookies) {
-        const kv = c.split(';')[0].trim();
-        if (kv) jar.set(kv.split('=')[0], kv);
-      }
-      sessionCookie = [...jar.values()].join('; ');
-    }
-    const n = res.headers.get('X-WC-Store-API-Nonce')
-           || res.headers.get('Nonce')
-           || res.headers.get('X-WooCommerce-StoreApiNonce');
-    if (n) nonce = n;
-  }
-
-  async function storeReq(path, method = 'GET', body = null) {
-    const headers = {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache',
-    };
-    if (sessionCookie) headers['Cookie'] = sessionCookie;
-    if (nonce && method !== 'GET') headers['Nonce'] = nonce;
-
-    const res = await fetch(`${storeBase}${path}`, {
-      method,
-      headers,
-      ...(body && { body: JSON.stringify(body) }),
-    });
-    captureHeaders(res);
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      const msg = data?.message || data?.code || `WC ${method} ${path} failed (${res.status})`;
-      console.log(`[place-order] ${method} ${path} → ${res.status}: ${msg}`);
-      const err = new Error(msg);
-      err.status = res.status;
-      err.wcCode = data?.code || null;
-      throw err;
-    }
-    return data;
-  }
-
-  // 1. Establish session + nonce
-  const existingCart = await storeReq(`/cart?_=${Date.now()}`);
-  console.log(`[place-order] GET /cart ok=${!!existingCart} nonce=${nonce ? 'yes' : 'no'} cookie=${sessionCookie ? 'yes' : 'no'}`);
-
-  // 2. Clear any stale items from this session
-  if (existingCart?.items?.length) {
-    for (const item of existingCart.items) {
-      await storeReq('/cart/remove-item', 'POST', { key: item.key });
-    }
-  }
-
-  // 3. Add the customer's items
-  for (const item of items) {
-    const productId = parseInt(item.id, 10);
-    const variantId = item.variantId && item.variantId !== item.id ? parseInt(item.variantId, 10) : null;
-    await storeReq('/cart/add-item', 'POST', { id: variantId ?? productId, quantity: item.quantity });
-    console.log(`[place-order] add-item ${variantId ?? productId} × ${item.quantity}`);
-  }
-
-  // 4. Build addresses (mirrors browser placeOrder() — pickup uses the store address)
   const addr = fulfillment === 'delivery' ? {
-    address_1: shipping.address1 || '',
-    address_2: shipping.address2 || '',
-    city:      shipping.city     || '',
-    state:     shipping.state    || '',
-    postcode:  shipping.postcode || '',
+    address_1: shipping?.address1 || '',
+    address_2: shipping?.address2 || '',
+    city:      shipping?.city     || '',
+    state:     shipping?.state    || '',
+    postcode:  shipping?.postcode || '',
     country:   'AU',
   } : {
     address_1: '1/32 Graham Rd',
@@ -1994,36 +1934,76 @@ async function placeOrderServer({ items, contact, shipping, fulfillment, payment
     country:   'AU',
   };
 
-  const billingAddress = {
-    first_name: contact.firstName || '',
-    last_name:  contact.lastName  || '',
-    email:      contact.email     || '',
-    phone:      contact.phone     || '',
+  const billing = {
+    first_name: contact?.firstName || '',
+    last_name:  contact?.lastName  || '',
+    email:      contact?.email     || '',
+    phone:      contact?.phone     || '',
     ...addr,
   };
-  const shippingAddress = {
-    first_name: contact.firstName || '',
-    last_name:  contact.lastName  || '',
+  const ship = {
+    first_name: contact?.firstName || '',
+    last_name:  contact?.lastName  || '',
     ...addr,
   };
 
-  // 5. Sync customer address so WC picks the right shipping rate / tax before checkout
-  await storeReq('/cart/update-customer', 'POST', {
-    billing_address: billingAddress,
-    shipping_address: shippingAddress,
+  const line_items = items.map((item) => {
+    const productId   = parseInt(item.id, 10);
+    const variationId = item.variantId && item.variantId !== item.id
+      ? parseInt(item.variantId, 10)
+      : null;
+    const li = { product_id: productId, quantity: Math.max(1, parseInt(item.quantity, 10) || 1) };
+    if (variationId) li.variation_id = variationId;
+    return li;
   });
 
-  // 6. Submit checkout
-  const result = await storeReq('/checkout', 'POST', {
-    billing_address:  billingAddress,
-    shipping_address: shippingAddress,
-    customer_note:    '',
-    payment_method:   paymentMethod,
-    payment_data:     paymentData,
-  });
-  console.log(`[place-order] checkout → order_id=${result?.order_id ?? '?'}`);
+  const shippingLabel = fulfillment === 'collect'
+    ? 'Click & Collect'
+    : (freight?.label || 'Shipping');
+  const shippingTotal = fulfillment === 'collect'
+    ? 0
+    : Number(freight?.price ?? 0);
+  const shipping_lines = fulfillment === 'collect' ? [] : [{
+    method_id:    'flat_rate',
+    method_title: shippingLabel,
+    total:        shippingTotal.toFixed(2),
+  }];
 
-  return result;
+  const isStripe = paymentMethod === 'stripe_cc';
+  const meta_data = isStripe ? [
+    { key: '_stripe_payment_intent', value: pdMap.get('stripe_payment_intent') || '' },
+    { key: '_stripe_payment_method', value: pdMap.get('stripe_payment_method') || '' },
+  ] : [];
+
+  const orderBody = {
+    payment_method:       paymentMethod,
+    payment_method_title: isStripe ? 'Credit Card (Stripe)' : 'Direct Bank Transfer',
+    set_paid:             isStripe,
+    status:               isStripe ? 'processing' : 'on-hold',
+    billing,
+    shipping: ship,
+    line_items,
+    shipping_lines,
+    meta_data,
+  };
+
+  const wcRes = await fetch(`${WC_URL}/wp-json/wc/v3/orders`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+    body:    JSON.stringify(orderBody),
+  });
+  const wcData = await wcRes.json().catch(() => null);
+  if (!wcRes.ok || !wcData?.id) {
+    const msg = wcData?.message || wcData?.code || `WC POST /orders failed (${wcRes.status})`;
+    console.log(`[place-order] POST /orders → ${wcRes.status}: ${msg}`);
+    const err = new Error(msg);
+    err.status = wcRes.status;
+    err.wcCode = wcData?.code || null;
+    throw err;
+  }
+  console.log(`[place-order] checkout → order_id=${wcData.id}`);
+
+  return { order_id: wcData.id };
 }
 
 async function handlePlaceOrder(req, res) {

@@ -727,16 +727,16 @@ export async function getWCShippingRates(items, address = {}) {
   }
 }
 
-// Place an order via our server proxy at /api/place-order.
-// The server manages the WC Store API session cookie + nonce — browser-direct
-// Store API writes 401 because cross-origin nonce headers aren't readable.
+// Place an order via our server proxy at /api/place-order. Server creates the
+// WC order directly via REST v3 admin (no Store API / WC Stripe gateway).
 // paymentMethod: 'stripe_cc' | 'bacs'
-// paymentData: array of { key, value } pairs (e.g. Stripe PaymentMethod ID)
-export async function placeOrder({ items, contact, shipping, fulfillment, paymentMethod, paymentData = [] }) {
+// paymentData: array of { key, value } pairs (e.g. Stripe PaymentIntent ID)
+// freight: { label, price } from the cart's shipping quote (delivery only)
+export async function placeOrder({ items, contact, shipping, fulfillment, paymentMethod, paymentData = [], freight = null }) {
   const res = await fetch('/api/place-order', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items, contact, shipping, fulfillment, paymentMethod, paymentData }),
+    body: JSON.stringify({ items, contact, shipping, fulfillment, paymentMethod, paymentData, freight }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
