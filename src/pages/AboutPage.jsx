@@ -31,8 +31,8 @@ const values = [
 
 const milestones = [
   {
-    year: 'The Beginning',
-    text: 'Elusive Racing started the way most great shops do — out of pure obsession. A workshop, a Honda, and a burning need to make it faster. What began as a personal project quickly turned into something bigger when friends started asking for parts, advice, and eventually, hands-on help.',
+    year: 'Humble Beginnings',
+    text: 'Elusive Racing started out with Kenny and Jimmy wrecking and modifying Hondas in their parents\' front yard — K-swaps, repairs, and the occasional full build done in their spare time. Over the years, more people in the local Honda scene started coming to them for parts and advice, and slowly the work outgrew the driveway.',
   },
   {
     year: 'Building a Name',
