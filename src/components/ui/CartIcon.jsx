@@ -64,7 +64,7 @@ export default function CartIcon() {
                             <button
                               onClick={() => updateQuantity(item.id, item.variantId, item.quantity + 1)}
                               aria-label="Increase"
-                              disabled={item.stockQuantity !== null && item.stockQuantity !== undefined && item.quantity >= item.stockQuantity}
+                              disabled={item.stockStatus !== 'onbackorder' && item.stockQuantity !== null && item.stockQuantity !== undefined && item.quantity >= item.stockQuantity}
                             >
                               <Plus size={12} />
                             </button>

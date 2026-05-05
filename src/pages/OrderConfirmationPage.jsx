@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, ShoppingBag, ArrowRight, Download, CreditCard, Building2, MapPin, Phone, Mail, AlertTriangle } from 'lucide-react';
+import { CheckCircle, ShoppingBag, ArrowRight, Download, CreditCard, Building2, MapPin, Phone, Mail, AlertTriangle, Info } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useCheckoutStore from '../store/checkoutStore';
 import useOrderStore from '../store/orderStore';
@@ -50,6 +50,7 @@ export default function OrderConfirmationPage() {
   }
 
   const { customer, shippingAddress, fulfillment, items, subtotal, shippingCost, shippingLabel, total, paymentMethod, paymentMethodLabel, orderId, orderDate, needsReconcile, paymentIntentId } = order;
+  const hasBackorder = items.some((i) => i.stockStatus === 'onbackorder');
 
   return (
     <div className="oc-page">
@@ -70,6 +71,20 @@ export default function OrderConfirmationPage() {
                 We&apos;ve received your payment successfully, but our order system needs a moment to catch up.
                 Our team has been notified and will confirm your order by email within 15 minutes.
                 {paymentIntentId && <> If you need to reach us, quote reference <code>{paymentIntentId}</code>.</>}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {hasBackorder && (
+          <div className="oc-backorder-notice" role="note">
+            <Info size={18} />
+            <div>
+              <strong>Your order contains a backorder item</strong>
+              <p>
+                We&apos;ll source it for you as quickly as possible, but availability is not guaranteed. We reserve
+                the right to cancel and refund any backorder item we are unable to procure, and will be in touch
+                if there are any delays.
               </p>
             </div>
           </div>

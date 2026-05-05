@@ -21,18 +21,22 @@ const useCartStore = create(
           return;
         }
         const qty = product.quantity ?? 1;
-        // stockQuantity 0/null = "no max". Out-of-stock items are rejected above,
-        // so a 0-stock item that reaches this point is implicitly backorder
-        // (orderable, no real cap).
-        const stockMax = (n) => (Number(n) > 0 ? Number(n) : null);
+        // stockQuantity 0/null = "no max". Out-of-stock items are rejected above.
+        // Backorder items (stockStatus 'onbackorder') are uncapped — WC will let
+        // stock go negative so we can source the product after the order.
+        const stockMax = (n, status) =>
+          status === 'onbackorder' ? null : (Number(n) > 0 ? Number(n) : null);
         set((s) => {
           const existing = s.items.find((i) => i.id === product.id && i.variantId === product.variantId);
           if (existing) {
-            const max = stockMax(existing.stockQuantity ?? product.stockQuantity);
+            const max = stockMax(
+              existing.stockQuantity ?? product.stockQuantity,
+              existing.stockStatus ?? product.stockStatus,
+            );
             const newQty = max !== null ? Math.min(max, existing.quantity + qty) : existing.quantity + qty;
             return { items: s.items.map((i) => i.id === product.id && i.variantId === product.variantId ? { ...i, quantity: newQty } : i) };
           }
-          const max = stockMax(product.stockQuantity);
+          const max = stockMax(product.stockQuantity, product.stockStatus);
           const clampedQty = max !== null ? Math.min(max, qty) : qty;
           const retailPrice = product.retailPrice ?? product.price;
           return { items: [...s.items, { ...product, retailPrice, wholesalePrices: product.wholesalePrices ?? null, quantity: clampedQty }] };
@@ -52,18 +56,22 @@ const useCartStore = create(
           return true;
         });
         if (!valid.length) return;
-        const stockMax = (n) => (Number(n) > 0 ? Number(n) : null);
+        const stockMax = (n, status) =>
+          status === 'onbackorder' ? null : (Number(n) > 0 ? Number(n) : null);
         set((s) => {
           let items = [...s.items];
           for (const product of valid) {
             const qty = product.quantity ?? 1;
             const idx = items.findIndex((i) => i.id === product.id && i.variantId === product.variantId);
             if (idx !== -1) {
-              const max = stockMax(items[idx].stockQuantity ?? product.stockQuantity);
+              const max = stockMax(
+                items[idx].stockQuantity ?? product.stockQuantity,
+                items[idx].stockStatus ?? product.stockStatus,
+              );
               const newQty = max !== null ? Math.min(max, items[idx].quantity + qty) : items[idx].quantity + qty;
               items[idx] = { ...items[idx], quantity: newQty };
             } else {
-              const max = stockMax(product.stockQuantity);
+              const max = stockMax(product.stockQuantity, product.stockStatus);
               const clampedQty = max !== null ? Math.min(max, qty) : qty;
               const retailPrice = product.retailPrice ?? product.price;
               items = [...items, { ...product, retailPrice, wholesalePrices: product.wholesalePrices ?? null, quantity: clampedQty }];
@@ -83,8 +91,10 @@ const useCartStore = create(
           set((s) => ({
             items: s.items.map((i) => {
               if (!(i.id === id && i.variantId === variantId)) return i;
-              // 0 stock means "backorder, no real cap" — see addItem comment.
-              const max = Number(i.stockQuantity) > 0 ? Number(i.stockQuantity) : null;
+              // Backorder items have no cap — WC will let stock go negative.
+              const max = i.stockStatus === 'onbackorder'
+                ? null
+                : (Number(i.stockQuantity) > 0 ? Number(i.stockQuantity) : null);
               return { ...i, quantity: max !== null ? Math.min(max, quantity) : quantity };
             }),
           }));

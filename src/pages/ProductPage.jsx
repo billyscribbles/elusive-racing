@@ -355,8 +355,11 @@ export default function ProductPage() {
   const maxQty = display.hasVariants
     ? (selectedVariant?.quantityAvailable ?? null)
     : (display.stockQuantity ?? null);
+  // Backorder products are uncapped — WC will let stock go negative once we sell past zero.
+  const effectiveStockStatus = selectedVariant?.stockStatus ?? display.stockStatus ?? null;
+  const isBackorder = effectiveStockStatus === 'onbackorder';
   // null means unlimited / unknown (e.g. backorder or prefill-only data)
-  const effectiveMax = maxQty !== null && maxQty > 0 ? maxQty : null;
+  const effectiveMax = isBackorder ? null : (maxQty !== null && maxQty > 0 ? maxQty : null);
   const lowStock = effectiveMax !== null && effectiveMax <= 5;
 
   const canAddToCart = !effectiveVariantsLoading && !display.outOfStock && (!display.hasVariants || !!selectedVariant) && displayPrice > 0 && (effectiveMax === null || effectiveMax > 0);
@@ -375,7 +378,7 @@ export default function ProductPage() {
       variantId: variantId ?? null,
       variantTitle: selectedVariant?.title ?? null,
       stockQuantity: effectiveMax,
-      stockStatus: selectedVariant?.stockStatus ?? display.stockStatus ?? null,
+      stockStatus: effectiveStockStatus,
       quantity: qty,
     });
     setAdded(true);

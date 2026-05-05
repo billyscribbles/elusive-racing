@@ -20,7 +20,7 @@ function buildOrderSnapshot({ items, contact, shipping, fulfillment, freight, pa
       ? { address1: '1/32 Graham Rd', city: 'Clayton South', state: 'VIC', postcode: '3169', country: 'Australia' }
       : { ...shipping },
     fulfillment,
-    items:           items.map(i => ({ name: i.name, brand: i.brand, quantity: i.quantity, price: i.price, image: i.image })),
+    items:           items.map(i => ({ name: i.name, brand: i.brand, quantity: i.quantity, price: i.price, image: i.image, stockStatus: i.stockStatus ?? null })),
     subtotal,
     shippingCost,
     shippingLabel:   fulfillment === 'collect' ? 'Click & Collect' : (freight?.label ?? 'Shipping'),

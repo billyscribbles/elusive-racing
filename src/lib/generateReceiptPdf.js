@@ -168,6 +168,22 @@ export function generateReceiptPdf(order) {
     y += 10;
   }
 
+  // ── Backorder notice ──
+  const hasBackorder = order.items?.some((i) => i.stockStatus === 'onbackorder');
+  if (hasBackorder) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138);
+    doc.text('Backorder Notice', margin, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60);
+    const noticeBody = "This order contains a backorder item. We'll source it for you as quickly as possible, but availability is not guaranteed. We reserve the right to cancel and refund any backorder item we are unable to procure, and will be in touch if there are any delays.";
+    const noticeLines = doc.splitTextToSize(noticeBody, contentWidth);
+    doc.text(noticeLines, margin, y);
+    y += noticeLines.length * 4 + 6;
+  }
+
   // ── Footer ──
   doc.setFontSize(8);
   doc.setTextColor(150);

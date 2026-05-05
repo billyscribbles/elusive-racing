@@ -938,7 +938,7 @@ async function handleCheckStock(req, res) {
         if (!id) continue;
         try {
           const r = await fetch(
-            `${WC_URL}/wp-json/wc/v3/products/${id}?_fields=id,name,stock_status,stock_quantity,manage_stock`,
+            `${WC_URL}/wp-json/wc/v3/products/${id}?_fields=id,name,stock_status,stock_quantity,manage_stock,backorders`,
             { headers: { Authorization: auth } }
           );
           if (!r.ok) {
@@ -946,9 +946,11 @@ async function handleCheckStock(req, res) {
             continue;
           }
           const p = await r.json();
+          // Backorder products are orderable past zero stock — let WC decrement to negative.
+          const backordersAllowed = p.stock_status === 'onbackorder' || p.backorders === 'yes' || p.backorders === 'notify';
           if (p.stock_status === 'outofstock') {
             issues.push({ id, name: p.name, requested, available: 0, reason: 'out_of_stock' });
-          } else if (p.manage_stock && typeof p.stock_quantity === 'number' && p.stock_quantity < requested) {
+          } else if (!backordersAllowed && p.manage_stock && typeof p.stock_quantity === 'number' && p.stock_quantity < requested) {
             issues.push({ id, name: p.name, requested, available: p.stock_quantity, reason: 'insufficient_stock' });
           }
         } catch (err) {

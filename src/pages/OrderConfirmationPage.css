@@ -50,6 +50,35 @@
   font-size: 12px;
   font-family: ui-monospace, monospace;
 }
+
+/* ── Backorder notice (informational, not a warning) ── */
+.oc-backorder-notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #3b82f6;
+  color: #1e3a8a;
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.oc-backorder-notice svg {
+  flex-shrink: 0;
+  color: #3b82f6;
+  margin-top: 2px;
+}
+.oc-backorder-notice strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.oc-backorder-notice p {
+  margin: 0;
+}
 .oc-success-icon {
   color: #22c55e;
   margin-bottom: 12px;
