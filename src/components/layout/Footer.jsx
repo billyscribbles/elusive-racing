@@ -99,7 +99,7 @@ export default function Footer() {
 
           {/* Logo + contact details */}
           <div className="footer-brand-col">
-            <Link to="/">
+            <Link to="/" reloadDocument>
               <img src="/logo-footer.svg" alt="Elusive Racing" className="footer-logo-img" />
             </Link>
 
@@ -134,7 +134,15 @@ export default function Footer() {
             <h3 className="footer-col-title">Quick Links</h3>
             <ul className="footer-col-links">
               {quickLinks.map((l) => (
-                <li key={l.href}><Link to={l.href} className="footer-col-link">{l.label}</Link></li>
+                <li key={l.href}>
+                  <Link
+                    to={l.href}
+                    className="footer-col-link"
+                    reloadDocument
+                  >
+                    {l.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -144,7 +152,15 @@ export default function Footer() {
             <h3 className="footer-col-title">Resources</h3>
             <ul className="footer-col-links">
               {resources.map((l) => (
-                <li key={l.href}><Link to={l.href} className="footer-col-link">{l.label}</Link></li>
+                <li key={l.href}>
+                  <Link
+                    to={l.href}
+                    className="footer-col-link"
+                    reloadDocument
+                  >
+                    {l.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -154,7 +170,15 @@ export default function Footer() {
             <h3 className="footer-col-title">Information</h3>
             <ul className="footer-col-links">
               {information.map((l) => (
-                <li key={l.href}><Link to={l.href} className="footer-col-link">{l.label}</Link></li>
+                <li key={l.href}>
+                  <Link
+                    to={l.href}
+                    className="footer-col-link"
+                    reloadDocument
+                  >
+                    {l.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>

@@ -50,3 +50,4 @@
 - You can now order any quantity of a backorder item and check out — the cart, the checkout stock check, and the order all go through, and the stock count is allowed to go negative so we can source it for you.
 - After placing an order that contains a backorder item, the order confirmation page and the downloadable PDF receipt now both show a short note that we'll source the item as quickly as possible, that availability isn't guaranteed, and that we may cancel and refund a backorder line if we can't procure it.
 - Rewrote the opening of the "How We Got Here" section on the About page to share how Kenny and Jimmy started out modifying Hondas in their parents' front yard.
+- Fixed footer links so pages now reliably start at the top after you click them.

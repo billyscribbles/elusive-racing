@@ -37,7 +37,11 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+}
+
+html.footer-scroll-resetting .app {
+  overflow-anchor: none;
 }
 
 body {
