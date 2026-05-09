@@ -14,7 +14,7 @@ const policySections = [
     title: 'Change of Mind',
     content: `We accept change-of-mind returns within 14 days of delivery, provided the item is unused, uninstalled, and returned in its original packaging and re-saleable condition.
 
-A restocking fee of up to 15% may apply. Return shipping costs are the responsibility of the customer. Any item that has been test-fitted or installed is not eligible for a change-of-mind return.`,
+A restocking fee of up to 20% may apply. Return shipping costs are the responsibility of the customer. Any item that has been test-fitted or installed is not eligible for a change-of-mind return.`,
   },
   {
     id: 'faulty',
@@ -26,11 +26,21 @@ A restocking fee of up to 15% may apply. Return shipping costs are the responsib
     title: 'Warranty Claims',
     content: `Many products we sell carry a manufacturer's warranty. Warranty terms vary by brand and product. To lodge a claim, submit the form below with your order number and a description of the fault.
 
+All parts must be fitted by a qualified, licensed mechanic. Any product installed by an unlicensed workshop or individual is not eligible for warranty or return, and a copy of the installing workshop's tax invoice must be supplied when a claim is lodged.
+
+Where a fault is reported on an electronic component such as a sensor or ECU, an assessment may be required to determine the nature and extent of the defect. We will notify you of the outcome once the assessment is complete.
+
 Warranty does not cover:
 - Damage caused by improper installation or use outside the manufacturer's guidelines
+- Damage resulting from the use of an incorrect grade, or an insufficient quantity, of lubricant — including, without limitation, on supercharger and turbocharger applications
 - Accident, misuse, or modification damage
 - Normal wear and tear
 - Products dismantled or repaired by unauthorised parties`,
+  },
+  {
+    id: 'performance-parts',
+    title: 'Performance Parts',
+    content: `Performance and motorsport-intended parts are supplied without manufacturer warranty against failure under competition use, accelerated wear, or loss of performance over time. These items are sold on the understanding that they operate beyond standard road-vehicle specifications. This exclusion does not affect your rights under the Australian Consumer Law in respect of major failures.`,
   },
   {
     id: 'non-returnable',
@@ -51,10 +61,23 @@ Do not ship items back without an authorisation number — unauthorised returns 
   {
     id: 'refunds',
     title: 'Refund Processing',
-    content: `Once we receive and inspect your returned item, refunds are processed to the original payment method:
-- Credit and debit cards: 5–10 business days
+    content: `Once we receive and inspect your returned item, your refund is issued to the original payment method. Approved refunds are typically processed within the following timeframes:
+- Visa, Mastercard, and American Express: 14–28 business days
+- PayPal: 14–28 business days
+- Afterpay and Zip Money: 14–28 business days
 - Bank transfer (BACS): 3–5 business days
-- Afterpay and buy-now-pay-later: per the provider's terms`,
+
+Once a refund has been initiated, the final processing time is governed by the relevant card issuer or third-party provider and is outside our control.`,
+  },
+  {
+    id: 'refund-deductions',
+    title: 'Refund Amount and Deductions',
+    content: `Refunds are calculated as the purchase price of the returned item, less:
+- Original return shipping costs
+- Non-refundable payment processing fees retained by the third-party provider, where applicable: Afterpay 7%, Zip Money 7%, Visa 3%, Mastercard 3%, American Express 3%
+- A restocking fee of up to 20%, where applicable
+
+These amounts reflect transaction and handling costs that are not recovered when an order is reversed, and are deducted before the balance is returned to your original payment method.`,
   },
 ];
 

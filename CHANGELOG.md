@@ -53,3 +53,4 @@
 - Fixed footer links so pages now reliably start at the top after you click them.
 - Added a Shipping page that explains delivery times and lists every carrier we use, with links to each carrier's transit-time and FAQ pages. Reachable from the "Fast Shipping" badge in the footer and a new "Shipping Policy" link in Quick Links.
 - On a product page with options (size, spec, etc.), picking an option now updates the SKU shown to match that exact variant.
+- Updated the Returns & Warranty page with our specific policies — refund processing times for each payment method, the deductions that apply to a refund, the requirement for a licensed mechanic to install parts, the lubricant exclusion for superchargers and turbos, the assessment process for faulty electronics, and a clear note that performance parts are sold without manufacturer warranty.
