@@ -19,6 +19,11 @@ export default function ServicesMegaMenu({ columns, footerLinks }) {
               key={col.title}
               className={`services-mega-column${col.splitInto > 1 ? ' services-mega-column--split' : ''}`}
             >
+              {col.image && (
+                <Link to={col.titleHref} className="services-mega-image-link" aria-hidden="true" tabIndex={-1}>
+                  <img src={col.image} alt="" loading="lazy" className="services-mega-image" />
+                </Link>
+              )}
               <h4 className="services-mega-title">{col.title}</h4>
               {col.links.length > 0 && (
                 <ul className="services-mega-links">

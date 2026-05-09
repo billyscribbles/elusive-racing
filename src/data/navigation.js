@@ -15,6 +15,7 @@ export const navItems = [
       {
         title: 'Engine Internals',
         titleHref: '/shop?sub=engine-internals',
+        image: '/menu/menu-engine-parts.jpg',
         splitInto: 2,
         links: [
           { label: 'Bearings',                          href: '/shop?sub=bearings' },
@@ -36,6 +37,7 @@ export const navItems = [
       {
         title: 'Engine Parts',
         titleHref: '/shop?sub=engine-parts',
+        image: '/menu/menu-engine-parts-2.jpg',
         links: [
           { label: 'Axles',               href: '/shop?sub=axles' },
           { label: 'Catch Can & Tanks',   href: '/shop?sub=catch-can-tanks' },
@@ -52,6 +54,7 @@ export const navItems = [
       {
         title: 'Induction',
         titleHref: '/shop?sub=induction',
+        image: '/menu/menu-induction.jpg',
         links: [
           { label: 'Intake Manifolds',   href: '/shop?sub=intake-manifolds' },
           { label: 'Adapters',           href: '/shop?sub=induction-adapters' },
@@ -66,6 +69,7 @@ export const navItems = [
       {
         title: 'Fuel',
         titleHref: '/shop?sub=fuel',
+        image: '/menu/menu-fuel.jpg',
         links: [
           { label: 'Fuel Filter',                     href: '/shop?sub=fuel-filter' },
           { label: 'Fuel Injectors',                  href: '/shop?sub=fuel-injectors' },
@@ -79,6 +83,7 @@ export const navItems = [
       {
         title: 'Turbo',
         titleHref: '/shop?sub=turbo-supercharger',
+        image: '/menu/menu-sway-turbo.jpg',
         links: [
           { label: 'Blow Off Valve & Wastegate', href: '/shop?sub=blow-off-valve-wastegate' },
           { label: 'Boost Controllers',          href: '/shop?sub=boost-controllers' },
@@ -92,6 +97,7 @@ export const navItems = [
       {
         title: 'Maintenance',
         titleHref: '/shop?sub=maintenance',
+        image: '/menu/menu-maintenacne.jpg',
         links: [
           { label: 'Engine Oil',          href: '/shop?sub=engine-oil' },
           { label: 'Fluids & Lubricants', href: '/shop?sub=fluids-lubricants' },
@@ -102,6 +108,7 @@ export const navItems = [
       {
         title: 'Exhaust',
         titleHref: '/shop?sub=exhaust',
+        image: '/menu/menu-headers.jpg',
         links: [
           { label: 'Exhaust System',                       href: '/shop?sub=exhaust-system' },
           { label: 'Headers, Turbo Manifold & Dump Pipes', href: '/shop?sub=headers-turbo-manifold-dump-pipes' },
@@ -140,6 +147,7 @@ export const navItems = [
       {
         title: 'Engine',
         titleHref: '/shop?sub=engine-honda-oem',
+        image: '/menu/menu-honda-engine.jpg',
         links: [
           { label: 'Gaskets',                           href: '/shop?sub=honda-engine-gaskets' },
           { label: 'Mounts',                            href: '/shop?sub=honda-engine-mounts' },
@@ -151,6 +159,7 @@ export const navItems = [
       {
         title: 'Drivetrain',
         titleHref: '/shop?sub=drivetrain-honda-oem',
+        image: '/menu/menu-honda-drivetrain.jpg',
         links: [
           { label: 'Mounts',                href: '/shop?sub=honda-drivetrain-mounts' },
           { label: 'Accessories',           href: '/shop?sub=honda-drivetrain-accessories' },
@@ -163,6 +172,7 @@ export const navItems = [
       {
         title: 'Body & Accessories',
         titleHref: '/shop?sub=body-accessories-honda-oem',
+        image: '/menu/menu-honda-body.jpg',
         links: [
           { label: 'Engine Bay',  href: '/shop?sub=honda-engine-bay' },
           { label: 'Exterior',    href: '/shop?sub=exterior-accessories-honda-oem' },
@@ -275,6 +285,7 @@ export const navItems = [
       {
         title: 'HID',
         titleHref: '/shop?sub=hid',
+        image: '/menu/menu-lighting.jpg',
         links: [
           { label: 'HID Adapters',         href: '/shop?sub=hid-adapters' },
           { label: 'HID Ballasts',         href: '/shop?sub=hid-ballasts' },
@@ -286,6 +297,7 @@ export const navItems = [
       {
         title: 'LED',
         titleHref: '/shop?sub=led',
+        image: '/menu/menu-led.jpg',
         links: [
           { label: 'Indicators',          href: '/shop?sub=led-indicators' },
           { label: 'Interior & Exterior', href: '/shop?sub=led-interior-exterior' },
@@ -298,6 +310,7 @@ export const navItems = [
       {
         title: 'Wiring',
         titleHref: '/shop?sub=lighting-wiring',
+        image: '/menu/menu-wiring.jpg',
         links: [
           { label: 'Pigtails & Adapters',  href: '/shop?sub=pigtails-adapters' },
           { label: 'PWM Canbus Modules',   href: '/shop?sub=pwm-canbus-modules' },
@@ -308,6 +321,7 @@ export const navItems = [
       {
         title: 'Accessories',
         titleHref: '/shop?sub=accessories-lighting',
+        image: '/menu/menu-dust.jpg',
         links: [
           { label: 'Dust Caps', href: '/shop?sub=lighting-dust-caps' },
         ],
@@ -315,6 +329,7 @@ export const navItems = [
       {
         title: 'Vehicle Kits',
         titleHref: '/shop?sub=vehicle-kits',
+        image: '/menu/menu-kits.jpg',
         links: [],
       },
     ],

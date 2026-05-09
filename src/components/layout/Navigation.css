@@ -80,8 +80,7 @@
   border-top: 3px solid var(--color-red);
   animation: dropdownFade 0.15s ease;
   max-height: calc(100vh - var(--header-height) - var(--nav-height) - 120px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
 }
 
 @keyframes dropdownFade {
@@ -544,7 +543,7 @@
 
 /* ── Services Mega Menu ── */
 .services-mega {
-  padding: 28px 0 22px;
+  padding: 20px 0 16px;
 }
 
 .services-mega-grid {
@@ -577,6 +576,28 @@
 .services-mega-column--split .services-mega-links li {
   break-inside: avoid;
   padding: 2px 0;
+}
+
+.services-mega-image-link {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.services-mega-image {
+  height: 96px;
+  width: auto;
+  aspect-ratio: 5 / 4;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.services-mega-image-link:hover .services-mega-image {
+  transform: scale(1.04);
 }
 
 .services-mega-title {
