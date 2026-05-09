@@ -67,3 +67,5 @@
 - Product cards now show "+5 in stock" once we have more than 5 on the shelf, and a yellow "Low in stock" badge when only 1 or 2 are left, so you can see at a glance when something's running low.
 - Added a Tyres & Wheel Alignment page to the Services section explaining what's included, how the alignment is done, and how a street setup differs from a track setup.
 - Added a Race Track Support page covering pre-event prep, in-paddock setup and changes between sessions, plus the circuits we regularly support customers at.
+- The Engine menu's long Engine Internals list now flows into two columns so it sits the same height as its neighbours, and the dropdown leaves a clear strip of screen below it so you can move your mouse off to close it.
+- Moved the "View all…" link in each top-nav category to sit underneath its list of links rather than above it.

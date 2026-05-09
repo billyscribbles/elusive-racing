@@ -15,6 +15,7 @@ export const navItems = [
       {
         title: 'Engine Internals',
         titleHref: '/shop?sub=engine-internals',
+        splitInto: 2,
         links: [
           { label: 'Bearings',                          href: '/shop?sub=bearings' },
           { label: 'Cam Gears',                         href: '/shop?sub=cam-gears' },
@@ -76,7 +77,7 @@ export const navItems = [
         ],
       },
       {
-        title: 'Turbo & Supercharger',
+        title: 'Turbo',
         titleHref: '/shop?sub=turbo-supercharger',
         links: [
           { label: 'Blow Off Valve & Wastegate', href: '/shop?sub=blow-off-valve-wastegate' },

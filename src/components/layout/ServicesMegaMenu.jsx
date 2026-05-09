@@ -1,17 +1,25 @@
 import { Link } from 'react-router-dom';
 
 export default function ServicesMegaMenu({ columns, footerLinks }) {
+  const hasSplit = columns.some((col) => col.splitInto > 1);
+  const totalSlots = columns.reduce((sum, col) => sum + (col.splitInto || 1), 0);
+  const gridStyle = hasSplit
+    ? { gridTemplateColumns: `repeat(${totalSlots}, minmax(0, 1fr))` }
+    : undefined;
+
   return (
     <div className="mega-menu services-mega">
       <div className="container">
-        <div className={`services-mega-grid${footerLinks?.length > 0 ? ' services-mega-grid--with-footer' : ''}`}>
+        <div
+          className={`services-mega-grid${footerLinks?.length > 0 ? ' services-mega-grid--with-footer' : ''}`}
+          style={gridStyle}
+        >
           {columns.map((col) => (
-            <div key={col.title} className="services-mega-column">
+            <div
+              key={col.title}
+              className={`services-mega-column${col.splitInto > 1 ? ' services-mega-column--split' : ''}`}
+            >
               <h4 className="services-mega-title">{col.title}</h4>
-              <Link to={col.titleHref} className="services-mega-viewall">
-                View all {col.title.toLowerCase()}
-                <span className="services-mega-viewall-arrow" aria-hidden="true">→</span>
-              </Link>
               {col.links.length > 0 && (
                 <ul className="services-mega-links">
                   {col.links.map((link) => (
@@ -23,6 +31,10 @@ export default function ServicesMegaMenu({ columns, footerLinks }) {
                   ))}
                 </ul>
               )}
+              <Link to={col.titleHref} className="services-mega-viewall">
+                View all {col.title.toLowerCase()}
+                <span className="services-mega-viewall-arrow" aria-hidden="true">→</span>
+              </Link>
             </div>
           ))}
         </div>

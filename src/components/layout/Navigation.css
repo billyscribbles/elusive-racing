@@ -79,6 +79,9 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border-top: 3px solid var(--color-red);
   animation: dropdownFade 0.15s ease;
+  max-height: calc(100vh - var(--header-height) - var(--nav-height) - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes dropdownFade {
@@ -561,6 +564,21 @@
   flex-direction: column;
 }
 
+.services-mega-column--split {
+  grid-column: span 2;
+}
+
+.services-mega-column--split .services-mega-links {
+  display: block;
+  columns: 2;
+  column-gap: 28px;
+}
+
+.services-mega-column--split .services-mega-links li {
+  break-inside: avoid;
+  padding: 2px 0;
+}
+
 .services-mega-title {
   font-family: var(--font-primary);
   font-weight: 800;
@@ -578,8 +596,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 12px;
+  margin-top: 12px;
   padding: 2px 0;
+  align-self: start;
   font-family: var(--font-primary);
   font-size: 11px;
   font-weight: 700;
