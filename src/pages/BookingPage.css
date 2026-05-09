@@ -104,6 +104,89 @@
   to { transform: rotate(360deg); }
 }
 
+/* Pre-booking workshop terms agreement */
+.booking-agreement {
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  background: #fafafa;
+  padding: 28px 32px;
+  max-width: 760px;
+}
+
+.booking-agreement-title {
+  font-family: var(--font-primary);
+  font-size: 20px;
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 12px;
+}
+
+.booking-agreement-intro {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.booking-agreement-intro a,
+.booking-agreement-check a {
+  color: var(--color-red);
+  text-decoration: underline;
+}
+
+.booking-agreement-list {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.booking-agreement-list li {
+  margin-bottom: 8px;
+}
+
+.booking-agreement-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #222;
+  line-height: 1.5;
+  margin: 0 0 20px;
+  cursor: pointer;
+}
+
+.booking-agreement-check input[type='checkbox'] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.booking-agreement-btn {
+  background: var(--color-red);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 22px;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.booking-agreement-btn:hover:not(:disabled) {
+  background: #c03333;
+}
+
+.booking-agreement-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .booking-title {
     font-size: 24px;
@@ -111,5 +194,9 @@
 
   .booking-frame {
     height: 1400px;
+  }
+
+  .booking-agreement {
+    padding: 22px 18px;
   }
 }

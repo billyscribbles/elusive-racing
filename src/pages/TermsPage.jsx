@@ -34,9 +34,11 @@ Where payment is made via Afterpay or similar buy-now-pay-later services, you ag
   {
     id: 'shipping',
     title: '4. Shipping & Delivery',
-    content: `We ship Australia-wide and to selected international destinations. Shipping costs and estimated delivery times are calculated at checkout based on the destination and weight of the order.
+    content: `We ship Australia-wide and to selected international destinations. Shipping costs and estimated delivery times are calculated at checkout based on the destination, total weight, and parcel dimensions of the order.
 
 Delivery timeframes are estimates only and are not guaranteed. Elusive Racing is not liable for delays caused by third-party carriers, customs, weather events, or circumstances beyond our control.
+
+Certain items are classified as dangerous goods under Australian and international transport regulations and are restricted to specific freight methods. This includes, without limitation, lithium-battery-powered products such as the Honda Motocompacto, which cannot be carried by air freight and must be sent via approved road or sea services. Where dangerous goods restrictions apply, available shipping methods, transit times, and surcharges may differ from standard parcels, and we will advise you of any limitations before dispatch.
 
 Risk of loss and title for products pass to you upon dispatch from our warehouse. Once goods have been handed to the carrier, we recommend you contact the carrier directly for tracking and delivery enquiries.
 
@@ -49,7 +51,7 @@ International customers are responsible for all customs duties, import taxes, an
     title: '5. Returns & Refunds',
     content: `We want you to be completely satisfied with your purchase. Our returns policy operates in addition to and does not limit your rights under the Australian Consumer Law (ACL).
 
-Change of Mind Returns: We accept change of mind returns within 30 days of delivery, provided the item is unused, in its original packaging, and in re-saleable condition. Return shipping costs for change of mind returns are the responsibility of the customer. A restocking fee of up to 15% may apply.
+Change of Mind Returns: We accept change of mind returns within 7 days of delivery, provided the item is unused, in its original packaging, and in re-saleable condition. Return shipping costs for change of mind returns are the responsibility of the customer. A restocking fee of up to 20% will apply to all approved change of mind returns.
 
 The following items are not eligible for return:
 - Electrical components, ECUs, or tuning software that has been opened or activated
@@ -129,16 +131,23 @@ Brand names and logos of third-party manufacturers displayed on this Site remain
   {
     id: 'liability',
     title: '11. Limitation of Liability',
-    content: `To the fullest extent permitted by law, Elusive Racing, its directors, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of our products or services, including but not limited to:
-- Loss of profits or revenue
-- Vehicle damage arising from product installation or use
-- Personal injury arising from product installation or use
+    content: `11.1 To the fullest extent permitted by law, Elusive Racing's total liability to you for any claim arising out of, or in connection with, the supply of any goods or services is limited to the value of those goods or services. Neither Elusive Racing nor its directors, employees, or agents will be liable for any loss or damage of any kind, however caused or arising — including, without limitation:
+- Theft of any kind
+- Loss of profit or revenue caused by delays in delivery
+- Loss arising from unreasonable use, negligence, or fair wear and tear
+- Loss arising from reliance on faulty or third-party-supplied specifications
+- Indirect, incidental, special, consequential, or punitive damages
 - Loss of data
 - Any other commercial or economic loss
 
-Our total liability to you for any claim arising out of or in connection with these Terms shall not exceed the amount paid by you for the product or service giving rise to the claim.
+11.2 Any warranty referred to in section 9 is limited to the affected product itself. Elusive Racing will not be liable for any consequential damage in connection with a warranty claim, including, without limitation, injury to any person, towage, accommodation, or loss of income. Warranty does not extend to defects or failures arising from:
+- Accident or impact damage
+- Misuse, abuse, or overloading
+- Negligence in installation, operation, or maintenance
+- Participation in motor sport or any form of competition
+- Use in vehicles modified from the manufacturer's original specifications
 
-Nothing in these Terms limits or excludes our liability for death or personal injury caused by our negligence, fraud, or any other liability that cannot be limited or excluded under applicable law.`,
+11.3 Nothing in these Terms limits or excludes any rights or remedies you may have under the Australian Consumer Law or any other applicable law that cannot lawfully be excluded, including (where applicable) liability for death or personal injury caused by our negligence.`,
   },
   {
     id: 'privacy',
@@ -149,7 +158,7 @@ We collect personal information such as your name, address, email, and phone num
 
 We do not sell, rent, or share your personal information with third parties for marketing purposes. We may share your information with trusted third parties who assist in operating our website, conducting our business, or servicing you, provided those parties agree to keep this information confidential.
 
-You may request access to or correction of personal information we hold about you by contacting us at sales@elusiveracing.com.au.`,
+You may request access to, or correction of, personal information we hold about you by sending a written request to admin@elusiveracing.com.au. Please include your full name, the email address used on your account, and a description of the information you would like to access or have corrected so we can verify your identity and respond promptly.`,
   },
   {
     id: 'wholesale',
