@@ -56,13 +56,19 @@ export default function ServiceDetailPage() {
         <div className="sp-hero-bg" style={{ backgroundImage: `url(${service.image})` }} />
         <div className="sp-hero-overlay" />
         <div className="sp-hero-content">
-          <p className="sp-hero-label">{CATEGORY_LABEL} &middot; {service.tagline}</p>
           <h1 className="sp-hero-title">{service.title}</h1>
-          <p className="sp-hero-sub">{service.intro}</p>
           <div className="sd-hero-actions">
             <Link to="/book" className="sp-hero-btn">Book This Service</Link>
             <a href="tel:+61395741710" className="sd-hero-btn-secondary">Call 03 9574 1710</a>
           </div>
+        </div>
+      </section>
+
+      {/* Intro */}
+      <section className="sd-intro">
+        <div className="container">
+          <p className="sd-intro-label">{CATEGORY_LABEL} &middot; {service.tagline}</p>
+          <p className="sd-intro-text">{service.intro}</p>
         </div>
       </section>
 

@@ -184,6 +184,45 @@ export const services = [
     ],
   },
   {
+    slug: 'tyres-wheel-alignment',
+    title: 'Tyres & Wheel Alignment',
+    category: 'maintenance',
+    image: '/menu/menu-wheels.jpg',
+    tagline: 'Right rubber, set up straight.',
+    summary:
+      'Tyre supply and fitment plus four-wheel alignment — for daily commuters, fast street cars and dedicated track builds.',
+    intro:
+      'Tyres are the only contact patch the car has, and a millimetre of toe out of spec will undo the rest of the suspension work in a few thousand kilometres. We supply and fit a wide range of street, sport and semi-slick tyres, balance them on the machine, and finish every job with a four-wheel alignment to factory spec or your preferred performance setup. If the car has new suspension, lowered ride height, or has just hit a kerb, an alignment is the cheapest insurance you can buy.',
+    inclusions: [
+      'Tyre supply and fitment (street, sport, semi-slick, slick)',
+      'Computer wheel balancing front and rear',
+      'Old tyre disposal and rubber valve stem replacement',
+      'Four-wheel alignment to factory specification',
+      'Performance alignment for track, time-attack or stance setups',
+      'Camber, caster and toe adjustment front and rear',
+      'Tyre rotation, pressure check and tread depth report',
+      'Pre-alignment suspension inspection (bushings, ball joints, tie rods)',
+    ],
+    sections: [
+      {
+        heading: 'How a proper alignment is done',
+        body: 'A wheel alignment is only as good as the inspection that comes before it. Worn bushings, loose tie rods or uneven tyre pressures will throw the numbers off and the alignment will not hold.',
+        bullets: [
+          'Pre-check — suspension play, tyre pressures, ride height',
+          'Mount on the alignment rack and measure current geometry',
+          'Compare against factory or target performance spec',
+          'Adjust camber, caster and toe front and rear',
+          'Final reading printed and supplied to you',
+          'Road test for pull, tracking and steering wheel centre',
+        ],
+      },
+      {
+        heading: 'Street vs track alignments',
+        body: 'A street alignment targets even tyre wear and stable highway tracking. A track alignment trades some tyre life for negative camber and toe settings that bite harder mid-corner. Tell us how the car is used and what you have under it — coilovers, camber arms, adjustable toe links — and we will set the geometry accordingly.',
+      },
+    ],
+  },
+  {
     slug: 'drivetrain-service',
     title: 'Drivetrain Service',
     category: 'maintenance',
@@ -388,6 +427,49 @@ export const services = [
     extraLinks: [
       { label: 'Browse the parts catalogue', href: '/shop' },
       { label: 'See all brands we carry', href: '/brands' },
+    ],
+  },
+  {
+    slug: 'race-track-support',
+    title: 'Race Track Support',
+    category: 'performance',
+    image: '/services/MTL03720.jpg',
+    tagline: 'We come to the track with you.',
+    summary:
+      'Trackside support for sprint days, time-attack and circuit racing — pre-event prep, in-paddock setup and changes between sessions.',
+    intro:
+      'A track day is no place to find out the car was not ready. Race track support is two halves — a thorough pre-event prep so the car arrives sorted, and a hands-on day at the circuit so you have someone in your corner between sessions. Whether you are running a Sandown sprint, a Phillip Island time-attack or a full-day club event, we bring the tools, the spares and the experience to keep you on the grid.',
+    inclusions: [
+      'Pre-event safety and mechanical inspection',
+      'Brake fluid flush with high-temperature racing fluid',
+      'Race pad and rotor inspection or fitment',
+      'Coolant, engine oil and gearbox fluid checks at race level',
+      'Wheel torque, hub and bearing check',
+      'Camber and tyre pressure setup for the circuit',
+      'In-paddock support between sessions (changes, adjustments, repairs)',
+      'Datalogging review where logging is fitted',
+      'Spares kit and tooling on hand throughout the day',
+    ],
+    sections: [
+      {
+        heading: 'What track support looks like',
+        body: 'A weekend at the track has a rhythm. We work to it.',
+        bullets: [
+          'Pre-event — workshop visit a week out, full check-over, fluids, brakes, alignment',
+          'Setup morning — pressures, camber, ride height and fuel load before first session',
+          'Between sessions — adjust pressures, swap pads or rotors, look at any new noise',
+          'Driver debrief — what the car was doing, what to change for the next run',
+          'Post-event — list of items the car wants attention on before next outing',
+        ],
+      },
+      {
+        heading: 'Events and circuits we support',
+        body: 'We regularly support customers at Phillip Island, Sandown, Winton, Calder Park and Heathcote. The Bend, Symmons Plains and interstate events are possible with notice — get in touch early so we can plan the trip, the spares kit and the trailer logistics with you.',
+      },
+      {
+        heading: 'What you should bring',
+        body: 'Helmet, suit and licence as the event requires; race fuel if your build needs it; a spare set of wheels and tyres if you have them; and an honest read on what you want to get out of the day. The clearer the goal, the better the day runs.',
+      },
     ],
   },
 ];

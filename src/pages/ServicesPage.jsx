@@ -6,7 +6,7 @@ import './ServicesPage.css';
 
 const TITLE = 'Workshop Services — Servicing, Tuning, Builds, Fabrication';
 const DESC =
-  'Honda and JDM workshop services in Clayton South, Melbourne. General, major and logbook servicing; brakes, suspension, drivetrain and transmission; engine builds, tuning, exhaust fabrication and performance parts.';
+  'Honda and JDM workshop services in Clayton South, Melbourne. General, major and logbook servicing; brakes, suspension, tyres and wheel alignment, drivetrain and transmission; engine builds, tuning, exhaust fabrication, performance parts and race track support.';
 
 const OTHER_BRANDS = [
   { name: 'Honda',      logo: '/brands/img-brand-logo-honda.png' },
@@ -51,7 +51,7 @@ export default function ServicesPage() {
           <div className="sp-services-header">
             <h2 className="sp-section-heading">All Services</h2>
             <p className="sp-section-sub">
-              Eleven services across maintenance and performance. Click any one for the full breakdown of what&rsquo;s included and how the work is done.
+              Thirteen services across maintenance and performance. Click any one for the full breakdown of what&rsquo;s included and how the work is done.
             </p>
           </div>
           <div className="sp-services-grid">
