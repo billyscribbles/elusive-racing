@@ -169,6 +169,7 @@ function normalizeProductDetail(p) {
       ? (p.variations ?? []).map(v => ({
           id: String(v.id),
           title: v.attributes?.map(a => a.option).join(' / ') || 'Default',
+          sku: v.sku || '',
           price: { amount: v.price || p.price || '0', currencyCode: 'AUD' },
           compareAtPrice: v.regular_price
             ? { amount: v.regular_price, currencyCode: 'AUD' }
@@ -183,6 +184,7 @@ function normalizeProductDetail(p) {
           {
             id: String(p.id),
             title: 'Default',
+            sku: p.sku || '',
             price: { amount: p.price || '0', currencyCode: 'AUD' },
             compareAtPrice: p.regular_price ? { amount: p.regular_price, currencyCode: 'AUD' } : null,
             availableForSale: p.stock_status !== 'outofstock',
@@ -445,7 +447,7 @@ export async function getProductByHandle(slug, onBase) {
   // Fetch variations if it's a variable product — slim payload with _fields
   if (isVariable) {
     const variations = await wcFetch(
-      `/products/${p.id}/variations?per_page=100&_fields=id,price,regular_price,sale_price,stock_status,stock_quantity,attributes,meta_data`
+      `/products/${p.id}/variations?per_page=100&_fields=id,sku,price,regular_price,sale_price,stock_status,stock_quantity,attributes,meta_data`
     );
     p.variations = variations;
   }

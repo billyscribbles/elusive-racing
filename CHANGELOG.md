@@ -52,3 +52,4 @@
 - Rewrote the opening of the "How We Got Here" section on the About page to share how Kenny and Jimmy started out modifying Hondas in their parents' front yard.
 - Fixed footer links so pages now reliably start at the top after you click them.
 - Added a Shipping page that explains delivery times and lists every carrier we use, with links to each carrier's transit-time and FAQ pages. Reachable from the "Fast Shipping" badge in the footer and a new "Shipping Policy" link in Quick Links.
+- On a product page with options (size, spec, etc.), picking an option now updates the SKU shown to match that exact variant.

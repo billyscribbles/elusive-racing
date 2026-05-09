@@ -490,12 +490,15 @@ export default function ProductPage() {
             })()}
             <h1 className="product-page-name">{display.name}</h1>
 
-            {display.sku && (
-              <p className="product-page-sku">
-                SKU: {display.sku}
-                <CopySkuButton sku={display.sku} />
-              </p>
-            )}
+            {(() => {
+              const displaySku = (selectedVariant?.sku) || display.sku;
+              return displaySku ? (
+                <p className="product-page-sku">
+                  SKU: {displaySku}
+                  <CopySkuButton sku={displaySku} />
+                </p>
+              ) : null;
+            })()}
 
             <div className="product-page-pricing">
               <span className="product-page-price">{formatPrice(displayPrice)}</span>
