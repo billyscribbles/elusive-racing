@@ -491,7 +491,9 @@ export default function ProductPage() {
             <h1 className="product-page-name">{display.name}</h1>
 
             {(() => {
-              const displaySku = (selectedVariant?.sku) || display.sku;
+              const displaySku = display.hasVariants
+                ? (selectedVariant?.sku || '')
+                : display.sku;
               return displaySku ? (
                 <p className="product-page-sku">
                   SKU: {displaySku}
