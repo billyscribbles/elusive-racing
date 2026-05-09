@@ -64,3 +64,4 @@
 - The "See all brands" link in the Brands menu now sits on the left.
 - Refreshed the featured brands shown in the Brands menu — Blox Racing, Intima, Supertech, Wiseco, Hardrace, GFB and Elusive Racing are now front and centre, and HKS, Mugen, Spoon Sports, Toda Racing, Kraftwerks, Cometic and Whiteline have been moved out of the featured list.
 - On mobile, the Brands menu now shows the top 8 brands in 3 rows of 3-3-2 instead of two columns, so they're easier to scan.
+- Product cards now show "+5 in stock" once we have more than 5 on the shelf, and a yellow "Low in stock" badge when only 1 or 2 are left, so you can see at a glance when something's running low.

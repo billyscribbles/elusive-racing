@@ -885,8 +885,25 @@
   margin-top: 6px;
 }
 
-.shop-product-stock--low {
+.shop-product-stock--out {
   color: var(--color-red);
+}
+
+.shop-product-stock-badge {
+  display: inline-block;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+
+.shop-product-stock-badge--low {
+  background: #f5c518;
+  color: #1a1a1a;
 }
 
 /* Add to cart — always visible on mobile, hover reveal on desktop */

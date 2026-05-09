@@ -88,9 +88,15 @@ function ProductCard({ product }) {
           )}
         </div>
         {product.stockQuantity != null && !product.backorder && (
-          <span className={`product-stock${product.stockQuantity <= 3 ? ' product-stock--low' : ''}`}>
-            {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
-          </span>
+          product.stockQuantity <= 0 ? (
+            <span className="product-stock product-stock--out">Out of stock</span>
+          ) : product.stockQuantity <= 2 ? (
+            <span className="product-stock-badge product-stock-badge--low">Low in stock</span>
+          ) : (
+            <span className="product-stock">
+              {product.stockQuantity > 5 ? '+5' : product.stockQuantity} in stock
+            </span>
+          )
         )}
       </div>
       <div className="product-actions">
