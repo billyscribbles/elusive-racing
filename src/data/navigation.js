@@ -135,7 +135,6 @@ export const navItems = [
       { label: 'Stabilizer Link', href: '/shop?sub=stabilizer-link' },
       { label: 'Tie Rods & Ends', href: '/shop?sub=tie-rods-ends' },
       { label: 'Hub', href: '/shop?sub=hub' },
-      { label: 'Accessories', href: '/shop?sub=accessories-suspension' },
     ],
   },
   {

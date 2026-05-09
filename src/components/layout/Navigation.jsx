@@ -92,92 +92,85 @@ function StandardMegaMenu({ columns }) {
   );
 }
 
-// Map sub-category labels to /menu/ images
+// Per-menu label-to-image map, mirroring https://elusiveracing.com.au.
+// Outer key = top-level nav label, inner key = link label.
 const SUB_IMAGES = {
-  // Engine
-  'Engine Internals':          '/menu/menu-engine-parts.jpg',
-  'Engine Parts':               '/menu/menu-engine-parts.jpg',
-  'Exhaust':                    '/menu/menu-headers.jpg',
-  'Fuel':                       '/menu/menu-fuel.jpg',
-  'Induction':                  '/menu/menu-induction.jpg',
-  'Maintenance':                '/menu/menu-maintenacne.jpg',
-  'Turbo & Supercharger':       '/menu/menu-sway-turbo.jpg',
-  // Suspension
-  'Coilovers':                  '/menu/menu-coilovers.jpg',
-  'Springs':                    '/menu/menu-springs.jpg',
-  'Suspension Arms':            '/menu/menu-susoension-arms.jpg',
-  'Sway Bars':                  '/menu/menu-sway-bars.jpg',
-  'Sway Bar Bushes':            '/menu/menu-sway-bar-bushes.jpg',
-  'Bars & Braces':              '/menu/menu-brace.jpg',
-  'Bushing':                    '/menu/menu-bushes.jpg',
-  'Ball Joints':                '/menu/menu-ball-joint.jpg',
-  'Chassis Braces':             '/menu/menu-chasis.jpg',
-  'Stabilizer Link':            '/menu/menu-stabilizer-.jpg',
-  'Tie Rods & Ends':            '/menu/menu-tie-end-link.jpg',
-  'Hub':                        '/menu/menu-hub.jpg',
-  'Accessories':                '/menu/menu-accesories.jpg',
-  // Honda OEM
-  'Engine':                     '/menu/menu-honda-engine.jpg',
-  'Drivetrain':                 '/menu/menu-honda-drivetrain.jpg',
-  'Body & Accessories':         '/menu/menu-honda-body.jpg',
-  // Interior
-  'Steering Wheels':            '/menu/menu-master.jpg',
-  'Seat & Rails':               '/menu/menu-seat.jpg',
-  'Shift Knobs':                '/menu/menu-shift-knob-2.jpg',
-  'Shifters':                   '/menu/menu-shifters.jpg',
-  'Quick Release & Hub/Boss Kits': '/menu/menu-quick-release.jpg',
-  'Cables & Accessories':       '/menu/menu-cables-accessories.jpg',
-  'X Bar & Braces':             '/menu/menu-brace.jpg',
-  // Drivetrain
-  'Clutch & Flywheel':          '/menu/menu-clutch.jpg',
-  'Clutch Lines':               '/menu/menu-clutch-lines.jpg',
-  'Cylinders & Slave':          '/menu/menu-master.jpg',
-  'Driveshafts':                '/menu/menu-driveshaft.jpg',
-  'Gearbox Gears & Synchros':   '/menu/menu-synchros.jpg',
-  'Gearbox Seals & Bearings':   '/menu/menu-bearings.jpg',
-  'Gears / Final Drives & LSD': '/menu/menu-lsd.jpg',
-  'Oil & Lubrication':          '/menu/menu-drivetrain-lubricants.jpg',
-  // Brakes
-  'Brake Pads':                 '/menu/menu-brake-pads.jpg',
-  'Rotors':                     '/menu/menu-rotors.jpg',
-  'Brake Kits':                 '/menu/menu-kits.jpg',
-  'Brake Lines':                '/menu/menu-brake-lines.jpg',
-  'Oil & Lubricants':           '/menu/menu-brake-fluid.jpg',
-  // Exterior
-  'Aerodynamics':               '/menu/menu-aero.jpg',
-  'Body Panels':                '/menu/menu-honda-body.jpg',
-  'Engine Bay':                 '/menu/menu-honda-engine.jpg',
-  'Lights & Indicators':        '/menu/menu-lights.jpg',
-  'Mirrors':                    '/menu/menu-mirror.jpg',
-  'Trims & Seals':              '/menu/menu-trim.jpg',
-  'Wheel Nuts':                 '/menu/menu-nuts.jpg',
-  // Electronics
-  'ECU & Converters':           '/menu/menu-ecu.jpg',
-  'Gauges':                     '/menu/menu-gauges.jpg',
-  'Sensors':                    '/menu/menu-sensor.jpg',
-  'Spark Plugs':                '/menu/menu-spark-plugs.jpg',
-  'Boost Controller':           '/menu/menu-boost-controller.jpg',
-  'Wiring Harnesses':           '/menu/menu-wiring-harness.jpg',
-  // Cooling
-  'Radiators & Overflow Bottles': '/menu/menu-radiator.jpg',
-  'Intercooler':                '/menu/menu-intercooler.jpg',
-  'Oil Coolers':                '/menu/menu-oil-cooler.jpg',
-  'Thermostat & Housing':       '/menu/menu-thermo.jpg',
-  'Upper Coolant Housings':     '/menu/menu-upper-coolant.jpg',
-  'Water Pump & Plate Kits':    '/menu/menu-water-pump.jpg',
-  'Fans, Hose & Accessories':   '/menu/menu-fans.jpg',
-  // Merchandise
-  'Hoodies & Jackets':          '/menu/menu-hoodie.jpg',
-  'T-Shirts':                   '/menu/menu-shirt.jpg',
-  'Caps':                       '/menu/menu-caps.jpg',
-  // Lighting
-  'LED':                        '/menu/menu-led.jpg',
-  'Tail / Brake':               '/menu/menu-lighting.jpg',
-  // Clearance
-  'Used Parts':                 '/menu/menu-maintenacne.jpg',
+  Suspension: {
+    'Coilovers':         '/menu/menu-coilovers.jpg',
+    'Springs':           '/menu/menu-springs.jpg',
+    'Suspension Arms':   '/menu/menu-susoension-arms.jpg',
+    'Sway Bars':         '/menu/menu-sway-bars.jpg',
+    'Sway Bar Bushes':   '/menu/menu-sway-bar-bushes.jpg',
+    'Bars & Braces':     '/menu/menu-brace.jpg',
+    'Bushing':           '/menu/menu-bushes.jpg',
+    'Ball Joints':       '/menu/menu-ball-joint.jpg',
+    'Chassis Braces':    '/menu/menu-chasis.jpg',
+    'Stabilizer Link':   '/menu/menu-stabilizer-.jpg',
+    'Tie Rods & Ends':   '/menu/menu-tie-end-link.jpg',
+    'Hub':               '/menu/menu-hub.jpg',
+  },
+  Interior: {
+    'Steering Wheels':                '/menu/menu-wheels.jpg',
+    'Seat & Rails':                   '/menu/menu-seat.jpg',
+    'Shift Knobs':                    '/menu/menu-shift-knob-2.jpg',
+    'Shifters':                       '/menu/menu-short-shifter.jpg',
+    'Quick Release & Hub/Boss Kits':  '/menu/menu-quick-release.jpg',
+    'Cables & Accessories':           '/menu/menu-cables-accessories.jpg',
+    'X Bar & Braces':                 '/menu/menu-brace.jpg',
+    'Accessories':                    '/menu/menu-accesories.jpg',
+  },
+  Drivetrain: {
+    'Clutch & Flywheel':          '/menu/menu-clutch.jpg',
+    'Clutch Lines':               '/menu/menu-clutch-lines.jpg',
+    'Cylinders & Slave':          '/menu/menu-master.jpg',
+    'Driveshafts':                '/menu/menu-driveshaft.jpg',
+    'Gearbox Gears & Synchros':   '/menu/menu-synchros.jpg',
+    'Gearbox Seals & Bearings':   '/menu/menu-bearings.jpg',
+    'Gears / Final Drives & LSD': '/menu/menu-lsd.jpg',
+    'Oil & Lubrication':          '/menu/menu-drivetrain-lubricants.jpg',
+    'Shifters':                   '/menu/menu-shifters.jpg',
+    'Accessories':                '/menu/menu-drivetrain-accessories.jpg',
+  },
+  Brakes: {
+    'Brake Pads':       '/menu/menu-brake-pads.jpg',
+    'Rotors':           '/menu/menu-rotors.jpg',
+    'Brake Kits':       '/menu/1028.jpg',
+    'Brake Lines':      '/menu/menu-brake-lines.jpg',
+    'Oil & Lubricants': '/menu/menu-brake-fluid.jpg',
+    'Accessories':      '/menu/menu-brake-accesories.jpg',
+  },
+  Exterior: {
+    'Aerodynamics':        '/menu/menu-aero.jpg',
+    'Body Panels':         '/menu/menu-honda-body.jpg',
+    'Engine Bay':          '/menu/menu-honda-engine.jpg',
+    'Lights & Indicators': '/menu/menu-lights.jpg',
+    'Mirrors':             '/menu/menu-mirror.jpg',
+    'Trims & Seals':       '/menu/menu-trim.jpg',
+    'Wheel Nuts':          '/menu/menu-nuts.jpg',
+    'Accessories':         '/menu/menu-exterior-accessories.jpg',
+  },
+  Electronics: {
+    'ECU & Converters':  '/menu/menu-ecu.jpg',
+    'Gauges':            '/menu/menu-gauges.jpg',
+    'Sensors':           '/menu/menu-sensor.jpg',
+    'Spark Plugs':       '/menu/menu-spark-plugs.jpg',
+    'Boost Controller':  '/menu/menu-boost-controller.jpg',
+    'Wiring Harnesses':  '/menu/menu-wiring-harness.jpg',
+    'Accessories':       '/menu/menu-electronic-accesories.jpg',
+  },
+  Cooling: {
+    'Radiators & Overflow Bottles': '/menu/menu-radiator.jpg',
+    'Intercooler':                  '/menu/menu-intercooler.jpg',
+    'Oil Coolers':                  '/menu/menu-oil-cooler.jpg',
+    'Thermostat & Housing':         '/menu/menu-thermo.jpg',
+    'Upper Coolant Housings':       '/menu/menu-upper-coolant.jpg',
+    'Water Pump & Plate Kits':      '/menu/menu-water-pump.jpg',
+    'Fans, Hose & Accessories':     '/menu/menu-fans.jpg',
+  },
 };
 
-function TileDropdown({ links, parentHref }) {
+function TileDropdown({ links, parentLabel }) {
+  const images = SUB_IMAGES[parentLabel] ?? {};
   return (
     <div className="tile-dropdown">
       <div className="container">
@@ -187,7 +180,7 @@ function TileDropdown({ links, parentHref }) {
               key={link.href}
               to={link.href}
               className="tile-dropdown-item"
-              style={{ '--tile-img': `url(${SUB_IMAGES[link.label] ?? '/menu/menu-accesories.jpg'})` }}
+              style={{ '--tile-img': `url(${images[link.label] ?? '/menu/menu-accesories.jpg'})` }}
             >
               <span className="tile-dropdown-overlay" />
               <span className="tile-dropdown-label">{link.label}</span>
@@ -271,7 +264,7 @@ export default function Navigation() {
                       <StandardMegaMenu columns={item.columns} />
                     )}
                     {!item.hasMega && item.links && item.links.length > 0 && (
-                      <TileDropdown links={item.links} />
+                      <TileDropdown links={item.links} parentLabel={item.label} />
                     )}
                   </div>
                 )}

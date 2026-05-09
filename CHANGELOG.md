@@ -70,3 +70,5 @@
 - The Engine menu's long Engine Internals list now flows into two columns so it sits the same height as its neighbours, and the dropdown leaves a clear strip of screen below it so you can move your mouse off to close it.
 - Moved the "View all…" link in each top-nav category to sit underneath its list of links rather than above it.
 - Added thumbnail images above each column in the Engine, Honda OEM and Lighting menus so they match the live site, and tightened the layout so everything fits without a scrollbar.
+- Synced every nav dropdown thumbnail with the live site so each tile (e.g. Brakes Accessories, Drivetrain Accessories, Interior Steering Wheels) now shows its correct image instead of a fallback.
+- Trimmed the Suspension menu by removing the Accessories tile so the row fits on screen.
