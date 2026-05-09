@@ -46,6 +46,7 @@ function CartRepricer() {
 // Lazy-load all page components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+const ServiceDetailPage = lazy(() => import('./pages/ServiceDetailPage'));
 const ShopPage = lazy(() => import('./pages/ShopPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
@@ -99,6 +100,7 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/services/:slug" element={<ServiceDetailPage />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/search" element={<ShopPage />} />
           <Route path="/products/:handle" element={<ProductPage />} />

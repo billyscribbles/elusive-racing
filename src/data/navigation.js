@@ -160,10 +160,38 @@ export const navItems = [
   {
     label: 'Services',
     href: '/services',
-    hasMega: false,
-    image: '/menu/menu-headers.jpg',
-    links: [],
+    hasMega: true,
+    type: 'services',
     highlight: true,
+    columns: [
+      {
+        title: 'Maintenance',
+        titleHref: '/services',
+        links: [
+          { label: 'General Service',      href: '/services/general-service' },
+          { label: 'Major Service',        href: '/services/major-service' },
+          { label: 'Logbook Service',      href: '/services/logbook-service' },
+          { label: 'Brake Service',        href: '/services/brake-service' },
+          { label: 'Suspension Service',   href: '/services/suspension-service' },
+          { label: 'Drivetrain Service',   href: '/services/drivetrain-service' },
+          { label: 'Transmission Service', href: '/services/transmission-service' },
+        ],
+      },
+      {
+        title: 'Performance',
+        titleHref: '/services',
+        links: [
+          { label: 'Engine Build & Rebuild',       href: '/services/engine-build' },
+          { label: 'Exhaust & Custom Fabrication', href: '/services/exhaust-fabrication' },
+          { label: 'Tuning Service',               href: '/services/tuning' },
+          { label: 'Performance Parts',            href: '/services/performance-parts' },
+        ],
+      },
+    ],
+    footerLinks: [
+      { label: 'View all services →', href: '/services' },
+      { label: 'Book a service',      href: '/book' },
+    ],
   },
 ];
 

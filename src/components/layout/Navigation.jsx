@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import { navItems, featuredBrands } from '../../data/navigation';
+import ServicesMegaMenu from './ServicesMegaMenu';
 import CartIcon from '../ui/CartIcon';
 import useAuthStore from '../../store/authStore';
 import useVehicleSelector from '../../hooks/useVehicleSelector';
@@ -263,7 +264,10 @@ export default function Navigation() {
                 {activeItem === item.label && (
                   <div className="dropdown-wrapper">
                     {item.type === 'brands' && <BrandsMegaMenu />}
-                    {item.type !== 'brands' && item.hasMega && item.columns && (
+                    {item.type === 'services' && (
+                      <ServicesMegaMenu columns={item.columns} footerLinks={item.footerLinks} />
+                    )}
+                    {item.hasMega && item.type !== 'brands' && item.type !== 'services' && item.columns && (
                       <StandardMegaMenu columns={item.columns} />
                     )}
                     {!item.hasMega && item.links && item.links.length > 0 && (

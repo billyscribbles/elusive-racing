@@ -1,0 +1,267 @@
+/* Detail page extends ServicesPage.css — only overrides and additions live here. */
+
+.service-detail-page .sp-hero {
+  height: 460px;
+}
+
+.sd-hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sd-hero-btn-secondary {
+  display: inline-block;
+  padding: 14px 28px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.sd-hero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-1px);
+}
+
+/* ── Inclusions ── */
+.sd-inclusions {
+  background: #fff;
+  padding: 64px 0 24px;
+}
+
+.sd-section-title {
+  font-family: var(--font-primary);
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 800;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: -0.3px;
+  margin-bottom: 18px;
+}
+
+.sd-section-title--center {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.sd-inclusions-list {
+  margin-top: 24px;
+  margin-bottom: 0;
+}
+
+/* ── Sections ── */
+.sd-sections {
+  padding: 24px 0 64px;
+  background: #fff;
+}
+
+.sd-section {
+  padding: 32px 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sd-section:last-child {
+  border-bottom: 0;
+}
+
+.sd-section-body {
+  font-size: 15px;
+  color: var(--color-mid);
+  line-height: 1.8;
+  margin-bottom: 16px;
+  max-width: 880px;
+}
+
+.sd-section-bullets {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  padding: 0;
+  margin: 0;
+}
+
+.sd-section-bullets li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14px;
+  color: var(--color-dark-3);
+  line-height: 1.6;
+}
+
+.sd-section-bullets li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  background: var(--color-red);
+  border-radius: 50%;
+}
+
+/* ── Extra cross-links ── */
+.sd-extra {
+  background: var(--color-bg);
+  padding: 32px 0;
+}
+
+.sd-extra-inner {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sd-extra-link {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-black);
+  transition: border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.sd-extra-link:hover {
+  border-color: var(--color-red);
+  color: var(--color-red);
+  transform: translateY(-1px);
+}
+
+/* ── Related services ── */
+.sd-related {
+  background: var(--color-bg);
+  padding: 64px 0;
+}
+
+.sd-related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.sd-related-card {
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: block;
+}
+
+.sd-related-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-red);
+}
+
+.sd-related-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.sd-related-body {
+  padding: 18px 20px;
+}
+
+.sd-related-title {
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: -0.2px;
+  margin-bottom: 8px;
+}
+
+.sd-related-sum {
+  font-size: 13px;
+  color: var(--color-mid);
+  line-height: 1.55;
+}
+
+/* ── Not found ── */
+.sd-not-found {
+  background: var(--color-black);
+  padding: 120px 0;
+  text-align: center;
+}
+
+.sd-not-found .sp-hero-label {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.sd-not-found-title {
+  font-family: var(--font-primary);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.sd-not-found-text {
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 28px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .service-detail-page .sp-hero {
+    height: auto;
+    padding: 72px 0;
+  }
+
+  .sd-related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sd-section-bullets {
+    grid-template-columns: 1fr;
+  }
+
+  .sd-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .sd-hero-btn-secondary {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .sd-related-img {
+    height: 140px;
+  }
+
+  .sd-extra-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sd-extra-link {
+    text-align: center;
+  }
+}
