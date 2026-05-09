@@ -4,22 +4,25 @@ export default function ServicesMegaMenu({ columns, footerLinks }) {
   return (
     <div className="mega-menu services-mega">
       <div className="container">
-        <div className="services-mega-grid">
+        <div className={`services-mega-grid${footerLinks?.length > 0 ? ' services-mega-grid--with-footer' : ''}`}>
           {columns.map((col) => (
             <div key={col.title} className="services-mega-column">
-              <Link to={col.titleHref} className="services-mega-title">
-                <span>{col.title}</span>
-                <span className="services-mega-title-arrow" aria-hidden="true">→</span>
+              <h4 className="services-mega-title">{col.title}</h4>
+              <Link to={col.titleHref} className="services-mega-viewall">
+                View all {col.title.toLowerCase()}
+                <span className="services-mega-viewall-arrow" aria-hidden="true">→</span>
               </Link>
-              <ul className="services-mega-links">
-                {col.links.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="services-mega-link">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              {col.links.length > 0 && (
+                <ul className="services-mega-links">
+                  {col.links.map((link) => (
+                    <li key={link.href}>
+                      <Link to={link.href} className="services-mega-link">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>

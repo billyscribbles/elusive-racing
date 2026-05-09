@@ -58,3 +58,4 @@
 - The Book a Service page now asks you to read and tick off our workshop terms before the booking form loads, so the key conditions (ownership authority, quote-before-work, vehicle collection, valuables, post-tuning responsibility) are confirmed before you start.
 - The Services menu in the top nav is now a dropdown with every service we offer, split into Maintenance and Performance — General, Major, Logbook, Brake, Suspension, Drivetrain, Transmission, Engine Build, Exhaust & Fabrication, Tuning, and Performance Parts.
 - Each service now has its own page that explains exactly what's included and how the work is done, so you can read up on it before you book.
+- Engine, Honda OEM, and Lighting in the top nav now expand into the same multi-column dropdowns the live site has, so every sub-category (Engine Internals, Induction, Fuel, Forced Induction, HID, LED, Wiring, etc.) is one click away from any page.

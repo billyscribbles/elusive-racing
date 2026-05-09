@@ -9,16 +9,104 @@ export const navItems = [
   {
     label: 'Engine',
     href: '/shop?sub=engine',
-    hasMega: false,
-    image: '/menu/menu-honda-engine.jpg',
-    links: [
-      { label: 'Engine Internals', href: '/shop?sub=engine-internals' },
-      { label: 'Engine Parts', href: '/shop?sub=engine-parts' },
-      { label: 'Exhaust', href: '/shop?sub=exhaust' },
-      { label: 'Fuel', href: '/shop?sub=fuel' },
-      { label: 'Induction', href: '/shop?sub=induction' },
-      { label: 'Maintenance', href: '/shop?sub=maintenance' },
-      { label: 'Turbo & Supercharger', href: '/shop?sub=turbo-supercharger' },
+    hasMega: true,
+    type: 'megaColumns',
+    columns: [
+      {
+        title: 'Engine Internals',
+        titleHref: '/shop?sub=engine-internals',
+        links: [
+          { label: 'Bearings',                          href: '/shop?sub=bearings' },
+          { label: 'Cam Gears',                         href: '/shop?sub=cam-gears' },
+          { label: 'Camshafts',                         href: '/shop?sub=camshafts' },
+          { label: 'Chain, Belts, Tensioners & Guides', href: '/shop?sub=chain-belts-tensioners' },
+          { label: 'Connecting Rods',                   href: '/shop?sub=connecting-rods' },
+          { label: 'Crankshafts',                       href: '/shop?sub=crankshafts' },
+          { label: 'Engine Accessories & Gaskets',      href: '/shop?sub=engine-accessories-gaskets' },
+          { label: 'Head Gaskets',                      href: '/shop?sub=head-gaskets' },
+          { label: 'Head Studs & Conrod Bolts',         href: '/shop?sub=head-studs-conrod' },
+          { label: 'Oil Pump & Water Pumps',            href: '/shop?sub=oil-pump-water-pumps' },
+          { label: 'Pistons',                           href: '/shop?sub=pistons' },
+          { label: 'Rocker Arms',                       href: '/shop?sub=rocker-arms' },
+          { label: 'Springs / Retainers & Bases',       href: '/shop?sub=springs-retainers-bases' },
+          { label: 'Valves',                            href: '/shop?sub=valves' },
+        ],
+      },
+      {
+        title: 'Engine Parts',
+        titleHref: '/shop?sub=engine-parts',
+        links: [
+          { label: 'Axles',               href: '/shop?sub=axles' },
+          { label: 'Catch Can & Tanks',   href: '/shop?sub=catch-can-tanks' },
+          { label: 'Cosmetic / Dress-up', href: '/shop?sub=cosmetic-dress-up' },
+          { label: 'Hinges',              href: '/shop?sub=hinges' },
+          { label: 'Ignition',            href: '/shop?sub=ignition' },
+          { label: 'Mounts',              href: '/shop?sub=engine-mounts' },
+          { label: 'Oil & Filter',        href: '/shop?sub=oil-filter' },
+          { label: 'Oil Pan & Baffles',   href: '/shop?sub=oil-pan' },
+          { label: 'Pulley Kits',         href: '/shop?sub=pulley-kits' },
+          { label: 'Supporting Parts',    href: '/shop?sub=supporting-parts' },
+        ],
+      },
+      {
+        title: 'Induction',
+        titleHref: '/shop?sub=induction',
+        links: [
+          { label: 'Intake Manifolds',   href: '/shop?sub=intake-manifolds' },
+          { label: 'Adapters',           href: '/shop?sub=induction-adapters' },
+          { label: 'Intake Accessories', href: '/shop?sub=intake-accessories' },
+          { label: 'Intake Gaskets',     href: '/shop?sub=intake-gaskets' },
+          { label: 'Intake System',      href: '/shop?sub=intake-system' },
+          { label: 'Map Sensors',        href: '/shop?sub=map-sensors' },
+          { label: 'Pod Filters',        href: '/shop?sub=pod-filters' },
+          { label: 'Throttle Bodies',    href: '/shop?sub=throttle-bodies' },
+        ],
+      },
+      {
+        title: 'Fuel',
+        titleHref: '/shop?sub=fuel',
+        links: [
+          { label: 'Fuel Filter',                     href: '/shop?sub=fuel-filter' },
+          { label: 'Fuel Injectors',                  href: '/shop?sub=fuel-injectors' },
+          { label: 'Fuel Pressure Regulator',         href: '/shop?sub=fuel-pressure-regulator' },
+          { label: 'Fuel Pump',                       href: '/shop?sub=fuel-pump' },
+          { label: 'Fuel Rails',                      href: '/shop?sub=fuel-rails' },
+          { label: 'Fuel System',                     href: '/shop?sub=fuel-system' },
+          { label: 'Fuel System Parts & Accessories', href: '/shop?sub=fuel-system-parts-accessories' },
+        ],
+      },
+      {
+        title: 'Turbo & Supercharger',
+        titleHref: '/shop?sub=turbo-supercharger',
+        links: [
+          { label: 'Blow Off Valve & Wastegate', href: '/shop?sub=blow-off-valve-wastegate' },
+          { label: 'Boost Controllers',          href: '/shop?sub=boost-controllers' },
+          { label: 'Intercoolers',               href: '/shop?sub=intercoolers' },
+          { label: 'Map Sensors',                href: '/shop?sub=map-sensors-turbo' },
+          { label: 'Superchargers',              href: '/shop?sub=superchargers' },
+          { label: 'Turbo',                      href: '/shop?sub=turbo' },
+          { label: 'Turbo Manifold',             href: '/shop?sub=turbo-manifold' },
+        ],
+      },
+      {
+        title: 'Maintenance',
+        titleHref: '/shop?sub=maintenance',
+        links: [
+          { label: 'Engine Oil',          href: '/shop?sub=engine-oil' },
+          { label: 'Fluids & Lubricants', href: '/shop?sub=fluids-lubricants' },
+          { label: 'Oil Filter',          href: '/shop?sub=oil-filter-maintenance' },
+          { label: 'Spark Plugs',         href: '/shop?sub=spark-plugs-maintenance' },
+        ],
+      },
+      {
+        title: 'Exhaust',
+        titleHref: '/shop?sub=exhaust',
+        links: [
+          { label: 'Exhaust System',                       href: '/shop?sub=exhaust-system' },
+          { label: 'Headers, Turbo Manifold & Dump Pipes', href: '/shop?sub=headers-turbo-manifold-dump-pipes' },
+          { label: 'Mufflers & Accessories',               href: '/shop?sub=mufflers-and-accessories' },
+        ],
+      },
     ],
   },
   {
@@ -45,12 +133,42 @@ export const navItems = [
   {
     label: 'Honda OEM',
     href: '/shop?sub=honda-oem',
-    hasMega: false,
-    image: '/menu/menu-honda-body.jpg',
-    links: [
-      { label: 'Engine', href: '/shop?sub=engine-honda-oem' },
-      { label: 'Drivetrain', href: '/shop?sub=drivetrain-honda-oem' },
-      { label: 'Body & Accessories', href: '/shop?sub=body-accessories-honda-oem' },
+    hasMega: true,
+    type: 'megaColumns',
+    columns: [
+      {
+        title: 'Engine',
+        titleHref: '/shop?sub=engine-honda-oem',
+        links: [
+          { label: 'Gaskets',                           href: '/shop?sub=honda-engine-gaskets' },
+          { label: 'Mounts',                            href: '/shop?sub=honda-engine-mounts' },
+          { label: 'Oil & Water Pumps',                 href: '/shop?sub=honda-engine-oil-water-pumps' },
+          { label: 'Accessories',                       href: '/shop?sub=honda-engine-accessories' },
+          { label: 'Chain, Belts, Tensioners & Guides', href: '/shop?sub=honda-engine-chain-belts-tensioners-guides' },
+        ],
+      },
+      {
+        title: 'Drivetrain',
+        titleHref: '/shop?sub=drivetrain-honda-oem',
+        links: [
+          { label: 'Mounts',                href: '/shop?sub=honda-drivetrain-mounts' },
+          { label: 'Accessories',           href: '/shop?sub=honda-drivetrain-accessories' },
+          { label: 'Bearings & Seals',      href: '/shop?sub=honda-drivetrain-external' },
+          { label: 'Cylinders & Slaves',    href: '/shop?sub=honda-cylinders-slaves' },
+          { label: 'Gears & Final Drive',   href: '/shop?sub=honda-drivetrain-gears-final-drive' },
+          { label: 'Synchro Hub & Sleeves', href: '/shop?sub=honda-drivetrain-synchrohub-sleeves' },
+        ],
+      },
+      {
+        title: 'Body & Accessories',
+        titleHref: '/shop?sub=body-accessories-honda-oem',
+        links: [
+          { label: 'Engine Bay',  href: '/shop?sub=honda-engine-bay' },
+          { label: 'Exterior',    href: '/shop?sub=exterior-accessories-honda-oem' },
+          { label: 'Interior',    href: '/shop?sub=interior-accessories-honda-oem' },
+          { label: 'Accessories', href: '/shop?sub=honda-bodyaccessries-accessories' },
+        ],
+      },
     ],
   },
   {
@@ -150,18 +268,61 @@ export const navItems = [
   {
     label: 'Lighting',
     href: '/shop?sub=lighting',
-    hasMega: false,
-    image: '/menu/menu-lighting.jpg',
-    links: [
-      { label: 'LED', href: '/shop?sub=led' },
-      { label: 'Tail / Brake', href: '/shop?sub=tail-brake' },
+    hasMega: true,
+    type: 'megaColumns',
+    columns: [
+      {
+        title: 'HID',
+        titleHref: '/shop?sub=hid',
+        links: [
+          { label: 'HID Adapters',         href: '/shop?sub=hid-adapters' },
+          { label: 'HID Ballasts',         href: '/shop?sub=hid-ballasts' },
+          { label: 'HID Bulbs (D Series)', href: '/shop?sub=hid-bulbs-d-series' },
+          { label: 'HID Bulbs (H Series)', href: '/shop?sub=hid-bulbs-h-series' },
+          { label: 'HID Kits',             href: '/shop?sub=hid-kits' },
+        ],
+      },
+      {
+        title: 'LED',
+        titleHref: '/shop?sub=led',
+        links: [
+          { label: 'Indicators',          href: '/shop?sub=led-indicators' },
+          { label: 'Interior & Exterior', href: '/shop?sub=led-interior-exterior' },
+          { label: 'LED Bulb Adapters',   href: '/shop?sub=led-bulb-adapters' },
+          { label: 'Low / High & Fogs',   href: '/shop?sub=low-high-fogs' },
+          { label: 'Reverse',             href: '/shop?sub=led-reverse' },
+          { label: 'Tail / Brake',        href: '/shop?sub=tail-brake' },
+        ],
+      },
+      {
+        title: 'Wiring',
+        titleHref: '/shop?sub=lighting-wiring',
+        links: [
+          { label: 'Pigtails & Adapters',  href: '/shop?sub=pigtails-adapters' },
+          { label: 'PWM Canbus Modules',   href: '/shop?sub=pwm-canbus-modules' },
+          { label: 'Relay Harnesses',      href: '/shop?sub=relay-harnesses' },
+          { label: 'Sockets & Connectors', href: '/shop?sub=sockets-connectors' },
+        ],
+      },
+      {
+        title: 'Accessories',
+        titleHref: '/shop?sub=accessories-lighting',
+        links: [
+          { label: 'Dust Caps', href: '/shop?sub=lighting-dust-caps' },
+        ],
+      },
+      {
+        title: 'Vehicle Kits',
+        titleHref: '/shop?sub=vehicle-kits',
+        links: [],
+      },
     ],
   },
   {
     label: 'Services',
     href: '/services',
     hasMega: true,
-    type: 'services',
+    type: 'megaColumns',
     highlight: true,
     columns: [
       {
@@ -189,8 +350,7 @@ export const navItems = [
       },
     ],
     footerLinks: [
-      { label: 'View all services →', href: '/services' },
-      { label: 'Book a service',      href: '/book' },
+      { label: 'Book a service', href: '/book' },
     ],
   },
 ];

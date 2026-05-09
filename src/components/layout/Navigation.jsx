@@ -264,10 +264,10 @@ export default function Navigation() {
                 {activeItem === item.label && (
                   <div className="dropdown-wrapper">
                     {item.type === 'brands' && <BrandsMegaMenu />}
-                    {item.type === 'services' && (
+                    {item.type === 'megaColumns' && (
                       <ServicesMegaMenu columns={item.columns} footerLinks={item.footerLinks} />
                     )}
-                    {item.hasMega && item.type !== 'brands' && item.type !== 'services' && item.columns && (
+                    {item.hasMega && item.type !== 'brands' && item.type !== 'megaColumns' && item.columns && (
                       <StandardMegaMenu columns={item.columns} />
                     )}
                     {!item.hasMega && item.links && item.links.length > 0 && (
