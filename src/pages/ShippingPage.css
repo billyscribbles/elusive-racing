@@ -1,0 +1,228 @@
+.shipping-page {
+  padding: 36px 0 80px;
+  background: #fff;
+  min-height: 60vh;
+}
+
+.shipping-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 20px;
+}
+
+.shipping-breadcrumb a { color: #888; transition: color 0.15s; }
+.shipping-breadcrumb a:hover { color: var(--color-red); }
+.shipping-breadcrumb span { color: #444; font-weight: 500; }
+
+.shipping-header { margin-bottom: 48px; }
+
+.shipping-title {
+  font-family: var(--font-primary);
+  font-size: 32px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 12px;
+}
+
+.shipping-intro {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #555;
+  max-width: 760px;
+  padding: 20px 24px;
+  background: #fafafa;
+  border-left: 3px solid var(--color-red);
+  border-radius: 0 4px 4px 0;
+}
+
+.shipping-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.shipping-toc {
+  position: sticky;
+  top: 110px;
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 6px;
+  padding: 24px 20px;
+}
+
+.shipping-toc-title {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 16px;
+}
+
+.shipping-toc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shipping-toc-list li a {
+  display: block;
+  font-size: 13px;
+  color: #555;
+  padding: 5px 8px;
+  border-radius: 3px;
+  line-height: 1.4;
+  transition: background 0.15s, color 0.15s;
+}
+
+.shipping-toc-list li a:hover {
+  background: #fff;
+  color: var(--color-red);
+}
+
+.shipping-content {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.shipping-section { scroll-margin-top: 180px; }
+
+.shipping-section-title {
+  font-family: var(--font-primary);
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.shipping-section p {
+  font-size: 14px;
+  line-height: 1.85;
+  color: #555;
+  margin-bottom: 14px;
+}
+
+.shipping-section p:last-child { margin-bottom: 0; }
+
+.shipping-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-left: 4px;
+}
+
+.shipping-list li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #555;
+  padding-left: 18px;
+  position: relative;
+}
+
+.shipping-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+/* Carrier list */
+.shipping-carrier-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+}
+
+.shipping-carrier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.shipping-carrier-row:last-child {
+  border-bottom: none;
+}
+
+.shipping-carrier-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.shipping-carrier-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-red);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.shipping-carrier-link:hover {
+  color: var(--color-red-hover);
+  text-decoration: underline;
+}
+
+/* Footer note */
+.shipping-footer-note {
+  margin-top: 64px;
+  padding: 24px 28px;
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.shipping-footer-note p {
+  font-size: 14px;
+  color: #666;
+}
+
+.shipping-footer-note a {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+.shipping-footer-note a:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .shipping-body {
+    grid-template-columns: 1fr;
+  }
+  .shipping-toc { position: static; }
+}
+
+@media (max-width: 600px) {
+  .shipping-title { font-size: 26px; }
+  .shipping-intro { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  .shipping-carrier-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .shipping-carrier-link {
+    white-space: normal;
+  }
+}

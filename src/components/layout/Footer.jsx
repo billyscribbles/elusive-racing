@@ -26,6 +26,7 @@ const infoStrip = [
     icon: <Truck size={36} strokeWidth={1.5} />,
     title: 'FAST SHIPPING',
     subtitle: 'Worldwide Shipping',
+    href: '/shipping',
   },
   {
     icon: <Phone size={36} strokeWidth={1.5} />,
@@ -51,6 +52,7 @@ const quickLinks = [
   { label: 'Services', href: '/services' },
   { label: 'About Us', href: '/about' },
   { label: 'Contact Us', href: '/contact' },
+  { label: 'Shipping Policy', href: '/shipping' },
   { label: 'Wholesale Registration', href: '/wholesale-registration' },
   { label: 'Wholesale Login', href: '/wholesale-login' },
 ];
@@ -65,7 +67,7 @@ const information = [
   { label: 'Terms and Conditions', href: '/terms' },
   { label: 'Privacy Policy', href: '/terms#privacy' },
   { label: 'Returns & Warranty', href: '/returns' },
-  { label: 'Shipping Policy', href: '/terms#shipping' },
+  { label: 'Shipping Policy', href: '/shipping' },
 ];
 
 export default function Footer() {
@@ -75,21 +77,42 @@ export default function Footer() {
       {/* ── Info strip ── */}
       <div className="footer-info-strip">
         <div className="container footer-info-inner">
-          {infoStrip.map((item, i) => (
-            <a
-              key={i}
-              href={item.href || '#'}
-              className="footer-info-item"
-              target={item.href?.startsWith('http') ? '_blank' : undefined}
-              rel={item.href?.startsWith('http') ? 'noopener noreferrer' : undefined}
-            >
-              <span className="footer-info-icon">{item.icon}</span>
-              <span className="footer-info-text">
-                <strong>{item.title}</strong>
-                <span style={{ whiteSpace: 'pre-line' }}>{item.subtitle}</span>
-              </span>
-            </a>
-          ))}
+          {infoStrip.map((item, i) => {
+            const isInternal = item.href?.startsWith('/');
+            const isExternal = item.href?.startsWith('http');
+            const inner = (
+              <>
+                <span className="footer-info-icon">{item.icon}</span>
+                <span className="footer-info-text">
+                  <strong>{item.title}</strong>
+                  <span style={{ whiteSpace: 'pre-line' }}>{item.subtitle}</span>
+                </span>
+              </>
+            );
+            if (isInternal) {
+              return (
+                <Link
+                  key={i}
+                  to={item.href}
+                  className="footer-info-item"
+                  reloadDocument
+                >
+                  {inner}
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={i}
+                href={item.href || '#'}
+                className="footer-info-item"
+                target={isExternal ? '_blank' : undefined}
+                rel={isExternal ? 'noopener noreferrer' : undefined}
+              >
+                {inner}
+              </a>
+            );
+          })}
         </div>
       </div>
 

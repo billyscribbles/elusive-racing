@@ -51,3 +51,4 @@
 - After placing an order that contains a backorder item, the order confirmation page and the downloadable PDF receipt now both show a short note that we'll source the item as quickly as possible, that availability isn't guaranteed, and that we may cancel and refund a backorder line if we can't procure it.
 - Rewrote the opening of the "How We Got Here" section on the About page to share how Kenny and Jimmy started out modifying Hondas in their parents' front yard.
 - Fixed footer links so pages now reliably start at the top after you click them.
+- Added a Shipping page that explains delivery times and lists every carrier we use, with links to each carrier's transit-time and FAQ pages. Reachable from the "Fast Shipping" badge in the footer and a new "Shipping Policy" link in Quick Links.

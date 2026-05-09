@@ -58,6 +58,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactUsPage = lazy(() => import('./pages/ContactUsPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const ReturnsPage = lazy(() => import('./pages/ReturnsPage'));
+const ShippingPage = lazy(() => import('./pages/ShippingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/returns" element={<ReturnsPage />} />
+          <Route path="/shipping" element={<ShippingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/wholesale-login" element={<LoginPage />} />
           <Route path="/my-account" element={<LoginPage />} />
