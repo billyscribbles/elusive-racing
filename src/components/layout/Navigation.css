@@ -104,13 +104,13 @@
 .brands-grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  gap: 16px;
+  gap: 4px;
   align-items: center;
 }
 
 .brands-mega-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding-top: 12px;
   margin-top: 4px;
 }
@@ -132,7 +132,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px;
+  padding: 4px;
   border: 1px solid #f0f0f0;
   border-radius: 4px;
   height: 70px;
@@ -147,16 +147,10 @@
 }
 
 .brand-item img {
-  max-height: 45px;
+  max-height: 56px;
   max-width: 100%;
   width: auto;
   object-fit: contain;
-  filter: grayscale(30%);
-  transition: filter 0.2s;
-}
-
-.brand-item:hover img {
-  filter: grayscale(0%);
 }
 
 .brand-fallback {
@@ -472,7 +466,7 @@
 
 .mobile-brands-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 

@@ -120,12 +120,10 @@
   width: auto;
   height: auto;
   object-fit: contain;
-  filter: grayscale(40%) opacity(0.8);
-  transition: filter 0.2s, transform 0.2s;
+  transition: transform 0.2s;
 }
 
 .brands-page-card:hover .brands-page-logo img {
-  filter: grayscale(0%) opacity(1);
   transform: scale(1.06);
 }
 

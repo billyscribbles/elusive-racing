@@ -59,3 +59,8 @@
 - The Services menu in the top nav is now a dropdown with every service we offer, split into Maintenance and Performance — General, Major, Logbook, Brake, Suspension, Drivetrain, Transmission, Engine Build, Exhaust & Fabrication, Tuning, and Performance Parts.
 - Each service now has its own page that explains exactly what's included and how the work is done, so you can read up on it before you book.
 - Engine, Honda OEM, and Lighting in the top nav now expand into the same multi-column dropdowns the live site has, so every sub-category (Engine Internals, Induction, Fuel, Forced Induction, HID, LED, Wiring, etc.) is one click away from any page.
+- Brand logos now show in full colour all the time on the Brands page and in the top-nav Brands menu, instead of looking faded until you hover them.
+- The Brands menu in the top nav now packs the logos in tighter and bigger, so each brand is easier to spot at a glance.
+- The "See all brands" link in the Brands menu now sits on the left.
+- Refreshed the featured brands shown in the Brands menu — Blox Racing, Intima, Supertech, Wiseco, Hardrace, GFB and Elusive Racing are now front and centre, and HKS, Mugen, Spoon Sports, Toda Racing, Kraftwerks, Cometic and Whiteline have been moved out of the featured list.
+- On mobile, the Brands menu now shows the top 8 brands in 3 rows of 3-3-2 instead of two columns, so they're easier to scan.
